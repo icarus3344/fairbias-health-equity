@@ -1,0 +1,295 @@
+{
+  "schema_version": "1.0.0",
+  "study_metadata": {
+    "title": "MEPS Longitudinal Coverage Interruption and Algorithmic Fairness Study",
+    "protocol_version": "1.0.0-pre-data",
+    "creation_date": "2026-08-28",
+    "evidence_access_date": "2026-08-28",
+    "purpose": "beneficial_retention_and_outreach_research_only",
+    "prohibited_uses": [
+      "underwriting",
+      "pricing",
+      "coverage_denial",
+      "eligibility_determination",
+      "benefit_reduction",
+      "punitive_or_exclusionary_decisions"
+    ],
+    "disclaimer": "Retrospective public-use survey data research only; not a deployable clinical or insurance product."
+  },
+  "panels": {
+    "development": {
+      "title": "MEPS HC-244 Panel 26 Longitudinal Data Public Use File",
+      "puf_id": "HC-244",
+      "panel_number": 26,
+      "years": [
+        2021,
+        2022
+      ],
+      "total_person_records": 6741,
+      "total_variables": 2737,
+      "complete_five_rounds_records": 6295,
+      "role": "development",
+      "details_url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-244",
+      "doc_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244doc.pdf",
+      "codebook_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244cb.pdf",
+      "candidate_download_url": "https://meps.ahrq.gov/data_files/pufs/h244/h244ssp.zip"
+    },
+    "temporal_holdout": {
+      "title": "MEPS HC-252 Panel 27 Longitudinal Data Public Use File",
+      "puf_id": "HC-252",
+      "panel_number": 27,
+      "years": [
+        2022,
+        2023
+      ],
+      "total_person_records": 8292,
+      "total_variables": 2648,
+      "complete_five_rounds_records": 7812,
+      "role": "locked_temporal_holdout",
+      "details_url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-252",
+      "doc_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252doc.pdf",
+      "codebook_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252cb.pdf",
+      "candidate_download_url": "https://meps.ahrq.gov/mepsweb/data_files/pufs/h252/h252ssp.zip"
+    }
+  },
+  "population_eligibility": {
+    "age_min": 18,
+    "age_max": 64,
+    "age_timing": "baseline_year_1_end",
+    "age_variable_name": null,
+    "age_variable_status": "pending_gate_7_codebook_verification",
+    "require_both_years": true,
+    "year_indicator_variable": "YEARIND",
+    "year_indicator_expected_value": 1,
+    "require_all_five_rounds": true,
+    "five_rounds_variable": "ALL5RDS",
+    "five_rounds_expected_value": 1,
+    "require_positive_longitudinal_weight": true,
+    "longitudinal_weight_variable": "LONGWT",
+    "require_continuous_baseline_insurance": true,
+    "baseline_insurance_timing": "all_12_months_year_1",
+    "baseline_insurance_variables": null,
+    "baseline_insurance_status": "pending_gate_7_codebook_verification"
+  },
+  "temporal_holdout_lock": {
+    "status": "locked",
+    "claim_boundary": "temporal_transport_assessment_within_meps_not_external_validation_or_deployment_simulation",
+    "allowed_prelock_checks": [
+      "schema_column_names_and_types",
+      "documented_code_compatibility",
+      "file_dimensions_and_record_counts",
+      "file_hashes",
+      "non_outcome_structural_integrity_checks"
+    ],
+    "prohibited_prelock_checks": [
+      "outcome_prevalence_inspection",
+      "protected_group_rates_or_distributions",
+      "feature_summaries_or_marginal_distributions",
+      "performance_metric_evaluation_or_tuning"
+    ]
+  },
+  "target_variables": {
+    "primary_outcome": {
+      "name": "any_uninsured_month_y2",
+      "description": "At least one month uninsured during calendar Year 2",
+      "exact_monthly_variables": null,
+      "variable_mapping_status": "pending_gate_7_codebook_verification"
+    },
+    "sensitivity_outcomes": [
+      {
+        "name": "prolonged_uninsurance_y2",
+        "description": "Three or more months uninsured during calendar Year 2",
+        "exact_monthly_variables": null,
+        "variable_mapping_status": "pending_gate_7_codebook_verification"
+      },
+      {
+        "name": "year_end_uninsurance_y2",
+        "description": "Uninsured in December (Month 12) of calendar Year 2",
+        "exact_monthly_variables": null,
+        "variable_mapping_status": "pending_gate_7_codebook_verification"
+      }
+    ]
+  },
+  "predictors": {
+    "timing_constraint": "baseline_year_1_only",
+    "prohibited_features": [
+      "year_2_features",
+      "outcome_year_coverage",
+      "post_baseline_utilization",
+      "post_baseline_employment",
+      "future_derived_variables",
+      "person_or_household_identifiers"
+    ],
+    "identifier_variables_for_grouping_only": [
+      "DUPERSID",
+      "DUID",
+      "PID",
+      "PANEL"
+    ],
+    "exact_predictor_list": null,
+    "predictor_status": "pending_gate_7_codebook_verification"
+  },
+  "data_partitioning": {
+    "panel": "HC-244",
+    "grouping_variable": "DUID",
+    "partition_by_row": false,
+    "ratios": {
+      "train": 0.6,
+      "validation": 0.2,
+      "calibration": 0.2
+    },
+    "refit_on": "train_plus_validation",
+    "stratification_targets": [
+      "target_outcome",
+      "survey_weight_deciles"
+    ]
+  },
+  "calibration": {
+    "method": "survey_weighted_platt_scaling",
+    "primary_partition": "calibration",
+    "calibrator_type": "logistic_calibrator_on_untouched_calibration_set",
+    "data_dependent_selection": false
+  },
+  "survey_design": {
+    "weight_variable": "LONGWT",
+    "strata_variable": "VARSTR",
+    "psu_variable": "VARPSU",
+    "design_variables_as_predictors": false,
+    "primary_point_estimates": "weighted",
+    "domain_representation": "civilian_noninstitutionalized_frozen_eligible_cohort",
+    "unweighted_role": "secondary_sensitivity",
+    "variance_estimation_method": "stratified_psu_bootstrap_resampling",
+    "unsupported_variance_method_action": "stop_and_escalate_no_silent_substitution",
+    "confidence_level": 0.95
+  },
+  "protected_dimensions": {
+    "primary_audit_dimensions": [
+      "race_ethnicity",
+      "sex"
+    ],
+    "secondary_audit_dimensions": [
+      "poverty_category",
+      "age_band",
+      "disability_limitation_status"
+    ],
+    "exact_protected_variable_mappings": null,
+    "category_mapping_status": "pending_gate_7_codebook_verification",
+    "role": "audit_variables_only_not_primary_predictors",
+    "suppression_rules": {
+      "min_unweighted_subgroup_n": 100,
+      "min_positive_outcomes": 20,
+      "min_negative_outcomes": 20,
+      "min_kish_effective_n": 50,
+      "action_on_suppression": "mark_unavailable_no_adhoc_merging"
+    }
+  },
+  "models": {
+    "primary_baseline": "survey_weighted_logistic_regression",
+    "secondary_candidates": [
+      "random_forest_classifier",
+      "hist_gradient_boosting_classifier"
+    ],
+    "secondary_requirements": "native_sample_weight_support_and_deterministic_seed"
+  },
+  "mitigation_arms": [
+    "unmitigated_baseline",
+    "paper_informed_reconstruction",
+    "survey_weighted_mitigation_extension"
+  ],
+  "primary_comparison": {
+    "mitigated_arm": "survey_weighted_mitigation_extension",
+    "baseline_arm": "unmitigated_survey_weighted_logistic_regression",
+    "feature_policy": "identical_baseline_predictors",
+    "split_policy": "identical_duid_grouped_split"
+  },
+  "primary_endpoints": {
+    "utility": "weighted_auprc_panel_27",
+    "fairness": "maximum_across_primary_dimensions_of_max_absolute_pairwise_group_tpr_gap_at_10_percent_weighted_capacity",
+    "fairness_category_mapping_status": "deferred_to_gate_7"
+  },
+  "paired_difference_inference": {
+    "method": "stratified_psu_resampling",
+    "confidence_level": 0.95,
+    "scalar_fairness_proof_prohibited": true,
+    "noninferiority_margin_invented": false,
+    "secondary_exploratory_roles": [
+      "other_models",
+      "other_metrics",
+      "other_groups",
+      "intersections"
+    ]
+  },
+  "evaluation_metrics": {
+    "discrimination": [
+      "weighted_auroc",
+      "weighted_auprc"
+    ],
+    "probabilistic_accuracy": [
+      "weighted_brier_score"
+    ],
+    "calibration": [
+      "calibration_intercept",
+      "calibration_slope",
+      "expected_calibration_error"
+    ],
+    "capacity_basis": "weighted_cumulative_longwt",
+    "capacity_sensitivity_basis": "unweighted_sample_fraction",
+    "prespecified_capacity_fractions": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "capacity_aware_metrics": [
+      "recall_at_capacity",
+      "precision_at_capacity"
+    ],
+    "fixed_threshold_policy": {
+      "source_partition": "calibration",
+      "source_panel": "HC-244",
+      "target_weighted_selection_fraction": 0.1,
+      "rule": "freeze_conventional_probability_threshold_from_calibrated_p26_calibration_set_apply_unchanged_to_p27",
+      "distinguish_from_rank_based_top_k": true
+    },
+    "fairness_audit_metrics": [
+      "subgroup_weighted_brier_score",
+      "subgroup_weighted_calibration_intercept_slope",
+      "true_positive_rate_gap",
+      "false_positive_rate_gap",
+      "positive_predictive_value_gap",
+      "selection_rate_gap",
+      "bias_concentration_quantity"
+    ]
+  },
+  "reproducibility": {
+    "random_seeds": [
+      20260828,
+      20260829,
+      20260830,
+      20260831,
+      20260832
+    ]
+  },
+  "computational_limits": {
+    "local_target_platform": "Apple Silicon Mac (24 GB RAM)",
+    "max_rss_gb": 16.0,
+    "max_smoke_run_minutes": 30.0,
+    "prohibit_quadratic_sample_matrix": true
+  },
+  "leakage_policy": {
+    "expected_predictive_signal_not_leakage": "nonzero_mutual_information_between_legitimate_baseline_predictors_and_y2_outcome",
+    "leakage_failure_examples": [
+      "year_2_or_post_baseline_columns_in_predictors",
+      "person_or_household_duid_overlap_across_partitions",
+      "preprocessing_fitted_beyond_authorized_partitions",
+      "use_of_panel_27_outcomes_or_distributions_for_tuning"
+    ]
+  },
+  "stop_conditions": [
+    "missing_or_unharmonizable_target_variables",
+    "failed_weight_or_design_validation",
+    "eligible_positive_outcomes_fewer_than_200",
+    "data_leakage_test_failure",
+    "unsupported_stratified_psu_resampling_structure",
+    "manifest_reproduction_failure"
+  ]
+}
