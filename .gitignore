@@ -1,0 +1,50 @@
+# Operating System & IDEs
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+.venv/
+.venv311/
+venv/
+env/
+
+# Secrets & Credentials
+.env*
+!.env.example
+*.pem
+*.key
+
+# Logs & Generated Plots
+*.log
+logs/
+test02.png
+
+# Data Directories (preserving .gitkeep)
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Execution Outputs & Artifacts (preserving .gitkeep)
+runs/*
+!runs/.gitkeep
+outputs/*
+!outputs/.gitkeep
+artifacts/*
+!artifacts/.gitkeep
