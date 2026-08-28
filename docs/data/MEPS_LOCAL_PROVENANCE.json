@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0.0",
+  "snapshot_timestamp_utc": "2026-08-28T07:34:54.929161+00:00",
+  "runtime_manifest_relative_path": "data/raw/meps/provenance.json",
+  "runtime_manifest_sha256": "0b224c29a0fda43b0dbb215ac41aa52ab3ad3a39baab945bcb1443720d23cd83",
+  "disclaimer": "Locally computed SHA-256 hashes establish local immutability and reproducibility; they do not constitute proof of publisher authenticity when no official upstream checksums exist.",
+  "total_artifacts": 6,
+  "total_bytes": 27581704,
+  "artifacts": {
+    "hc244_archive": {
+      "artifact_id": "hc244_archive",
+      "puf_id": "HC-244",
+      "artifact_type": "data_archives",
+      "requested_url": "https://meps.ahrq.gov/data_files/pufs/h244/h244ssp.zip",
+      "final_url": "https://meps.ahrq.gov/data_files/pufs/h244/h244ssp.zip",
+      "http_status": 200,
+      "content_type": "application/zip",
+      "byte_size": 4093832,
+      "sha256": "fb19c9091b9baafd4b315c8cdb36a61dc2a9e4dc683869f4dd47b42866be5357",
+      "repository_relative_path": "data/raw/meps/h244/h244ssp.zip",
+      "archive_member_metadata": {
+        "member_name": "h244.ssp",
+        "uncompressed_size": 59728720,
+        "compressed_size": 4093682,
+        "crc32": 3114255949
+      },
+      "publisher_checksum": null
+    },
+    "hc244_codebook": {
+      "artifact_id": "hc244_codebook",
+      "puf_id": "HC-244",
+      "artifact_type": "codebooks",
+      "requested_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244cb.pdf",
+      "final_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244cb.pdf",
+      "http_status": 200,
+      "content_type": "application/pdf",
+      "byte_size": 6804911,
+      "sha256": "4b5818ca63875321eb6b535595c5be02ac084e6fab5937305694c6833ee2e83a",
+      "repository_relative_path": "data/raw/meps/h244/h244cb.pdf",
+      "archive_member_metadata": null,
+      "publisher_checksum": null
+    },
+    "hc244_doc": {
+      "artifact_id": "hc244_doc",
+      "puf_id": "HC-244",
+      "artifact_type": "documentation",
+      "requested_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244doc.pdf",
+      "final_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244doc.pdf",
+      "http_status": 200,
+      "content_type": "application/pdf",
+      "byte_size": 283449,
+      "sha256": "8b3fcbd85e3848f9c0cb5d0e69207bd7eccfca5e303c2187f6b3b279c6b84afc",
+      "repository_relative_path": "data/raw/meps/h244/h244doc.pdf",
+      "archive_member_metadata": null,
+      "publisher_checksum": null
+    },
+    "hc252_archive": {
+      "artifact_id": "hc252_archive",
+      "puf_id": "HC-252",
+      "artifact_type": "data_archives",
+      "requested_url": "https://meps.ahrq.gov/mepsweb/data_files/pufs/h252/h252ssp.zip",
+      "final_url": "https://meps.ahrq.gov/mepsweb/data_files/pufs/h252/h252ssp.zip",
+      "http_status": 200,
+      "content_type": "application/zip",
+      "byte_size": 4747104,
+      "sha256": "fe0c3d9cea62a266091db7e8d1be50a2f415f371ce76e76466ba4c8de4810a68",
+      "repository_relative_path": "data/raw/meps/h252/h252ssp.zip",
+      "archive_member_metadata": {
+        "member_name": "h252.ssp",
+        "uncompressed_size": 70390080,
+        "compressed_size": 4746954,
+        "crc32": 1797043430
+      },
+      "publisher_checksum": null
+    },
+    "hc252_codebook": {
+      "artifact_id": "hc252_codebook",
+      "puf_id": "HC-252",
+      "artifact_type": "codebooks",
+      "requested_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252cb.pdf",
+      "final_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252cb.pdf",
+      "http_status": 200,
+      "content_type": "application/pdf",
+      "byte_size": 11368575,
+      "sha256": "b72afefab2811c0a19f3654e19bc4494f16bad26af1f8e276b5c5260915a0b2e",
+      "repository_relative_path": "data/raw/meps/h252/h252cb.pdf",
+      "archive_member_metadata": null,
+      "publisher_checksum": null
+    },
+    "hc252_doc": {
+      "artifact_id": "hc252_doc",
+      "puf_id": "HC-252",
+      "artifact_type": "documentation",
+      "requested_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252doc.pdf",
+      "final_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252doc.pdf",
+      "http_status": 200,
+      "content_type": "application/pdf",
+      "byte_size": 283833,
+      "sha256": "f0a883f605ebf0959916368a234eac982b17596a39295a576dfbc93ee906387b",
+      "repository_relative_path": "data/raw/meps/h252/h252doc.pdf",
+      "archive_member_metadata": null,
+      "publisher_checksum": null
+    }
+  }
+}
