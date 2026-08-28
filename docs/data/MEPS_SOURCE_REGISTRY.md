@@ -1,7 +1,7 @@
 # MEPS Source Registry & Data Provenance Specification
 
-**Date**: 2026-08-28  
-**Status**: Pre-Data Ingestion Registry (No Local Microdata Present)  
+**Date**: 2026-08-28
+**Status**: Pre-Data Ingestion Registry (No Local Microdata Present)
 **Access Date for Upstream Evidence**: 2026-08-28
 
 ---
@@ -40,7 +40,7 @@ The following table documents official survey file metadata verified directly ag
 
 ## 3. General Longitudinal Survey References
 
-- **AHRQ MEPS Longitudinal Data Guidance**: Overview of design, weight construction, and longitudinal pooling principles.  
+- **AHRQ MEPS Longitudinal Data Guidance**: Overview of design, weight construction, and longitudinal pooling principles.
   URL: [https://meps.ahrq.gov/mepsweb/data_stats/more_info_download_data_files.jsp](https://meps.ahrq.gov/mepsweb/data_stats/more_info_download_data_files.jsp) (Accessed 2026-08-28).
 
 ---

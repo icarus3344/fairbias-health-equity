@@ -37,4 +37,3 @@ To establish a rigorous temporal evaluation framework within MEPS, we adopt a tw
 - **Positive (Calibration Drift Assessment)**: Enables explicit measurement of calibration slope and intercept shifts across consecutive survey panels, assessed descriptively without causal attribution.
 - **Negative (Sample Size Allocation)**: Limits the development sample size to HC-244 rather than pooling both panels. However, pooling would destroy temporal holdout validity.
 - **Negative (Harmonization Burden)**: Requires rigorous variable-level harmonization between Panel 26 and Panel 27 codebooks in Gate 7.
-

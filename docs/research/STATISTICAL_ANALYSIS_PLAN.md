@@ -1,8 +1,8 @@
 # Statistical Analysis Plan (SAP)
 
-**Study Title**: Longitudinal Prediction and Fair Allocation of Health Insurance Retention Outreach in MEPS  
-**Date**: 2026-08-28  
-**SAP Version**: 1.0.0-pre-data  
+**Study Title**: Longitudinal Prediction and Fair Allocation of Health Insurance Retention Outreach in MEPS
+**Date**: 2026-08-28
+**SAP Version**: 1.0.0-pre-data
 **Status**: Frozen (Pending Gate 7 Codebook Verification)
 
 ---

@@ -1,7 +1,7 @@
 # Research Protocol: Longitudinal Prediction and Fair Allocation of Health Insurance Retention Outreach
 
-**Date**: 2026-08-28  
-**Protocol Version**: 1.0.0-pre-data  
+**Date**: 2026-08-28
+**Protocol Version**: 1.0.0-pre-data
 **Status**: Frozen (Pending Gate 7 Codebook Verification)
 
 ---
@@ -146,18 +146,18 @@ Panel 27 constitutes a **temporal holdout** providing a stronger temporal transp
 
 ## 7. Official Evidence & Source Citations
 
-1. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS HC-252 Panel 27 Longitudinal Data Public Use File*. Released September 2025.  
-   - File Details: [AHRQ HC-252 Details](https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-252) (Accessed 2026-08-28).  
-   - Documentation: [HC-252 Documentation PDF](https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252doc.pdf) (Accessed 2026-08-28).  
+1. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS HC-252 Panel 27 Longitudinal Data Public Use File*. Released September 2025.
+   - File Details: [AHRQ HC-252 Details](https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-252) (Accessed 2026-08-28).
+   - Documentation: [HC-252 Documentation PDF](https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252doc.pdf) (Accessed 2026-08-28).
    - Codebook: [HC-252 Codebook PDF](https://meps.ahrq.gov/data_stats/download_data/pufs/h252/h252cb.pdf) (Accessed 2026-08-28).
-2. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS HC-244 Panel 26 Longitudinal Data Public Use File*. Released September 2024.  
-   - File Details: [AHRQ HC-244 Details](https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-244) (Accessed 2026-08-28).  
-   - Documentation: [HC-244 Documentation PDF](https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244doc.pdf) (Accessed 2026-08-28).  
+2. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS HC-244 Panel 26 Longitudinal Data Public Use File*. Released September 2024.
+   - File Details: [AHRQ HC-244 Details](https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-244) (Accessed 2026-08-28).
+   - Documentation: [HC-244 Documentation PDF](https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244doc.pdf) (Accessed 2026-08-28).
    - Codebook: [HC-244 Codebook PDF](https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244cb.pdf) (Accessed 2026-08-28).
-3. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS Longitudinal Data Files Overview & Guidance*.  
+3. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS Longitudinal Data Files Overview & Guidance*.
    - Guidance URL: [MEPS Longitudinal Data Files Guidance](https://meps.ahrq.gov/mepsweb/data_stats/more_info_download_data_files.jsp) (Accessed 2026-08-28).
-4. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS Data Use Agreement*.  
-   - Agreement URL: [AHRQ Data Use Agreement](https://meps.ahrq.gov/data_stats/data_use.jsp) (Accessed 2026-08-28).  
+4. **Agency for Healthcare Research and Quality (AHRQ)**. *MEPS Data Use Agreement*.
+   - Agreement URL: [AHRQ Data Use Agreement](https://meps.ahrq.gov/data_stats/data_use.jsp) (Accessed 2026-08-28).
    - Core Provisions: Statistical reporting and analysis only; absolute prohibition against re-identification; no attempts to link MEPS data with other individually identifiable records; MEPS-NHIS linkage restricted to the AHRQ Data Center, NCHS Research Data Center, or U.S. Census Research Data Center network; formal citation required.
-5. **Tang, Z., Lu, T., & Li, T.** (2024). *Metric-Independent Mitigation of Unpredefined Bias in Machine Classification*. Intelligent Computing, 3, Article 0083. DOI: [10.34133/icomputing.0083](https://doi.org/10.34133/icomputing.0083).  
+5. **Tang, Z., Lu, T., & Li, T.** (2024). *Metric-Independent Mitigation of Unpredefined Bias in Machine Classification*. Intelligent Computing, 3, Article 0083. DOI: [10.34133/icomputing.0083](https://doi.org/10.34133/icomputing.0083).
    - *Erratum*: Intelligent Computing, Article 0125. DOI: [10.34133/icomputing.0125](https://doi.org/10.34133/icomputing.0125) (Addresses omitted funding acknowledgment; does not invalidate methodology).
