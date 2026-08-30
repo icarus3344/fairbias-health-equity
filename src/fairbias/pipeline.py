@@ -6,10 +6,18 @@ test 20%):
 - The TRAINING partition determines bias concentrations (d_phi) and the
   data transforms (greedy mitigation until d_phi < epsilon).
 - The VALIDATION partition produces the per-iteration metrics used for
-  early stopping and Pareto checkpoint selection.  The test partition
-  never informs model or transform selection.
-- The TEST partition is evaluated exactly once, after the best
-  checkpoint has been locked in.
+  the ENGINEERING Pareto checkpoint selection.  The test partition never
+  informs model or transform selection.
+- The TEST partition is evaluated exactly once per REPORTED TERMINAL
+  STATE.  Two terminal states are reported separately and must never be
+  merged:
+
+  1. ``paper_strict``: the termination state of the paper's greedy
+     mitigation algorithm (the state the loop actually stopped in, with
+     no validation-based rollback).
+  2. ``pareto_engineering``: the validation-Pareto-selected checkpoint —
+     an explicitly named ENGINEERING extension, NOT the paper algorithm's
+     output.
 """
 
 from __future__ import annotations
@@ -37,11 +45,14 @@ from fairbias.transform import FairTransform, calculate_nmi_dict
 
 @dataclasses.dataclass
 class FairBiasRunResult:
-    """Encapsulates execution metrics, manifests, and best Pareto iteration state.
+    """Encapsulates execution metrics, manifests, and terminal states.
 
     ``initial_metrics`` and per-iteration ``metrics`` are computed on the
-    VALIDATION partition; ``final_metrics`` is the single, locked-in
-    evaluation on the TEST partition.
+    VALIDATION partition.  Two separately reported TEST evaluations:
+    ``paper_strict_metrics`` is the single evaluation of the greedy
+    algorithm's termination state; ``pareto_engineering_metrics`` is the
+    single evaluation of the validation-Pareto-selected checkpoint
+    (named engineering extension, not the paper output).
     """
 
     run_id: str
@@ -52,11 +63,19 @@ class FairBiasRunResult:
     iterations: List[Dict[str, Any]]
     best_iteration: int
     best_selection_reason: str
-    final_metrics: Dict[str, Any]
-    final_changed_dict: Dict[str, Any]
-    # Strict-paper failure record: highest-d_phi attribute whose exhaustive
-    # transform search could not reach the epsilon ball (None when the run
-    # fully mitigated or ran to the iteration budget without failure).
+    paper_strict_metrics: Dict[str, Any]
+    paper_strict_changed_dict: Dict[str, Any]
+    pareto_engineering_metrics: Dict[str, Any]
+    pareto_engineering_changed_dict: Dict[str, Any]
+    # Termination semantics of the greedy loop: converged,
+    # termination_reason, terminal_iteration, terminal_max_dphi,
+    # epsilon_threshold.
+    termination: Dict[str, Any]
+    # Configured-grid failure record: highest-d_phi attribute whose
+    # configured candidate-grid search could not reach the epsilon ball
+    # (None when the run fully mitigated or ran to the iteration budget
+    # without failure).  This is "configured grid exhausted", NOT a
+    # paper-level non-convergence claim.
     non_convergence: Optional[Dict[str, Any]] = None
     execution_time_seconds: float = 0.0
     output_file: str = ""
@@ -70,10 +89,12 @@ def _serialize_object(obj: Any) -> Any:
         return obj.tolist()
     if isinstance(obj, (np.floating, float)):
         return float(obj)
+    # bool must be checked BEFORE int: Python bools are ints, and the
+    # termination record's ``converged`` must serialize as true/false.
+    if isinstance(obj, (bool, np.bool_)):
+        return bool(obj)
     if isinstance(obj, (np.integer, int)):
         return int(obj)
-    if isinstance(obj, np.bool_):
-        return bool(obj)
     if isinstance(obj, dict):
         return {str(k): _serialize_object(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
@@ -240,6 +261,14 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
 
     current_epsilon = copy.deepcopy(init_epsilon)
 
+    # Greedy-loop exit tracking (refined into the public termination
+    # record after the loop).  Exit points:
+    #   - "no_transform_accepted": nothing applicable this round
+    #   - "epsilon_reached": training max d_phi <= epsilon
+    #   - "accuracy_threshold_reached": engineering enhancement stop
+    #   - "iteration_budget_exhausted": for-loop ran out of max_iterations
+    exit_reason: Optional[str] = None
+
     # 6. Iterative Mitigation & Enhancement Loop
     for iter_idx in range(1, cfg.max_iterations + 1):
         iter_data: Dict[str, Any] = {
@@ -281,11 +310,12 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
                 iter_data["selected_attribute"] = ae_attr
 
         if sel_attr is None and ae_attr is None:
-            # No transform accepted this round: the state is terminal.  Under
-            # the strict-paper "stop" failure mode this carries the recorded
-            # non-convergence (highest attribute could not enter the epsilon
-            # ball); under a fully mitigated state every attribute is inside
-            # the ball and non_convergence stays None.
+            # No transform accepted this round: the state is terminal.
+            # Under the strict "stop" failure mode this carries the
+            # recorded configured-grid failure (highest attribute could
+            # not enter the epsilon ball); under a fully mitigated state
+            # every attribute is already inside the ball.
+            exit_reason = "no_transform_accepted"
             break
 
         # Apply current transformations to all partitions
@@ -330,13 +360,94 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
 
         # Early termination checks (training epsilon + validation accuracy)
         if cfg.use_bias_mitigation and curr_max_eps <= epsilon_threshold:
+            exit_reason = "epsilon_reached"
             break
         if cfg.use_accuracy_enhancement and metrics.get("ACC", 0.0) >= acc_threshold:
+            exit_reason = "accuracy_threshold_reached"
             break
 
-    # 7. Pareto Checkpointing on VALIDATION metrics only
-    # Selection rule: minimize fairness gap (EO or SP on validation) subject to
-    # ACC >= initial validation ACC - tau.  The test partition is NOT consulted.
+    if exit_reason is None:
+        # The for-loop ran to the end of the iteration budget without an
+        # explicit early-exit condition firing.
+        exit_reason = "iteration_budget_exhausted"
+
+    # ------------------------------------------------------------------
+    # Termination record for the greedy loop (paper_strict semantics).
+    # The terminal state is the LAST ACCEPTED transform state (iteration 0
+    # = untransformed data when no transform was ever accepted).
+    # ------------------------------------------------------------------
+    terminal_record = history_iterations[-1] if history_iterations else initial_checkpoint
+    terminal_iteration = int(terminal_record["iteration"])
+    terminal_max_dphi = float(terminal_record["max_epsilon"])
+
+    if exit_reason == "no_transform_accepted":
+        if not cfg.use_bias_mitigation and not cfg.use_accuracy_enhancement:
+            termination_reason = "mitigation_disabled"
+        elif cfg.use_bias_mitigation and terminal_max_dphi <= epsilon_threshold:
+            # No candidate above epsilon: every attribute already sits in
+            # the epsilon ball (e.g. the very first step found nothing to
+            # mitigate).
+            termination_reason = "epsilon_reached"
+        else:
+            # The configured candidate grid (power exponents / category
+            # merge chain / drop) could not bring the highest attribute
+            # into the epsilon ball.  This is "configured grid exhausted"
+            # — NOT a claim of paper-level algorithmic non-convergence
+            # (the paper's power search has no stated finite bound).
+            termination_reason = "candidate_grid_exhausted"
+    else:
+        termination_reason = exit_reason
+
+    if not cfg.use_bias_mitigation:
+        # The epsilon-ball convergence criterion is not applicable.
+        converged: Optional[bool] = None
+    else:
+        converged = termination_reason == "epsilon_reached"
+
+    termination_record = {
+        "converged": converged,
+        "termination_reason": termination_reason,
+        "terminal_iteration": terminal_iteration,
+        "terminal_max_dphi": terminal_max_dphi,
+        "epsilon_threshold": epsilon_threshold,
+        # Auditable distinction: grid exhaustion is an implementation
+        # budget outcome, not a paper-level convergence claim.
+        "note": (
+            "candidate_grid_exhausted means the CONFIGURED transform grid "
+            "was exhausted; it is not a paper-level non-convergence claim "
+            "(the paper prescribes an increasing-order search without a "
+            "stated finite bound)."
+            if termination_reason == "candidate_grid_exhausted"
+            else ""
+        ),
+    }
+
+    # 7. Two separately reported terminal states (never merged).
+    #
+    # 7a. paper_strict: the termination state of the paper's greedy
+    # algorithm — the last accepted transform state, NO validation-based
+    # rollback.  Evaluated on the TEST partition exactly once.
+    paper_strict_changed_dict = copy.deepcopy(terminal_record["changed_dict"])
+    paper_strict_X_train = transformer.transform_data(
+        X_train, paper_strict_changed_dict, numerical_cols, categorical_cols
+    )
+    paper_strict_X_test = transformer.transform_data(
+        X_test, paper_strict_changed_dict, numerical_cols, categorical_cols
+    )
+    paper_strict_metrics = evaluator.evaluate(
+        paper_strict_X_train,
+        Y_train,
+        O_train,
+        paper_strict_X_test,
+        Y_test,
+        O_test,
+    )
+
+    # 7b. pareto_engineering: validation-Pareto-selected checkpoint — an
+    # explicitly named ENGINEERING extension (not the paper output).
+    # Selection rule: minimize fairness gap (EO or SP on validation)
+    # subject to ACC >= initial validation ACC - tau.  The test partition
+    # is NOT consulted during selection.
     candidates = [initial_checkpoint] + history_iterations
     min_acc_allowed = init_acc - cfg.accuracy_tolerance_tau
 
@@ -357,28 +468,29 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
 
     best_record = min(feasible_candidates, key=get_fairness_penalty)
     best_iter_num = int(best_record["iteration"])
-    best_changed_dict = copy.deepcopy(best_record["changed_dict"])
+    pareto_changed_dict = copy.deepcopy(best_record["changed_dict"])
     best_fairness_val = get_fairness_penalty(best_record)
 
     best_reason = (
         f"Selected Iteration {best_iter_num} via Pareto Rule on VALIDATION metrics: "
         f"Minimizes {metric_key} ({best_fairness_val:.4f}) under accuracy constraint "
         f"(validation ACC {best_record['metrics'].get('ACC', 0.0):.4f} >= {min_acc_allowed:.4f}). "
-        f"Test partition evaluated exactly once afterwards."
+        f"Test partition evaluated exactly once afterwards. "
+        f"This is the ENGINEERING pareto_engineering state, not the paper "
+        f"algorithm's termination state."
     )
 
-    # 8. Final evaluation: single, locked-in evaluation on the TEST partition
-    final_transformed_X_train = transformer.transform_data(
-        X_train, best_changed_dict, numerical_cols, categorical_cols
+    pareto_X_train = transformer.transform_data(
+        X_train, pareto_changed_dict, numerical_cols, categorical_cols
     )
-    final_transformed_X_test = transformer.transform_data(
-        X_test, best_changed_dict, numerical_cols, categorical_cols
+    pareto_X_test = transformer.transform_data(
+        X_test, pareto_changed_dict, numerical_cols, categorical_cols
     )
-    final_metrics = evaluator.evaluate(
-        final_transformed_X_train,
+    pareto_engineering_metrics = evaluator.evaluate(
+        pareto_X_train,
         Y_train,
         O_train,
-        final_transformed_X_test,
+        pareto_X_test,
         Y_test,
         O_test,
     )
@@ -417,8 +529,10 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         },
         "selection_partition": "validation",
         "final_evaluation_partition": "test",
+        "final_states": ["paper_strict", "pareto_engineering"],
         "epsilon_threshold": epsilon_threshold,
         "failed_attribute_mode": cfg.failed_attribute_mode,
+        "termination": termination_record,
         "mitigation_non_convergence": (
             copy.deepcopy(mitigation_engine.non_convergence)
             if cfg.use_bias_mitigation else None
@@ -429,10 +543,23 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         "iterations": history_iterations,
         "best_iteration": best_iter_num,
         "best_selection_reason": best_reason,
-        "final_results": {
-            "metrics": final_metrics,
+        "final_results_paper_strict": {
+            "metrics": paper_strict_metrics,
             "metrics_partition": "test",
-            "changed_dict": best_changed_dict,
+            "changed_dict": paper_strict_changed_dict,
+            "state": "greedy termination state of the paper algorithm",
+            "termination": termination_record,
+        },
+        "final_results_pareto_engineering": {
+            "metrics": pareto_engineering_metrics,
+            "metrics_partition": "test",
+            "changed_dict": pareto_changed_dict,
+            "best_iteration": best_iter_num,
+            "selection_reason": best_reason,
+            "state": (
+                "validation-Pareto-selected checkpoint; ENGINEERING "
+                "extension, not the paper algorithm's termination state"
+            ),
         },
         "execution_time_seconds": exec_time,
     }
@@ -449,8 +576,11 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         iterations=history_iterations,
         best_iteration=best_iter_num,
         best_selection_reason=best_reason,
-        final_metrics=final_metrics,
-        final_changed_dict=best_changed_dict,
+        paper_strict_metrics=paper_strict_metrics,
+        paper_strict_changed_dict=paper_strict_changed_dict,
+        pareto_engineering_metrics=pareto_engineering_metrics,
+        pareto_engineering_changed_dict=pareto_changed_dict,
+        termination=termination_record,
         non_convergence=(
             copy.deepcopy(mitigation_engine.non_convergence)
             if cfg.use_bias_mitigation else None

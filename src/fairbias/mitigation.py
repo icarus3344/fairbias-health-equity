@@ -9,8 +9,12 @@ transforms"):
   epsilon.  Acceptance is tied to the epsilon ball, not to an arbitrary
   marginal decrease.
 - Numerical attributes: single sign-preserving polynomial terms at odd
-  fraction (1/3, 1/5, 1/7, ...) or odd integer (3, 5, 7, ...) powers,
-  searched in increasing order until d_phi < epsilon.  Values beyond
+  integer (3, 5, 7, ...) or odd fraction (1/3, 1/5, 1/7, ...) powers,
+  searched in increasing order until d_phi < epsilon.  The paper's main
+  text lists these values as EXAMPLES ("e.g.") and prescribes no finite
+  upper bound; the finite grid configured here is an implementation
+  budget, and exhausting it is recorded as "configured grid exhausted",
+  NOT as a paper-level non-convergence claim.  Values beyond
   numpy.float32 are set uniformly to 1, which is equivalent to dropping
   the attribute (recorded explicitly).
 - Categorical attributes: at each step the two (possibly already
@@ -74,10 +78,14 @@ class FairBiasMitigation:
                 f"failed_attribute_mode must be 'stop' (strict paper) or 'next' "
                 f"(named engineering extension), got {failed_attribute_mode!r}"
             )
-        # "stop": strict paper semantics -- the greedy loop keeps operating on
-        # the CURRENT highest-d_phi attribute; if its exhaustive search cannot
-        # reach the epsilon ball the run is recorded as non-convergent and
-        # terminates (``self.non_convergence``).
+        # "stop" (default, strict paper): the greedy loop keeps operating on
+        # the CURRENT highest-d_phi attribute; if the CONFIGURED candidate
+        # grid cannot reach the epsilon ball the run is recorded as
+        # non-convergent (``self.non_convergence``) and terminates.
+        # NOTE: this records "configured grid exhausted" — the paper's
+        # power search has no stated finite bound (main text lists 3, 5, 7
+        # and 1/3, 1/5, 1/7 as "e.g." examples), so this is NOT a
+        # paper-level algorithmic non-convergence claim.
         # "next": explicitly named ENGINEERING extension -- the failure is
         # recorded keyed by (protected attribute, feature) and the next-ranked
         # attribute is tried instead.
@@ -380,12 +388,16 @@ class FairBiasMitigation:
 
         Failure semantics (``failed_attribute_mode``):
 
-        - "stop" (strict paper): if the exhaustive transform search for the
-          CURRENT highest-d_phi attribute cannot reach the epsilon ball, the
-          run is recorded as NON-CONVERGENT (``self.non_convergence``) and no
-          transform is applied this step; the caller must stop.  The paper's
-          greedy loop always operates on the current highest attribute, so
-          silently moving on to a lower-ranked one is not paper semantics.
+        - "stop" (default, strict paper): if the CONFIGURED candidate-grid
+          search for the CURRENT highest-d_phi attribute cannot reach the
+          epsilon ball, the run is recorded as non-convergent
+          (``self.non_convergence``, with ``search_scope="configured_grid"``)
+          and no transform is applied this step; the caller must stop.  The
+          paper's greedy loop always operates on the current highest
+          attribute, so silently moving on to a lower-ranked one is not
+          paper semantics.  Exhausting the configured grid is an
+          implementation-budget outcome, NOT a paper-level non-convergence
+          claim (the paper's power search has no stated finite bound).
         - "next" (named engineering extension): the failure is recorded keyed
           by (protected attribute, feature) and the next-ranked attribute is
           considered instead.
@@ -429,12 +441,19 @@ class FairBiasMitigation:
 
             # The transform search could not bring this attribute below epsilon
             if self.failed_attribute_mode == "stop":
-                # Strict paper semantics: report non-convergence on the
-                # current highest attribute and stop the mitigation loop.
+                # Strict-paper failure semantics: report configured-grid
+                # exhaustion on the current highest attribute and stop the
+                # mitigation loop.
                 self.non_convergence = {
                     "label_O": selected_label_O,
                     "attribute": selected_attribute,
                     "d_phi": float(eps),
+                    "search_scope": "configured_grid",
+                    "reason": (
+                        "configured candidate grid exhausted; not a "
+                        "paper-level non-convergence claim (paper power "
+                        "search has no stated finite bound)"
+                    ),
                 }
                 break
 

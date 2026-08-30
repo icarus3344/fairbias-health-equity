@@ -53,13 +53,26 @@ def run_and_report(cfg_factory, name, max_iterations=3):
               f"ACC={it['metrics']['ACC']:.4f} (validation) EO={_eo_mean(it['metrics']):.4f} "
               f"dropped={dropped or '-'}")
 
-    print(f"[pareto] best_iteration={res.best_iteration} reason={res.best_selection_reason}")
-    print(f"[final] ACC={res.final_metrics['ACC']:.4f} EO={_eo_mean(res.final_metrics):.4f} (test, single locked-in evaluation)")
+    print(f"[termination] converged={res.termination['converged']} "
+          f"reason={res.termination['termination_reason']} "
+          f"terminal_iteration={res.termination['terminal_iteration']} "
+          f"terminal_max_dphi={res.termination['terminal_max_dphi']:.7f} "
+          f"epsilon={res.termination['epsilon_threshold']:.7f}")
+
+    print(f"[pareto_engineering] best_iteration={res.best_iteration} "
+          f"reason={res.best_selection_reason}")
+    print(f"[paper_strict] ACC={res.paper_strict_metrics['ACC']:.4f} "
+          f"EO={_eo_mean(res.paper_strict_metrics):.4f} "
+          f"(test, greedy termination state of the paper algorithm)")
+    print(f"[pareto_engineering] ACC={res.pareto_engineering_metrics['ACC']:.4f} "
+          f"EO={_eo_mean(res.pareto_engineering_metrics):.4f} "
+          f"(test, ENGINEERING Pareto checkpoint — not the paper output)")
     if res.non_convergence is not None:
         print(f"[non-convergence] attribute={res.non_convergence['attribute']} "
               f"O={res.non_convergence['label_O']} "
               f"d_phi={res.non_convergence['d_phi']:.4f} "
-              f"(strict-paper stop: highest attribute could not enter the epsilon ball)")
+              f"search_scope={res.non_convergence.get('search_scope')} "
+              f"(configured grid exhausted; not a paper-level claim)")
     else:
         print("[non-convergence] none")
     print(f"[time] {elapsed:.1f}s")

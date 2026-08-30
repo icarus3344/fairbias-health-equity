@@ -1,0 +1,18 @@
+{
+  "description": "Golden fixture for the MDS dimension-selection contrast test (tests/test_fairbias_mds_dimension_golden.py).",
+  "source": {
+    "url": "https://raw.githubusercontent.com/zftang/MachineClassifer_BiasMitigation_beta/main/Result/UCIAdult/distance_matrix_step_0.csv",
+    "repository": "https://github.com/zftang/MachineClassifer_BiasMitigation_beta",
+    "repository_role": "official code repository of Tang, Lu & Li 2024 (Intell. Comput. 2024;3:Article 0083), cited in the paper's Data Availability statement",
+    "file_role": "attribute distance matrix D (13 features + origin node = 14x14) at bias-mitigation step 0 (before any transform) on the UCI Adult demo run"
+  },
+  "download": {
+    "date": "2026-08-30",
+    "method": "curl -sL -o <target>.part followed by checksum validation and rename (atomic download protocol, AI_EXECUTION_PROTOCOL.md Section 6)",
+    "size_bytes": 4261,
+    "sha256": "5f9fd4f81766ce724bd9866bd139503d252f68c9bc7e5065ff34ace0f57228e1"
+  },
+  "purpose": "Codex round-4 verdict item 4: the MDS dimension selection (stress elbow) previously had no supplementary/golden contrast. The Supplementary Materials themselves were NOT accessible (publisher site returned HTTP 403; the official repository contains no supplementary PDF), so this official-repository distance matrix is the strongest available golden reference.",
+  "official_implementation_behavior": "In MachineClassifer_BiasMitigation.py the elbow plot (stress for dims 1..8) is generated for VISUAL inspection only; the actual MDS embedding is computed with the dimension FIXED at 2 (source comment: 'here the MDS dimensition is fixed at 2').",
+  "recorded_contrast": "fairbias.bias_metric._find_optimal_mds_components on this matrix selects dim=3 (first normalized stress delta below the 0.01 slope threshold occurs between dim 2 and dim 3, and the implementation returns the dimension AT which the curve has flattened). The official implementation uses dim=2 (the conventional elbow). This is a RECORDED DEVIATION (baseline semantics), documented here and in the round-4 gate report; it must not be presented as paper-aligned."
+}

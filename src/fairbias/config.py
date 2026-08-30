@@ -53,15 +53,25 @@ class FairBiasConfig:
 
     # Mitigation acceptance criteria
     phi_threshold: float = 100.0  # NMI information-loss gate (baseline PARAMS_MAIN_THRESHOLD_PHI)
-    # Paper power grid: odd fractions 1/3, 1/5, 1/7 and odd integers 3, 5, 7
-    # (searched in increasing order until d_phi < epsilon)
+    # CONFIGURED candidate grid (finite implementation budget).  The
+    # paper's main text lists odd integers (3, 5, 7) and odd fractions
+    # (1/3, 1/5, 1/7) as EXAMPLES ("e.g.") and prescribes an
+    # increasing-order search with no stated finite upper bound; the
+    # official code repository (zftang/MachineClassifer_BiasMitigation_beta)
+    # uses an interleaved stream [3, 1/3, 5, 1/5, ..., 1999, 1/1999].
+    # The Supplementary Materials (Algorithm 1) were not accessible for a
+    # definitive bound, so this six-value grid is an implementation
+    # budget: exhausting it is recorded as "candidate_grid_exhausted",
+    # NOT as paper-level algorithmic non-convergence.
     transform_poly_exponents: tuple = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
 
     # Failure semantics for the greedy mitigation search:
     #   "stop" (default, strict paper): when the CURRENT highest-d_phi
-    #       attribute's exhaustive transform search cannot reach the epsilon
-    #       ball, the run records non-convergence and terminates (the paper
-    #       keeps operating on the highest attribute).
+    #       attribute's CONFIGURED candidate-grid search cannot reach the
+    #       epsilon ball, the run records the failure (search_scope=
+    #       "configured_grid") and terminates (the paper keeps operating
+    #       on the highest attribute).  Note: this is "configured grid
+    #       exhausted", not a paper-level non-convergence claim.
     #   "next" (explicitly named ENGINEERING extension): record the failure
     #       keyed by (protected attribute, feature) and try the next-ranked
     #       attribute instead.
