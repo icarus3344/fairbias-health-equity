@@ -54,8 +54,12 @@ class FairBiasRunResult:
     best_selection_reason: str
     final_metrics: Dict[str, Any]
     final_changed_dict: Dict[str, Any]
-    execution_time_seconds: float
-    output_file: str
+    # Strict-paper failure record: highest-d_phi attribute whose exhaustive
+    # transform search could not reach the epsilon ball (None when the run
+    # fully mitigated or ran to the iteration budget without failure).
+    non_convergence: Optional[Dict[str, Any]] = None
+    execution_time_seconds: float = 0.0
+    output_file: str = ""
 
 
 def _serialize_object(obj: Any) -> Any:
@@ -107,24 +111,54 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
     X_raw, Y_raw, O_raw, categorical_cols, numerical_cols = loader.prepare_data()
     dataset_sha = _sha256_of_file(cfg.dataset_path)
 
-    # 2. Paper split: train 64% / validation 16% / test 20%, stratified on Y
-    X_tr_raw, X_tmp_raw, Y_tr_raw, Y_tmp_raw, O_tr_raw, O_tmp_raw = train_test_split(
+    # 2. Paper split: train 64% / validation 16% / test 20%, stratified on Y.
+    # First hold out validation+test jointly, then carve test out of the
+    # holdout in proportion test_size / (val_size + test_size) so that the
+    # TEST partition truly receives 20% of the FULL dataset (the previous
+    # two-stage split handed 80% to train and only 4% to test).
+    holdout_size = cfg.val_size + cfg.test_size
+    X_tr_raw, X_hold_raw, Y_tr_raw, Y_hold_raw, O_tr_raw, O_hold_raw = train_test_split(
         X_raw,
         Y_raw,
         O_raw,
-        test_size=cfg.test_size,
+        test_size=holdout_size,
         random_state=cfg.random_seed,
         stratify=_stratify_series(Y_raw, cfg.stratify_split),
     )
-    val_fraction_of_remainder = cfg.val_size / max(1e-12, 1.0 - cfg.test_size)
+    test_fraction_of_holdout = cfg.test_size / max(1e-12, holdout_size)
     X_va_raw, X_te_raw, Y_va_raw, Y_te_raw, O_va_raw, O_te_raw = train_test_split(
-        X_tmp_raw,
-        Y_tmp_raw,
-        O_tmp_raw,
-        test_size=val_fraction_of_remainder,
+        X_hold_raw,
+        Y_hold_raw,
+        O_hold_raw,
+        test_size=test_fraction_of_holdout,
         random_state=cfg.random_seed,
-        stratify=_stratify_series(Y_tmp_raw, cfg.stratify_split),
+        stratify=_stratify_series(Y_hold_raw, cfg.stratify_split),
     )
+
+    # Defensive assertion on the OBSERVED row counts (the manifest used to
+    # echo the configured fractions while the actual split was different).
+    n_total = len(X_raw)
+    if n_total > 0:
+        observed = {
+            "train": len(X_tr_raw) / n_total,
+            "validation": len(X_va_raw) / n_total,
+            "test": len(X_te_raw) / n_total,
+        }
+        configured = {
+            "train": 1.0 - holdout_size,
+            "validation": cfg.val_size,
+            "test": cfg.test_size,
+        }
+        for part, frac in observed.items():
+            if abs(frac - configured[part]) > 0.05:
+                raise RuntimeError(
+                    f"Observed {part} split fraction {frac:.4f} deviates from the "
+                    f"configured {configured[part]:.4f}; refusing to continue with a "
+                    "mis-partitioned dataset."
+                )
+        observed_fractions = observed
+    else:
+        observed_fractions = {"train": 0.0, "validation": 0.0, "test": 0.0}
 
     # 3. Fit encoders STRICTLY on the training partition, then transform
     loader.fit_encoders(X_tr_raw, Y_tr_raw, O_tr_raw)
@@ -178,6 +212,7 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         num_attrs=numerical_cols,
         phi_threshold=cfg.phi_threshold,
         poly_exponents=cfg.transform_poly_exponents,
+        failed_attribute_mode=cfg.failed_attribute_mode,
     )
     enhancement_engine = FairAccuracyEnhancement(
         evaluator=evaluator,
@@ -246,7 +281,11 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
                 iter_data["selected_attribute"] = ae_attr
 
         if sel_attr is None and ae_attr is None:
-            # No transform accepted this round: the state is terminal
+            # No transform accepted this round: the state is terminal.  Under
+            # the strict-paper "stop" failure mode this carries the recorded
+            # non-convergence (highest attribute could not enter the epsilon
+            # ball); under a fully mitigated state every attribute is inside
+            # the ball and non_convergence stays None.
             break
 
         # Apply current transformations to all partitions
@@ -363,11 +402,12 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
             "code_note": "src/fairbias (see Git state in the gate report)",
         },
         "split": {
-            "fractions": {
+            "configured_fractions": {
                 "train": 1.0 - cfg.test_size - cfg.val_size,
                 "validation": cfg.val_size,
                 "test": cfg.test_size,
             },
+            "observed_fractions": observed_fractions,
             "row_counts": {
                 "train": int(len(X_train)),
                 "validation": int(len(X_val)),
@@ -378,6 +418,11 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         "selection_partition": "validation",
         "final_evaluation_partition": "test",
         "epsilon_threshold": epsilon_threshold,
+        "failed_attribute_mode": cfg.failed_attribute_mode,
+        "mitigation_non_convergence": (
+            copy.deepcopy(mitigation_engine.non_convergence)
+            if cfg.use_bias_mitigation else None
+        ),
         "initial_metrics": init_metrics,
         "initial_metrics_partition": "validation",
         "initial_epsilon": init_epsilon,
@@ -406,6 +451,10 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         best_selection_reason=best_reason,
         final_metrics=final_metrics,
         final_changed_dict=best_changed_dict,
+        non_convergence=(
+            copy.deepcopy(mitigation_engine.non_convergence)
+            if cfg.use_bias_mitigation else None
+        ),
         execution_time_seconds=exec_time,
         output_file=str(out_file),
     )

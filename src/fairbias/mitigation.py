@@ -58,6 +58,7 @@ class FairBiasMitigation:
         max_search_candidates: int = 5,
         phi_threshold: float = 100.0,
         poly_exponents: Tuple[float, ...] = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0),
+        failed_attribute_mode: str = "stop",
     ):
         self.evaluator = evaluator
         self.transformer = transformer
@@ -67,16 +68,36 @@ class FairBiasMitigation:
         self.max_search_candidates = max_search_candidates
         self.phi_threshold = float(phi_threshold)
         self.poly_exponents = tuple(sorted(float(p) for p in poly_exponents))
-        self.failed_attributes: set[str] = set()
+
+        if failed_attribute_mode not in ("stop", "next"):
+            raise ValueError(
+                f"failed_attribute_mode must be 'stop' (strict paper) or 'next' "
+                f"(named engineering extension), got {failed_attribute_mode!r}"
+            )
+        # "stop": strict paper semantics -- the greedy loop keeps operating on
+        # the CURRENT highest-d_phi attribute; if its exhaustive search cannot
+        # reach the epsilon ball the run is recorded as non-convergent and
+        # terminates (``self.non_convergence``).
+        # "next": explicitly named ENGINEERING extension -- the failure is
+        # recorded keyed by (protected attribute, feature) and the next-ranked
+        # attribute is tried instead.
+        self.failed_attribute_mode = failed_attribute_mode
+        self.failed_attribute_keys: set = set()
+        self.non_convergence: Optional[Dict[str, Any]] = None
 
     def find_ranked_epsilon_attributes(
         self, df_epsilon: Dict[str, Dict[str, float]]
     ) -> List[Tuple[float, str, str]]:
-        """Return sorted list of (epsilon, label_O, attribute) candidates in descending order."""
+        """Return sorted list of (epsilon, label_O, attribute) candidates in descending order.
+
+        Only (protected, feature) pairs NOT already recorded as failed (under
+        the "next" engineering mode) are ranked; failures never mask the same
+        feature under a different protected attribute.
+        """
         candidates = []
         for l_o, attr_dict in df_epsilon.items():
             for attr, eps in attr_dict.items():
-                if attr not in self.failed_attributes:
+                if (str(l_o), str(attr)) not in self.failed_attribute_keys:
                     candidates.append((float(eps), str(l_o), str(attr)))
         candidates.sort(key=lambda x: x[0], reverse=True)
         return candidates
@@ -355,10 +376,19 @@ class FairBiasMitigation:
 
         The attribute with the largest d_phi is selected and transforms are
         searched for it until its d_phi falls below ``epsilon_threshold``.
-        Attributes already inside the epsilon ball are left untouched.  If
-        the search for an attribute cannot reach the epsilon ball, the
-        attribute is recorded as failed and the next-ranked attribute is
-        considered.
+        Attributes already inside the epsilon ball are left untouched.
+
+        Failure semantics (``failed_attribute_mode``):
+
+        - "stop" (strict paper): if the exhaustive transform search for the
+          CURRENT highest-d_phi attribute cannot reach the epsilon ball, the
+          run is recorded as NON-CONVERGENT (``self.non_convergence``) and no
+          transform is applied this step; the caller must stop.  The paper's
+          greedy loop always operates on the current highest attribute, so
+          silently moving on to a lower-ranked one is not paper semantics.
+        - "next" (named engineering extension): the failure is recorded keyed
+          by (protected attribute, feature) and the next-ranked attribute is
+          considered instead.
 
         Parameters
         ----------
@@ -398,7 +428,19 @@ class FairBiasMitigation:
                 return candidate_df, temp_changed, selected_label_O, selected_attribute
 
             # The transform search could not bring this attribute below epsilon
-            self.failed_attributes.add(selected_attribute)
+            if self.failed_attribute_mode == "stop":
+                # Strict paper semantics: report non-convergence on the
+                # current highest attribute and stop the mitigation loop.
+                self.non_convergence = {
+                    "label_O": selected_label_O,
+                    "attribute": selected_attribute,
+                    "d_phi": float(eps),
+                }
+                break
+
+            # Engineering extension ("next"): record keyed by
+            # (protected attribute, feature) and try the next-ranked attribute
+            self.failed_attribute_keys.add((selected_label_O, selected_attribute))
 
         return self._no_op(X, changed_dict)
 

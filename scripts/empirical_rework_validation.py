@@ -4,6 +4,7 @@ Runs run_fairbias_pipeline on COMPAS and Credit, printing per-iteration:
 selected feature, max d_phi, ACC and EO, plus best iteration selection.
 """
 
+import json
 import time
 
 from fairbias.config import FairBiasConfig
@@ -33,6 +34,16 @@ def run_and_report(cfg_factory, name, max_iterations=3):
         top = sorted(d.items(), key=lambda kv: -kv[1])[:3]
         print(f"  init d_phi top3 [{o_col}]: " + ", ".join(f"{k}={v:.4f}" for k, v in top))
 
+    with open(res.output_file, encoding="utf-8") as f:
+        payload = json.load(f)
+    split = payload["split"]
+    rc = split["row_counts"]
+    total = sum(rc.values())
+    obs = split["observed_fractions"]
+    print(f"  split (observed): train={rc['train']} ({obs['train']:.4f}) "
+          f"validation={rc['validation']} ({obs['validation']:.4f}) "
+          f"test={rc['test']} ({obs['test']:.4f}) / total={total}")
+
     for it in res.iterations:
         sel = it["selected_attributes"]
         dropped = [k for k, v in it["changed_dict"].items() if v == "dropped"]
@@ -44,6 +55,13 @@ def run_and_report(cfg_factory, name, max_iterations=3):
 
     print(f"[pareto] best_iteration={res.best_iteration} reason={res.best_selection_reason}")
     print(f"[final] ACC={res.final_metrics['ACC']:.4f} EO={_eo_mean(res.final_metrics):.4f} (test, single locked-in evaluation)")
+    if res.non_convergence is not None:
+        print(f"[non-convergence] attribute={res.non_convergence['attribute']} "
+              f"O={res.non_convergence['label_O']} "
+              f"d_phi={res.non_convergence['d_phi']:.4f} "
+              f"(strict-paper stop: highest attribute could not enter the epsilon ball)")
+    else:
+        print("[non-convergence] none")
     print(f"[time] {elapsed:.1f}s")
 
 

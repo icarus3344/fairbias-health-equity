@@ -49,21 +49,45 @@ class TestFairBiasPipeline(unittest.TestCase):
             self.assertIn("avg_epsilon", it)
             self.assertEqual(it["metrics_partition"], "validation")
 
-        # Manifest must document the partition boundaries
+        # Manifest must document the partition boundaries — BOTH the
+        # configured fractions and the fractions OBSERVED from the actual
+        # row counts (a previous bug echoed the configured numbers while the
+        # real split was 80/16/4).
         with open(res.output_file, encoding="utf-8") as f:
             payload = json.load(f)
         self.assertEqual(payload["selection_partition"], "validation")
         self.assertEqual(payload["final_evaluation_partition"], "test")
         self.assertEqual(payload["final_results"]["metrics_partition"], "test")
-        fractions = payload["split"]["fractions"]
-        self.assertAlmostEqual(fractions["train"], 0.64, places=9)
-        self.assertAlmostEqual(fractions["validation"], 0.16, places=9)
-        self.assertAlmostEqual(fractions["test"], 0.20, places=9)
+        configured = payload["split"]["configured_fractions"]
+        self.assertAlmostEqual(configured["train"], 0.64, places=9)
+        self.assertAlmostEqual(configured["validation"], 0.16, places=9)
+        self.assertAlmostEqual(configured["test"], 0.20, places=9)
         row_counts = payload["split"]["row_counts"]
         total = sum(row_counts.values())
         self.assertEqual(total, len(pd.read_csv(config.dataset_path)))
         for key in ("train", "validation", "test"):
             self.assertGreater(row_counts[key], 0)
+
+        # The OBSERVED fractions (row_counts / total) must match the paper
+        # 64/16/20 split — this is the assertion the old manifest-only check
+        # could not make.
+        observed = payload["split"]["observed_fractions"]
+        for part in ("train", "validation", "test"):
+            self.assertAlmostEqual(
+                observed[part], row_counts[part] / total, places=9,
+                msg="observed_fractions must be derived from the real row counts",
+            )
+            self.assertAlmostEqual(
+                observed[part], configured[part], delta=0.05,
+                msg=(
+                    f"actual {part} fraction {observed[part]:.4f} deviates from "
+                    f"the paper 64/16/20 split (configured {configured[part]:.4f})"
+                ),
+            )
+
+        # Strict-paper failure semantics must be reported explicitly
+        self.assertIn("failed_attribute_mode", payload)
+        self.assertIn("mitigation_non_convergence", payload)
 
     def test_pareto_checkpoint_selection_rule(self):
         # Verify that the Pareto rule prefers lower EO/SP disparity on the

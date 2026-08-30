@@ -73,8 +73,10 @@ class TestFairDataLoader(unittest.TestCase):
         self.assertEqual(set(Y_ev.unique()) <= {0, 1}, True)
 
     def test_unseen_categories_get_new_deterministic_codes(self):
-        # Split BEFORE encoding: a category unseen in train must receive a
-        # deterministic new code instead of influencing the train encoding.
+        # Split BEFORE encoding: every category absent from the training data
+        # must map to the FIXED unseen-sentinel code defined at train fit time
+        # (len(train classes)) — the SAME code in every partition, regardless
+        # of which categories each evaluation partition happens to contain.
         df_synth = pd.DataFrame({
             "age": [25, 30, 45, 50, 60, 35],
             "gender": ["M", "F", "F", "M", "F", "M"],
@@ -106,9 +108,50 @@ class TestFairDataLoader(unittest.TestCase):
 
         train_codes = sorted(set(X_tr["income_cat"]))
         self.assertEqual(train_codes, [0, 1])  # only train categories encoded
-        # Unseen category gets a deterministic code beyond the train codes
-        self.assertTrue(set(X_ev["income_cat"]).issubset({0, 1, 2}))
-        self.assertIn(2, set(X_ev["income_cat"]))
+        # The sentinel is fixed at fit time: len(train classes) == 2
+        self.assertEqual(loader.unseen_sentinels["income_cat"], 2)
+        # Unseen category maps to the fixed sentinel (not a partition-specific
+        # newly allocated code)
+        self.assertEqual(set(X_ev["income_cat"]), {2})
+
+    def test_unseen_sentinel_is_shared_across_partitions(self):
+        # Two DIFFERENT unseen categories appearing in validation vs test
+        # must receive the SAME sentinel code: the encoding space never
+        # depends on the contents of an evaluation partition.
+        df_synth = pd.DataFrame({
+            "gender": ["M", "F"] * 5,
+            "income_cat": (
+                ["low", "high"] * 3          # train rows (0..5)
+                + ["medium", "medium"]        # validation rows (6..7)
+                + ["extreme", "other"]        # test rows (8..9)
+            ),
+            "target": [0, 1] * 5,
+        })
+        cfg = FairBiasConfig(
+            dataset_name="synthetic",
+            label_Y="target",
+            label_O=("gender",),
+        )
+        loader = FairDataLoader(cfg)
+        X, Y, O, cats, nums = loader.prepare_data(df_synth)
+
+        n_train, n_val = 6, 2
+        X_tr = X.iloc[:n_train]
+        X_va = X.iloc[n_train:n_train + n_val]
+        X_te = X.iloc[n_train + n_val:]
+        loader.fit_encoders(X_tr, Y.iloc[:n_train], O.iloc[:n_train])
+        X_tr_t, _, _ = loader.transform_partition(X_tr, Y.iloc[:n_train], O.iloc[:n_train])
+        X_va_t, _, _ = loader.transform_partition(X_va, Y.iloc[n_train:n_train + n_val], O.iloc[n_train:n_train + n_val])
+        X_te_t, _, _ = loader.transform_partition(X_te, Y.iloc[n_train + n_val:], O.iloc[n_train + n_val:])
+
+        sentinel = loader.unseen_sentinels["income_cat"]
+        self.assertEqual(sentinel, 2)
+        # train encoding contains no sentinel
+        self.assertNotIn(sentinel, set(X_tr_t["income_cat"]))
+        # validation's "medium" and test's "extreme"/"other" all share the
+        # single fixed sentinel — identical encoding space in both partitions
+        self.assertEqual(set(X_va_t["income_cat"]), {sentinel})
+        self.assertEqual(set(X_te_t["income_cat"]), {sentinel})
 
     def test_continuous_target_binarized_on_train_median(self):
         df_synth = pd.DataFrame({

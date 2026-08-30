@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 
 @dataclasses.dataclass(frozen=True)
@@ -36,7 +36,11 @@ class FairBiasConfig:
     # Feature transform bounds
     transform_n_bins: int = 10
     transform_log_epsilon: float = 1e-5
-    transform_x_max: float = 1e9
+    # None = strict paper mode: the only magnitude bound on power transforms
+    # is the paper's numpy.float32 overflow rule (≈3.4e38 -> attribute dropped).
+    # Setting a numeric value re-enables a NON-PAPER engineering guard and
+    # must be reported as such.
+    transform_x_max: Optional[float] = None
     
     adaptive_threshold_method: str = "kmeans_125"  # "kmeans_125" or "ratio"
     h_order: int = 1  # Level-H exclusion order (Eq. 4/5): near-full companion contexts
@@ -52,7 +56,17 @@ class FairBiasConfig:
     # Paper power grid: odd fractions 1/3, 1/5, 1/7 and odd integers 3, 5, 7
     # (searched in increasing order until d_phi < epsilon)
     transform_poly_exponents: tuple = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
-    
+
+    # Failure semantics for the greedy mitigation search:
+    #   "stop" (default, strict paper): when the CURRENT highest-d_phi
+    #       attribute's exhaustive transform search cannot reach the epsilon
+    #       ball, the run records non-convergence and terminates (the paper
+    #       keeps operating on the highest attribute).
+    #   "next" (explicitly named ENGINEERING extension): record the failure
+    #       keyed by (protected attribute, feature) and try the next-ranked
+    #       attribute instead.
+    failed_attribute_mode: str = "stop"
+
     verbose: bool = False
     output_dir: str = "runs"
 

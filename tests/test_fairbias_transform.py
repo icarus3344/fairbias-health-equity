@@ -91,12 +91,37 @@ class TestFairTransform(unittest.TestCase):
         )
 
     def test_power_overflow_rejected(self):
+        # Strict paper mode (x_max=None, the default): the ONLY magnitude
+        # bound is the paper's numpy.float32 overflow rule (≈3.4e38).
+        # (1e5)^5 = 1e25 is far below float32 max, so it must be ACCEPTED —
+        # the old 1e9 engineering guard used to reject it.
         df = pd.DataFrame({"num_feat": [1e5, 2e5]})
-        change = {"power": 5.0}  # (1e5)^5 = 1e25 > x_max
+        change = {"power": 5.0}
         is_valid = self.transformer.check_transform_validity(
             df, "num_feat", change, num_attrs=["num_feat"]
         )
-        self.assertFalse(is_valid)
+        self.assertTrue(is_valid)
+
+        # Genuine float32 overflow is still detected by the paper rule
+        from fairbias.transform import power_transform_overflows
+        df_huge = pd.DataFrame({"num_feat": [1e30, 2.0]})
+        self.assertTrue(power_transform_overflows(df_huge["num_feat"], 5.0))
+        self.assertFalse(power_transform_overflows(df["num_feat"], 5.0))
+
+    def test_x_max_engineering_guard_is_opt_in(self):
+        # A numeric x_max re-enables the NON-PAPER engineering guard and
+        # must be opt-in (explicit constructor argument), never a default.
+        from fairbias.transform import FairTransform
+        guarded = FairTransform(x_max=1e9)
+        df = pd.DataFrame({"num_feat": [1e5, 2e5]})
+        change = {"power": 5.0}  # (1e5)^5 = 1e25 > 1e9
+        self.assertFalse(
+            guarded.check_transform_validity(
+                df, "num_feat", change, num_attrs=["num_feat"]
+            )
+        )
+        # The default constructor must not install the guard
+        self.assertIsNone(FairTransform().x_max)
 
     def test_chained_category_composition(self):
         from fairbias.transform import compose_category_mapping

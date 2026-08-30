@@ -277,43 +277,47 @@ class FairDataLoader:
         - Non-numeric protected columns: LabelEncoder over training groups.
         - High-cardinality numeric protected columns (>5 values): training-
           median binarization threshold.
+
+        Every LabelEncoder additionally fixes an UNSEEN-CATEGORY SENTINEL code
+        (``len(classes)``) at fit time.  All later partitions map any category
+        absent from the training data to that same fixed sentinel, so the
+        encoding space is identical across train/validation/test and never
+        depends on which categories happen to appear in an evaluation
+        partition.
         """
         self.label_encoders = {}
         self.encoding_mappings = {}
+        self.unseen_sentinels: Dict[str, int] = {}
         self._y_median = None
         self._o_medians = {}
+
+        def _fit_label_encoder(values: pd.Series, name: str) -> LabelEncoder:
+            le = LabelEncoder()
+            le.fit(values.astype(str))
+            self.label_encoders[name] = le
+            self.encoding_mappings[name] = {
+                str(cls_): int(idx) for idx, cls_ in enumerate(le.classes_)
+            }
+            # Fixed unknown-category sentinel, defined at TRAIN fit time
+            self.unseen_sentinels[name] = int(len(le.classes_))
+            return le
 
         for col in self.categorical_columns:
             if col not in X_train.columns:
                 continue
             if not pd.api.types.is_numeric_dtype(X_train[col]):
-                le = LabelEncoder()
-                le.fit(X_train[col].astype(str))
-                self.label_encoders[col] = le
-                self.encoding_mappings[col] = {
-                    str(cls_): int(idx) for idx, cls_ in enumerate(le.classes_)
-                }
+                _fit_label_encoder(X_train[col], col)
 
         # Target Y
         if not pd.api.types.is_numeric_dtype(Y_train):
-            le_y = LabelEncoder()
-            le_y.fit(Y_train.astype(str))
-            self.label_encoders[Y_train.name] = le_y
-            self.encoding_mappings[Y_train.name] = {
-                str(cls_): int(idx) for idx, cls_ in enumerate(le_y.classes_)
-            }
+            _fit_label_encoder(Y_train, Y_train.name)
         elif not self._is_binary_numeric(Y_train):
             self._y_median = float(pd.to_numeric(Y_train, errors="coerce").median())
 
         # Protected attributes O
         for p_col in O_train.columns:
             if not pd.api.types.is_numeric_dtype(O_train[p_col]):
-                le_p = LabelEncoder()
-                le_p.fit(O_train[p_col].astype(str))
-                self.label_encoders[p_col] = le_p
-                self.encoding_mappings[p_col] = {
-                    str(cls_): int(idx) for idx, cls_ in enumerate(le_p.classes_)
-                }
+                _fit_label_encoder(O_train[p_col], p_col)
             elif O_train[p_col].nunique() > 5:
                 self._o_medians[p_col] = float(O_train[p_col].median())
 
@@ -323,22 +327,22 @@ class FairDataLoader:
         self,
         s: pd.Series,
         encoder: LabelEncoder,
-        unseen_sentinel: Optional[int] = None,
+        sentinel: int,
     ) -> pd.Series:
-        """Apply a train-fitted encoder; unseen categories get deterministic
-        new codes appended after the training codes (or the sentinel)."""
+        """Apply a train-fitted encoder to one partition.
+
+        Categories absent from the training data are mapped to the FIXED
+        sentinel code defined at fit time (``len(train classes)``) — the same
+        code in every partition.  No partition-specific codes are ever
+        allocated, so validation and test share one encoding space.
+        """
         classes = list(encoder.classes_)
         code_map = {cls_: idx for idx, cls_ in enumerate(classes)}
         str_vals = s.astype(str)
 
-        unseen = sorted(set(str_vals.dropna()) - set(classes))
-        next_code = len(classes)
+        unseen = set(str_vals.dropna()) - set(classes)
         for u in unseen:
-            if unseen_sentinel is not None:
-                code_map[u] = unseen_sentinel
-            else:
-                code_map[u] = next_code
-                next_code += 1
+            code_map[u] = sentinel
 
         return str_vals.map(code_map).astype(int)
 
@@ -360,7 +364,9 @@ class FairDataLoader:
             if col not in X_out.columns:
                 continue
             if col in self.label_encoders:
-                X_out[col] = self._encode_series(X_out[col], self.label_encoders[col])
+                X_out[col] = self._encode_series(
+                    X_out[col], self.label_encoders[col], self.unseen_sentinels[col]
+                )
             else:
                 # Numeric categorical column: pass codes through unchanged
                 X_out[col] = pd.to_numeric(X_out[col], errors="coerce").fillna(0).astype(int)
@@ -371,7 +377,9 @@ class FairDataLoader:
 
         # Target Y
         if Y.name in self.label_encoders:
-            Y_out = self._encode_series(Y, self.label_encoders[Y.name], unseen_sentinel=-1)
+            Y_out = self._encode_series(
+                Y, self.label_encoders[Y.name], self.unseen_sentinels[Y.name]
+            )
             Y_out.name = Y.name
         elif self._y_median is not None:
             Y_out = pd.Series(
@@ -388,7 +396,9 @@ class FairDataLoader:
         O_out = O.copy()
         for p_col in O_out.columns:
             if p_col in self.label_encoders:
-                O_out[p_col] = self._encode_series(O_out[p_col], self.label_encoders[p_col])
+                O_out[p_col] = self._encode_series(
+                    O_out[p_col], self.label_encoders[p_col], self.unseen_sentinels[p_col]
+                )
             elif p_col in self._o_medians:
                 O_out[p_col] = (O_out[p_col] > self._o_medians[p_col]).astype(int)
             else:
