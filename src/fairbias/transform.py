@@ -92,10 +92,10 @@ class FairTransform:
     ):
         self.n_bins = n_bins
         self.log_epsilon = log_epsilon
-        # None = strict paper mode: the only magnitude bound on power
+        # None = NO additional magnitude guard: the only bound on power
         # transforms is the paper's numpy.float32 overflow rule (≈3.4e38,
-        # checked by ``power_transform_overflows``).  A numeric x_max is a
-        # NON-PAPER engineering guard and must be reported as such.
+        # checked by ``power_transform_overflows``).  A numeric x_max is
+        # a NON-PAPER engineering guard and must be reported as such.
         self.x_max = x_max
 
     def check_transform_validity(

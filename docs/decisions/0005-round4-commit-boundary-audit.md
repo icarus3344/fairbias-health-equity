@@ -58,6 +58,10 @@ The Codex supervisor reviewed the content of `4565487` and established:
 - The commit-history gap between the round-4 report and `4565487` is now
   documented rather than silent.
 - Round 4.1 adds the missing fixture, replaces `paper_strict` with the two
-  explicit algorithm modes (`official_unweighted_reproduction` /
-  `engineering_bounded`), and verifies a clean checkout (see
+  explicit algorithm modes (subsequently renamed across the Round 4.1
+  repair rounds: the official-derived mode is now
+  `official_code_derived_monotone_cursor_unweighted` — an official-code-
+  derived variant with a termination-safety extension, not an
+  official-code equivalence claim — alongside `engineering_bounded`;
+  see the Round 4.1 repair reports), and verifies a clean checkout (see
   `docs/reports/REWORK_FAIRBIAS_ROUND4_1_MODE_SEPARATION.md`).

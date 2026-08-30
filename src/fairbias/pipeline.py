@@ -11,14 +11,22 @@ test 20%):
 - The TEST partition is evaluated exactly once per REPORTED TERMINAL
   STATE.
 
-Algorithm modes (Round 4.1, see ``fairbias.config``):
+Algorithm modes (Round 4.1; renamed twice — the second rename is the
+Round 4.1 REPAIR-2 verdict of 2026-08-30 — see ``fairbias.config``):
 
-- ``official_unweighted_reproduction``: strict reproduction of the paper
-  METHOD as adjudicated by the official code repository.  MDS fixed at
-  dim=2, official interleaved power stream (order preserved), NO finite
-  iteration budget, NO validation-Pareto rollback.  The greedy
-  termination state is the SOLE reported state, under the key
-  ``final_results_official_unweighted_reproduction``.
+- ``official_code_derived_monotone_cursor_unweighted``: an
+  OFFICIAL-CODE-DERIVED VARIANT WITH A TERMINATION-SAFETY EXTENSION —
+  derived from the official code repository's behavior, but NOT
+  claimed to be behaviorally equivalent to it and NOT a paper-text
+  method reproduction (the paper text prescribes elbow-plot MDS
+  dimension selection; the fixed dim=2 is inherited official-code
+  behavior).  Official interleaved power stream (order preserved,
+  searched under a MONOTONE per-attribute stream cursor — the
+  DELIBERATE deviation from the official restart-from-head search that
+  guarantees termination of the budget-free loop), NO finite iteration
+  budget, NO validation-Pareto rollback.  The greedy termination state
+  is the SOLE reported state, under the key
+  ``final_results_official_code_derived_monotone_cursor_unweighted``.
 
 - ``engineering_bounded`` (default): the bounded configuration —
   automatic MDS dimension, six-value ascending power grid, finite
@@ -68,13 +76,13 @@ class FairBiasRunResult:
     ``initial_metrics`` and per-iteration ``metrics`` are computed on the
     VALIDATION partition.  ``greedy_terminal_metrics`` is the single TEST
     evaluation of the greedy algorithm's termination state — in
-    ``official_unweighted_reproduction`` mode this is the official
-    reproduction output; in ``engineering_bounded`` mode it is the
-    configured greedy terminal state (no paper-alignment claim).
-    ``pareto_engineering_metrics`` is the single TEST evaluation of the
-    validation-Pareto-selected checkpoint and exists ONLY in
-    ``engineering_bounded`` mode (None in official mode, which has no
-    Pareto rollback).
+    ``official_code_derived_monotone_cursor_unweighted`` mode this is
+    the official-code-derived output; in ``engineering_bounded`` mode
+    it is the configured greedy terminal state (no paper-alignment
+    claim).  ``pareto_engineering_metrics`` is the single TEST evaluation
+    of the validation-Pareto-selected checkpoint and exists ONLY in
+    ``engineering_bounded`` mode (None in the official-code-derived
+    mode, which has no Pareto rollback).
     """
 
     run_id: str
@@ -145,6 +153,52 @@ def _stratify_series(Y: pd.Series, enabled: bool) -> Optional[pd.Series]:
     return None
 
 
+def _termination_note(
+    termination_reason: str,
+    is_official: bool,
+    non_convergence: Optional[Dict[str, Any]],
+) -> str:
+    """Termination note generated from the REAL recorded failure scope.
+
+    Round 4.1 REPAIR-2 (Codex P1): in the official-code-derived mode the
+    note used to unconditionally describe "official power stream
+    exhaustion" even when the failing attribute was CATEGORICAL (whose
+    search scope is the merge chain).  The note is now derived from the
+    mitigation engine's recorded ``search_scope`` so a categorical
+    failure is described as such.
+    """
+    if is_official:
+        if termination_reason == "candidate_grid_exhausted":
+            scope = (non_convergence or {}).get("search_scope")
+            if scope == "categorical_merge_chain":
+                return (
+                    "official-code-derived mode: the categorical merge "
+                    "chain for an attribute (bounded merges plus the "
+                    "rejected terminal drop) was exhausted without "
+                    "reaching the epsilon ball; there is no iteration "
+                    "budget in this mode."
+                )
+            return (
+                "official-code-derived mode: the finite OFFICIAL power "
+                "stream was exhausted for a numeric attribute under the "
+                "monotone per-attribute stream cursor (no position is "
+                "retried) without reaching the epsilon ball; there is no "
+                "iteration budget in this mode."
+            )
+        return (
+            "official-code-derived mode: no finite iteration budget "
+            "applies; max_iterations is ignored."
+        )
+    if termination_reason == "candidate_grid_exhausted":
+        return (
+            "candidate_grid_exhausted means the CONFIGURED transform grid "
+            "was exhausted; it is not a paper-level non-convergence claim "
+            "(the paper prescribes an increasing-order search without a "
+            "stated finite bound)."
+        )
+    return ""
+
+
 def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRunResult:
     """
     Execute the complete FairBias benchmarking pipeline.
@@ -154,9 +208,10 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
 
     # Round 4.1: resolve the algorithm mode ONCE so that every downstream
     # component (evaluator, mitigation engine, manifest) sees the concrete
-    # effective configuration.  In official mode this fixes the MDS
-    # dimension at 2, installs the official interleaved power stream, and
-    # marks the run as having NO iteration budget and NO Pareto rollback.
+    # effective configuration.  In the official-code-derived mode this
+    # fixes the MDS dimension at 2, installs the official interleaved
+    # power stream, and marks the run as having NO iteration budget and
+    # NO Pareto rollback.
     algorithm_mode = cfg.algorithm_mode
     is_official = algorithm_mode == ALGORITHM_MODE_OFFICIAL
     cfg = cfg.resolved()
@@ -307,9 +362,14 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
 
     # 6. Iterative Mitigation & Enhancement Loop
     # ENGINEERING mode: bounded by cfg.max_iterations.
-    # OFFICIAL mode: NO finite budget — the loop terminates only via the
-    # epsilon ball or exhaustion of the (finite) official power stream /
-    # categorical merge chain, both of which guarantee termination.
+    # OFFICIAL-CODE-DERIVED mode: NO finite budget — termination is
+    # guaranteed by the MONOTONE per-attribute power-stream cursor in
+    # the mitigation engine (Round 4.1 REPAIR: each searched stream
+    # position is consumed exactly once per numeric attribute, so
+    # revisits advance forward-only and can never oscillate between
+    # powers) together with the bounded categorical merge chains; the
+    # mere finiteness of the official stream is NOT by itself a
+    # termination guarantee.
     iteration_budget: Optional[int] = None if is_official else cfg.max_iterations
     iter_idx = 0
     while True:
@@ -459,26 +519,13 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         "epsilon_threshold": epsilon_threshold,
         "algorithm_mode": algorithm_mode,
         # Auditable distinction: grid exhaustion is an implementation
-        # budget outcome, not a paper-level convergence claim.
-        "note": (
-            "candidate_grid_exhausted means the CONFIGURED transform grid "
-            "was exhausted; it is not a paper-level non-convergence claim "
-            "(the paper prescribes an increasing-order search without a "
-            "stated finite bound)."
-            if termination_reason == "candidate_grid_exhausted" and not is_official
-            else (
-                "official mode: the finite OFFICIAL power stream "
-                "[3, 1/3, ..., 1999, 1/1999] was exhausted without reaching "
-                "the epsilon ball; there is no iteration budget in this "
-                "mode."
-                if termination_reason == "candidate_grid_exhausted" and is_official
-                else (
-                    "official mode: no finite iteration budget applies; "
-                    "max_iterations is ignored."
-                    if is_official
-                    else ""
-                )
-            )
+        # budget outcome, not a paper-level convergence claim.  The note
+        # text follows the REAL recorded search_scope (numeric power
+        # stream vs categorical merge chain).
+        "note": _termination_note(
+            termination_reason,
+            is_official,
+            mitigation_engine.non_convergence if cfg.use_bias_mitigation else None,
         ),
     }
 
@@ -488,8 +535,9 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
     # (iteration 0 = untransformed data when no transform was ever
     # accepted), with NO validation-based rollback.  Evaluated on the TEST
     # partition exactly once.
-    #   - official mode: this is the official_unweighted_reproduction
-    #     output and the SOLE reported state.
+    #   - official-code-derived mode: this is the
+    #     official_code_derived_monotone_cursor_unweighted output and the
+    #     SOLE reported state.
     #   - engineering mode: this is the configured_greedy_terminal state
     #     (no paper-alignment claim).
     greedy_terminal_changed_dict = copy.deepcopy(terminal_record["changed_dict"])
@@ -512,16 +560,16 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
     # explicitly named ENGINEERING extension.  Selection rule: minimize
     # fairness gap (EO or SP on validation) subject to ACC >= initial
     # validation ACC - tau.  The test partition is NOT consulted during
-    # selection.  THE OFFICIAL MODE HAS NO PARETO STATE: the greedy
-    # termination state above is the sole reported output.
+    # selection.  THE OFFICIAL-CODE-DERIVED MODE HAS NO PARETO STATE: the
+    # greedy termination state above is the sole reported output.
     if is_official:
         pareto_changed_dict: Optional[Dict[str, Any]] = None
         pareto_engineering_metrics: Optional[Dict[str, Any]] = None
         best_iter_num = terminal_iteration
         best_reason = (
-            "N/A — algorithm_mode='official_unweighted_reproduction' has no "
-            "validation-Pareto selection; the greedy termination state is "
-            "the sole reported state."
+            "N/A — algorithm_mode='official_code_derived_monotone_"
+            "cursor_unweighted' has no validation-Pareto selection; the "
+            "greedy termination state is the sole reported state."
         )
     else:
         candidates = [initial_checkpoint] + history_iterations
@@ -607,12 +655,20 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
         "final_evaluation_partition": "test",
         "algorithm_mode": algorithm_mode,
         "algorithm_mode_definition": (
-            "official_unweighted_reproduction: strict reproduction of the "
-            "paper METHOD as adjudicated by the official code repository — "
-            "MDS fixed at dim=2, official interleaved power stream "
-            "[3, 1/3, 5, 1/5, ..., 1999, 1/1999] (order preserved), NO "
-            "finite iteration budget, NO validation-Pareto rollback; the "
-            "greedy termination state is the sole reported state."
+            "official_code_derived_monotone_cursor_unweighted: an "
+            "OFFICIAL-CODE-DERIVED VARIANT WITH A TERMINATION-SAFETY "
+            "EXTENSION — derived from the official code repository's "
+            "behavior, NOT claimed to be behaviorally equivalent to it "
+            "and NOT a paper-text method reproduction (the paper text "
+            "prescribes elbow-plot MDS dimension selection; MDS fixed "
+            "at dim=2 is inherited official-code behavior): official "
+            "interleaved power stream [3, 1/3, 5, 1/5, ..., 1999, "
+            "1/1999] (order preserved, searched under a monotone "
+            "per-attribute stream cursor — a deliberate termination-"
+            "safety deviation from the official restart-from-head "
+            "search), NO finite iteration budget, NO validation-Pareto "
+            "rollback; the greedy termination state is the sole "
+            "reported state."
             if is_official else
             "engineering_bounded: automatic stress-elbow MDS dimension, "
             "six-value ascending power grid, finite max_iterations budget, "
@@ -620,7 +676,7 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
             "named ENGINEERING extension.  NO paper-alignment claim."
         ),
         "final_states": (
-            ["official_unweighted_reproduction"]
+            ["official_code_derived_monotone_cursor_unweighted"]
             if is_official
             else ["configured_greedy_terminal", "pareto_engineering"]
         ),
@@ -641,14 +697,16 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
     }
 
     if is_official:
-        result_payload["final_results_official_unweighted_reproduction"] = {
+        result_payload["final_results_official_code_derived_monotone_cursor_unweighted"] = {
             "metrics": greedy_terminal_metrics,
             "metrics_partition": "test",
             "changed_dict": greedy_terminal_changed_dict,
             "state": (
-                "greedy termination state of the official (paper-method) "
-                "algorithm — sole reported state; no validation-Pareto "
-                "rollback exists in this mode"
+                "greedy termination state of the official-code-derived "
+                "variant with termination-safety extension "
+                "(official_code_derived_monotone_cursor_unweighted) — "
+                "sole reported state; no validation-Pareto rollback "
+                "exists in this mode"
             ),
             "termination": termination_record,
         }

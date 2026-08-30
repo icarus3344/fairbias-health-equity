@@ -1,15 +1,28 @@
 """Empirical validation script for the reworked FairBias pipeline.
 
 Runs run_fairbias_pipeline on COMPAS and Credit in BOTH algorithm modes
-(Round 4.1):
+(Round 4.1; mode renamed twice — the second rename is the Round 4.1
+REPAIR-2 verdict of 2026-08-30):
 
-- ``official_unweighted_reproduction``: MDS fixed dim=2, official
-  interleaved power stream [3, 1/3, ..., 1999, 1/1999] (order
+- ``official_code_derived_monotone_cursor_unweighted``: an
+  OFFICIAL-CODE-DERIVED VARIANT WITH A TERMINATION-SAFETY EXTENSION —
+  derived from the official code repository's behavior, NOT claimed to
+  be behaviorally equivalent to it (the monotone per-attribute stream
+  cursor is a deliberate deviation from the official restart-from-head
+  search) and NOT a paper-text method reproduction (the paper text
+  prescribes elbow-plot MDS dimension selection).  MDS fixed dim=2,
+  official interleaved power stream [3, 1/3, ..., 1999, 1/1999] (order
   preserved), NO iteration budget, NO Pareto rollback — the greedy
   termination state is the sole reported state.
 - ``engineering_bounded``: automatic MDS dim, six-value grid, bounded
   iterations, dual terminal states (configured greedy terminal + Pareto
   checkpoint).
+
+One execution generates EXACTLY FOUR runs (both datasets × both modes).
+The engineering runs use ``max_iterations=10`` (the pre-declared
+comparable budget for the round-4/4.1 empirical comparison); the
+official runs have no budget, so ``max_iterations`` is irrelevant for
+them.
 
 Prints per-iteration: selected feature, max d_phi, ACC and EO, plus
 termination records and per-mode terminal-state metrics.
@@ -18,7 +31,7 @@ termination records and per-mode terminal-state metrics.
 import json
 import time
 
-from fairbias.config import FairBiasConfig
+from fairbias.config import ALGORITHM_MODE_OFFICIAL, FairBiasConfig
 from fairbias.pipeline import run_fairbias_pipeline
 
 
@@ -30,7 +43,12 @@ def _eo_mean(metrics):
     return float(eo)
 
 
-def run_and_report(cfg_factory, name, max_iterations=3, mode="engineering"):
+def run_and_report(cfg_factory, name, max_iterations=10, mode="engineering"):
+    # Default max_iterations=10: the pre-declared comparable budget for
+    # the round-4/4.1 empirical comparison, so ONE execution of this
+    # script generates exactly the four declared runs (Round 4.1
+    # REPAIR-2: the previous default of 3 silently produced two extra
+    # engineering runs that the report failed to disclose).
     cfg = cfg_factory(
         max_iterations=max_iterations,
         output_dir="runs/rework_empirical",
@@ -75,8 +93,9 @@ def run_and_report(cfg_factory, name, max_iterations=3, mode="engineering"):
           f"terminal_max_dphi={res.termination['terminal_max_dphi']:.7f} "
           f"epsilon={res.termination['epsilon_threshold']:.7f}")
 
-    if res.algorithm_mode == "official_unweighted_reproduction":
-        print(f"[official_unweighted_reproduction] ACC={res.greedy_terminal_metrics['ACC']:.4f} "
+    if res.algorithm_mode == ALGORITHM_MODE_OFFICIAL:
+        print(f"[official_code_derived_monotone_cursor_unweighted] "
+              f"ACC={res.greedy_terminal_metrics['ACC']:.4f} "
               f"EO={_eo_mean(res.greedy_terminal_metrics):.4f} "
               f"(test, greedy termination state — sole reported state, "
               f"no Pareto rollback in this mode)")
@@ -91,11 +110,19 @@ def run_and_report(cfg_factory, name, max_iterations=3, mode="engineering"):
               f"EO={_eo_mean(res.pareto_engineering_metrics):.4f} "
               f"(test, ENGINEERING Pareto checkpoint — not the paper output)")
     if res.non_convergence is not None:
+        scope = res.non_convergence.get("search_scope")
+        if scope == "official_power_stream":
+            scope_note = ("official power stream exhausted under the "
+                          "monotone cursor")
+        elif scope == "categorical_merge_chain":
+            scope_note = "categorical merge chain exhausted"
+        else:
+            scope_note = ("configured grid exhausted; not a paper-level "
+                          "claim")
         print(f"[non-convergence] attribute={res.non_convergence['attribute']} "
               f"O={res.non_convergence['label_O']} "
               f"d_phi={res.non_convergence['d_phi']:.4f} "
-              f"search_scope={res.non_convergence.get('search_scope')} "
-              f"(configured grid exhausted; not a paper-level claim)")
+              f"search_scope={scope} ({scope_note})")
     else:
         print("[non-convergence] none")
     print(f"[time] {elapsed:.1f}s")

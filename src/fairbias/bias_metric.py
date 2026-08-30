@@ -35,9 +35,12 @@ returning a fake all-zero (perfectly fair) d_phi vector.
 
 ``mds_fixed_components`` (Round 4.1): when not None, the MDS embedding
 dimension is FIXED at that value and the stress-elbow selection is
-skipped entirely — this is the ``official_unweighted_reproduction``
-behavior (the official implementation fixes the embedding dimension at
-2).  None keeps the automatic elbow selection (engineering mode).
+skipped entirely — this is inherited ``official_code_derived_monotone_
+cursor_unweighted`` behavior (the official code fixes the embedding
+dimension at 2; the paper TEXT instead prescribes elbow-plot dimension
+selection, so this fixed-dimension shortcut is official-code-derived
+behavior, not a paper-text method reproduction).  None keeps the
+automatic elbow selection (engineering mode).
 
 SURVEY-WEIGHTED EXTENSION POINT (pre-declared, Gate D scope): the ONLY
 planned deviation for the survey-weighted FairBias variant replaces the

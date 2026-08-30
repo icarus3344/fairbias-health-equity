@@ -5,7 +5,7 @@ import argparse
 import json
 import sys
 
-from fairbias.config import FairBiasConfig
+from fairbias.config import ALGORITHM_MODE_OFFICIAL, FairBiasConfig
 from fairbias.pipeline import run_fairbias_pipeline
 
 
@@ -58,8 +58,12 @@ def main() -> int:
         default="engineering",
         choices=["official", "engineering"],
         help=(
-            "Algorithm mode: 'official' = official_unweighted_reproduction "
-            "(MDS fixed dim=2, official interleaved power stream, no "
+            "Algorithm mode: 'official' = "
+            "official_code_derived_monotone_cursor_unweighted "
+            "(official-code-derived variant with a termination-safety "
+            "extension: MDS fixed dim=2, official interleaved power "
+            "stream under a monotone per-attribute cursor — a deliberate "
+            "deviation from the official restart-from-head search, no "
             "iteration budget, no Pareto rollback); 'engineering' = "
             "engineering_bounded (automatic MDS dim, six-value grid, "
             "bounded iterations, Pareto checkpoint)."
@@ -120,8 +124,8 @@ def main() -> int:
         print(f"Termination: converged={res.termination['converged']} "
               f"reason={res.termination['termination_reason']} "
               f"terminal_iteration={res.termination['terminal_iteration']}")
-        if res.algorithm_mode == "official_unweighted_reproduction":
-            print(f"Official-Unweighted-Reproduction Final ACC: "
+        if res.algorithm_mode == ALGORITHM_MODE_OFFICIAL:
+            print(f"Official-Code-Derived-Monotone-Cursor-Unweighted Final ACC: "
                   f"{res.greedy_terminal_metrics['ACC']:.4f}, "
                   f"EO: {res.greedy_terminal_metrics['EO']}, "
                   f"SP: {res.greedy_terminal_metrics['SP']} "

@@ -6,21 +6,43 @@ import dataclasses
 from typing import Any, Optional, Sequence
 
 # ---------------------------------------------------------------------
-# Algorithm modes (Round 4.1)
+# Algorithm modes (Round 4.1; renamed twice — the second rename is the
+# Round 4.1 REPAIR-2 verdict of 2026-08-30)
 #
-# ``official_unweighted_reproduction``: strict reproduction of the PAPER
-# METHOD as adjudicated by the official code repository
-# (github.com/zftang/MachineClassifer_BiasMitigation_beta, designated by
-# the paper's Data Availability statement) wherever the paper text is
-# ambiguous:
-#   - MDS embedding dimension FIXED AT 2 (official source comment:
-#     "here the MDS dimensition is fixed at 2");
+# ``official_code_derived_monotone_cursor_unweighted``: an
+# OFFICIAL-CODE-DERIVED VARIANT WITH A TERMINATION-SAFETY EXTENSION.
+# It is derived from the behavior of the official code repository
+# (github.com/zftang/MachineClassifer_BiasMitigation_beta, designated
+# by the paper's Data Availability statement) but is NOT claimed to be
+# behaviorally equivalent to it, and is NOT a "strict reproduction of
+# the paper method":
+#   - MDS embedding dimension FIXED AT 2, inherited from the official
+#     code (official source comment: "here the MDS dimensition is fixed
+#     at 2"); the paper TEXT (p. 5) instead prescribes selecting the
+#     optimal MDS dimension via an elbow plot.  A paper-text mode
+#     (elbow-plot dimension selection) is NOT implemented in this
+#     codebase.
 #   - power search over the OFFICIAL interleaved stream
 #     [3, 1/3, 5, 1/5, ..., 1999, 1/1999] in the official (interleaved,
-#     NOT ascending) order;
-#   - NO finite iteration budget: the greedy loop terminates only via
-#     epsilon-ball convergence or exhaustion of the (finite) official
-#     stream;
+#     NOT ascending) order — inherited from the official code.
+#   - DELIBERATE DEVIATION (termination-safety extension): a MONOTONE
+#     per-attribute stream cursor (Round 4.1 REPAIR) that consumes each
+#     searched position exactly once, so revisits advance forward-only
+#     and powers are never reused.  The official implementation instead
+#     RESTARTS the power search from the head of the stream on every
+#     revisit, so powers rejected earlier can be retried after other
+#     attributes change.  The cursor permanently excludes them, so this
+#     mode can diverge from official-code behavior in general; the
+#     unchanged COMPAS/Credit trajectories are an empirical
+#     observation, NOT an equivalence guarantee.  A true
+#     official-behavior reference mode (state-cycle detection with
+#     fail-closed stop, unaltered candidate stream) may be added later
+#     as a SEPARATE mode; it is not implemented here.
+#   - NO finite iteration budget: the greedy loop terminates via the
+#     epsilon ball, per-attribute exhaustion of the (finite) official
+#     stream under the monotone cursor, or bounded categorical merge
+#     chains — the cursor, not the stream's mere finiteness, is what
+#     guarantees termination.
 #   - NO validation-Pareto rollback: the greedy termination state is the
 #     sole reported state.
 #
@@ -34,7 +56,7 @@ from typing import Any, Optional, Sequence
 # pipeline entry, so every downstream component (evaluator, mitigation
 # engine, output manifest) sees the concrete effective configuration.
 # ---------------------------------------------------------------------
-ALGORITHM_MODE_OFFICIAL = "official_unweighted_reproduction"
+ALGORITHM_MODE_OFFICIAL = "official_code_derived_monotone_cursor_unweighted"
 ALGORITHM_MODE_ENGINEERING = "engineering_bounded"
 ALGORITHM_MODES = (ALGORITHM_MODE_OFFICIAL, ALGORITHM_MODE_ENGINEERING)
 
@@ -68,8 +90,11 @@ def official_power_stream(up_to: int = OFFICIAL_POWER_STREAM_MAX) -> tuple:
 class FairBiasConfig:
     """Immutable configuration container for FairBias benchmarking runs."""
 
-    # Algorithm mode (Round 4.1): "official_unweighted_reproduction" or
-    # "engineering_bounded" — see the module-level mode contract above.
+    # Algorithm mode (Round 4.1; renamed twice — see the module-level
+    # mode contract above): "official_code_derived_monotone_cursor_unweighted"
+    # (official-code-derived variant with a termination-safety extension;
+    # neither an official-code equivalence claim nor a paper-text method
+    # reproduction) or "engineering_bounded".
     algorithm_mode: str = ALGORITHM_MODE_ENGINEERING
     # When not None, the MDS embedding dimension is FIXED at this value and
     # the stress-elbow search is skipped entirely.  The official mode
@@ -103,10 +128,10 @@ class FairBiasConfig:
     # Feature transform bounds
     transform_n_bins: int = 10
     transform_log_epsilon: float = 1e-5
-    # None = strict paper mode: the only magnitude bound on power transforms
-    # is the paper's numpy.float32 overflow rule (≈3.4e38 -> attribute dropped).
-    # Setting a numeric value re-enables a NON-PAPER engineering guard and
-    # must be reported as such.
+    # None = NO additional magnitude guard: the only bound on power
+    # transforms is the paper's numpy.float32 overflow rule (≈3.4e38 ->
+    # attribute dropped).  Setting a numeric value re-enables a NON-PAPER
+    # engineering guard and must be reported as such.
     transform_x_max: Optional[float] = None
     
     adaptive_threshold_method: str = "kmeans_125"  # "kmeans_125" or "ratio"
@@ -133,8 +158,8 @@ class FairBiasConfig:
     transform_poly_exponents: tuple = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
 
     # Failure semantics for the greedy mitigation search:
-    #   "stop" (default, strict paper): when the CURRENT highest-d_phi
-    #       attribute's CONFIGURED candidate-grid search cannot reach the
+    #   "stop" (default): when the CURRENT highest-d_phi attribute's
+    #       CONFIGURED candidate-grid search cannot reach the
     #       epsilon ball, the run records the failure (search_scope=
     #       "configured_grid") and terminates (the paper keeps operating
     #       on the highest attribute).  Note: this is "configured grid
@@ -162,13 +187,17 @@ class FairBiasConfig:
     def resolved(self) -> "FairBiasConfig":
         """Return the EFFECTIVE configuration with the mode concretized.
 
-        ``official_unweighted_reproduction`` resolves to:
-          - ``mds_fixed_components = 2`` (official fixed embedding dim);
+        ``official_code_derived_monotone_cursor_unweighted``
+        (official-code-derived variant with a termination-safety
+        extension) resolves to:
+          - ``mds_fixed_components = 2`` (official fixed embedding dim,
+            inherited from the official code — not the paper text's
+            elbow-plot selection);
           - ``transform_poly_exponents`` = the official interleaved stream
             (order preserved; a custom non-official grid is rejected);
           - accuracy enhancement and the "next" failed-attribute mode are
             rejected (both are named engineering extensions and are
-            incompatible with a strict reproduction claim).
+            incompatible with the official-code-derived mode).
 
         ``engineering_bounded`` resolves to itself unchanged.
         """
@@ -180,13 +209,13 @@ class FairBiasConfig:
             raise ValueError(
                 "use_accuracy_enhancement is a named ENGINEERING extension "
                 "and cannot be combined with algorithm_mode="
-                "'official_unweighted_reproduction'"
+                "'official_code_derived_monotone_cursor_unweighted'"
             )
         if cfg.failed_attribute_mode != "stop":
             raise ValueError(
                 "failed_attribute_mode='next' is a named ENGINEERING "
                 "extension and cannot be combined with algorithm_mode="
-                "'official_unweighted_reproduction'"
+                "'official_code_derived_monotone_cursor_unweighted'"
             )
 
         if cfg.mds_fixed_components is None:
@@ -195,9 +224,11 @@ class FairBiasConfig:
             )
         elif int(cfg.mds_fixed_components) != OFFICIAL_FIXED_MDS_DIM:
             raise ValueError(
-                "algorithm_mode='official_unweighted_reproduction' fixes the "
-                f"MDS embedding dimension at {OFFICIAL_FIXED_MDS_DIM} "
-                f"(official implementation behavior); got "
+                "algorithm_mode='official_code_derived_monotone_cursor_"
+                "unweighted' fixes the MDS embedding dimension at "
+                f"{OFFICIAL_FIXED_MDS_DIM} "
+                "(inherited official-code behavior, NOT the paper text's "
+                "elbow-plot selection); got "
                 f"mds_fixed_components={cfg.mds_fixed_components!r}. Use the "
                 "engineering_bounded mode for other dimensions."
             )
@@ -214,10 +245,11 @@ class FairBiasConfig:
                 )
             else:
                 raise ValueError(
-                    "algorithm_mode='official_unweighted_reproduction' must "
-                    "use the official interleaved power stream "
-                    "[3, 1/3, 5, 1/5, ..., 1999, 1/1999]; got a custom grid. "
-                    "Use the engineering_bounded mode for custom grids."
+                    "algorithm_mode='official_code_derived_monotone_cursor_"
+                    "unweighted' must use the official interleaved power "
+                    "stream [3, 1/3, 5, 1/5, ..., 1999, 1/1999]; got a "
+                    "custom grid. Use the engineering_bounded mode for "
+                    "custom grids."
                 )
         return cfg
 
@@ -226,8 +258,8 @@ class FairBiasConfig:
         """Standard preset for COMPAS dataset.
 
         ``mode`` is accepted as a convenience alias for ``algorithm_mode``
-        ("official" -> official_unweighted_reproduction, "engineering" ->
-        engineering_bounded).
+        ("official" -> official_code_derived_monotone_cursor_unweighted,
+        "engineering" -> engineering_bounded).
         """
         params = {
             "dataset_name": "compas",
@@ -264,8 +296,8 @@ class FairBiasConfig:
         """Standard preset for Taiwan Credit Card dataset.
 
         ``mode`` is accepted as a convenience alias for ``algorithm_mode``
-        ("official" -> official_unweighted_reproduction, "engineering" ->
-        engineering_bounded).
+        ("official" -> official_code_derived_monotone_cursor_unweighted,
+        "engineering" -> engineering_bounded).
         """
         params = {
             "dataset_name": "credit",

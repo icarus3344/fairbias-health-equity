@@ -73,31 +73,56 @@ class FairBiasMitigation:
         self.max_search_candidates = max_search_candidates
         self.phi_threshold = float(phi_threshold)
         # Round 4.1: the power stream is searched IN THE ORDER GIVEN when
-        # ``preserve_exponent_order`` is True (official mode: the official
-        # implementation searches the interleaved stream [3, 1/3, 5, 1/5,
-        # ...] in that order, which differs from an ascending sort).  The
-        # engineering mode keeps the legacy ascending sort.
+        # ``preserve_exponent_order`` is True (official-code-derived mode:
+        # the official implementation searches the interleaved stream
+        # [3, 1/3, 5, 1/5, ...] in that order, which differs from an
+        # ascending sort).  The engineering mode keeps the legacy
+        # ascending sort.
+        self.preserve_exponent_order = bool(preserve_exponent_order)
         if preserve_exponent_order:
             self.poly_exponents = tuple(float(p) for p in poly_exponents)
         else:
             self.poly_exponents = tuple(sorted(float(p) for p in poly_exponents))
 
+        # Round 4.1 REPAIR (Codex P0): the official-code-derived mode
+        # persists a MONOTONE per-attribute cursor into the power stream.
+        # Every stream position searched for a numeric attribute (skipped,
+        # rejected, or accepted) is consumed exactly once and can never be
+        # searched again for that attribute.  Without the cursor the
+        # numerical search restarted from the head of the stream on every
+        # revisit (skipping only the currently applied power), which
+        # allowed a revisit cycle 3 -> 1/3 -> 3 -> ... under the
+        # budget-free loop -- the loop then had NO termination guarantee.
+        # With the cursor, repeated revisits of one attribute advance
+        # strictly forward through the finite stream, so the total number
+        # of accepted transforms is bounded and the loop terminates
+        # (epsilon ball, stream exhaustion per attribute, or bounded
+        # categorical merge chains).  NOTE: this cursor is the DELIBERATE
+        # termination-safety DEVIATION from the official implementation,
+        # which restarts its power search from the head of the stream on
+        # every revisit; see config.py's mode contract.  The engineering
+        # mode keeps the legacy restart-from-head behaviour (bounded there
+        # by max_iterations) and leaves this dict empty.
+        self._exponent_stream_cursors: Dict[str, int] = {}
+
         if failed_attribute_mode not in ("stop", "next"):
             raise ValueError(
-                f"failed_attribute_mode must be 'stop' (strict paper) or 'next' "
-                f"(named engineering extension), got {failed_attribute_mode!r}"
+                f"failed_attribute_mode must be 'stop' (default: highest-d_phi "
+                f"attribute failure stops the run) or 'next' (named "
+                f"engineering extension), got {failed_attribute_mode!r}"
             )
-        # "stop" (default, strict paper): the greedy loop keeps operating on
-        # the CURRENT highest-d_phi attribute; if the CONFIGURED candidate
-        # grid cannot reach the epsilon ball the run is recorded as
-        # non-convergent (``self.non_convergence``) and terminates.
-        # NOTE: this records "configured grid exhausted" — the paper's
+        # "stop" (default): the greedy loop keeps operating on the CURRENT
+        # highest-d_phi attribute; if its candidate search (numeric power
+        # stream/grid or categorical merge chain) cannot reach the epsilon
+        # ball the run is recorded as non-convergent
+        # (``self.non_convergence``) and terminates.  NOTE: in engineering
+        # mode this records "configured grid exhausted" — the paper's
         # power search has no stated finite bound (main text lists 3, 5, 7
         # and 1/3, 1/5, 1/7 as "e.g." examples), so this is NOT a
         # paper-level algorithmic non-convergence claim.
         # "next": explicitly named ENGINEERING extension -- the failure is
-        # recorded keyed by (protected attribute, feature) and the next-ranked
-        # attribute is tried instead.
+        # recorded keyed by (protected attribute, feature) and the
+        # next-ranked attribute is tried instead.
         self.failed_attribute_mode = failed_attribute_mode
         self.failed_attribute_keys: set = set()
         self.non_convergence: Optional[Dict[str, Any]] = None
@@ -340,14 +365,33 @@ class FairBiasMitigation:
         attr: str,
         epsilon_threshold: float,
     ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
-        """Search single sign-preserving polynomial powers in increasing
-        order until the attribute's d_phi < epsilon (paper numerical
-        transform).  Powers overflowing numpy.float32 map to the explicit
-        ``"dropped"`` state."""
+        """Search single sign-preserving polynomial powers in stream order
+        until the attribute's d_phi < epsilon (paper numerical transform).
+        Powers overflowing numpy.float32 map to the explicit ``"dropped"``
+        state.
+
+        Round 4.1 REPAIR (Codex P0): in the official-code-derived mode
+        (``preserve_exponent_order=True``) the search resumes from the
+        persisted per-attribute stream cursor and consumes every searched
+        position permanently (monotone, forward-only advancement), so a
+        revisited attribute can never reuse an earlier power or oscillate
+        between powers.  The engineering mode keeps the legacy
+        restart-from-head search (bounded by the caller's iteration
+        budget).
+        """
         existing = changed_dict.get(attr)
         current_power = float(existing.get("power", 1.0)) if isinstance(existing, dict) else 1.0
 
-        for power in self.poly_exponents:
+        start_index = 0
+        if self.preserve_exponent_order:
+            start_index = self._exponent_stream_cursors.get(attr, 0)
+
+        for index in range(start_index, len(self.poly_exponents)):
+            power = self.poly_exponents[index]
+            if self.preserve_exponent_order:
+                # Consume this stream position permanently: the cursor
+                # only ever moves forward for this attribute.
+                self._exponent_stream_cursors[attr] = index + 1
             if abs(power - current_power) < 1e-12 or abs(power - 1.0) < 1e-12:
                 continue
 
@@ -397,16 +441,23 @@ class FairBiasMitigation:
 
         Failure semantics (``failed_attribute_mode``):
 
-        - "stop" (default, strict paper): if the CONFIGURED candidate-grid
-          search for the CURRENT highest-d_phi attribute cannot reach the
-          epsilon ball, the run is recorded as non-convergent
-          (``self.non_convergence``, with ``search_scope="configured_grid"``)
-          and no transform is applied this step; the caller must stop.  The
-          paper's greedy loop always operates on the current highest
-          attribute, so silently moving on to a lower-ranked one is not
-          paper semantics.  Exhausting the configured grid is an
-          implementation-budget outcome, NOT a paper-level non-convergence
-          claim (the paper's power search has no stated finite bound).
+        - "stop" (default): if the transform search for the CURRENT
+          highest-d_phi attribute cannot reach the epsilon ball,
+          the run is recorded as non-convergent
+          (``self.non_convergence``) and no transform is applied this
+          step; the caller must stop.  The paper's greedy loop always
+          operates on the current highest attribute, so silently moving
+          on to a lower-ranked one is not paper semantics.  In
+          engineering mode exhausting the configured grid is an
+          implementation-budget outcome, NOT a paper-level
+          non-convergence claim (the paper's power search has no stated
+          finite bound).  In the official-code-derived mode the failure
+          means EITHER the finite OFFICIAL power stream was exhausted
+          for a NUMERIC attribute under the monotone stream cursor
+          (``search_scope="official_power_stream"``) OR the categorical
+          merge chain (including its rejected terminal drop) was
+          exhausted for a CATEGORICAL attribute
+          (``search_scope="categorical_merge_chain"``).
         - "next" (named engineering extension): the failure is recorded keyed
           by (protected attribute, feature) and the next-ranked attribute is
           considered instead.
@@ -450,9 +501,55 @@ class FairBiasMitigation:
 
             # The transform search could not bring this attribute below epsilon
             if self.failed_attribute_mode == "stop":
-                # Strict-paper failure semantics: report configured-grid
-                # exhaustion on the current highest attribute and stop the
-                # mitigation loop.
+                # Failure semantics: report the search exhaustion on the
+                # current highest attribute and stop the mitigation loop.
+                if self.preserve_exponent_order:
+                    # Official-code-derived mode: record the REAL search
+                    # scope — the numeric power stream under the monotone
+                    # cursor, or the categorical merge chain.  The scope
+                    # is decided by the attribute's role, NOT by the mode
+                    # alone (Round 4.1 REPAIR-2: a categorical failure
+                    # used to be mis-recorded as power-stream exhaustion).
+                    is_categorical_search = (
+                        selected_attribute in self.cate_attrs
+                        or not pd.api.types.is_numeric_dtype(
+                            X[selected_attribute]
+                        )
+                    )
+                    if is_categorical_search:
+                        self.non_convergence = {
+                            "label_O": selected_label_O,
+                            "attribute": selected_attribute,
+                            "d_phi": float(eps),
+                            "search_scope": "categorical_merge_chain",
+                            "reason": (
+                                "categorical merge chain exhausted for this "
+                                "attribute (bounded merges plus the rejected "
+                                "terminal drop could not reach the epsilon "
+                                "ball); the official-code-derived loop has "
+                                "no iteration budget"
+                            ),
+                        }
+                    else:
+                        self.non_convergence = {
+                            "label_O": selected_label_O,
+                            "attribute": selected_attribute,
+                            "d_phi": float(eps),
+                            "search_scope": "official_power_stream",
+                            "stream_positions_consumed": int(
+                                self._exponent_stream_cursors.get(
+                                    selected_attribute, 0
+                                )
+                            ),
+                            "reason": (
+                                "official power stream exhausted for this "
+                                "attribute under the monotone per-attribute "
+                                "stream cursor (no position is retried); the "
+                                "official-code-derived loop has no "
+                                "iteration budget"
+                            ),
+                        }
+                    break
                 self.non_convergence = {
                     "label_O": selected_label_O,
                     "attribute": selected_attribute,
