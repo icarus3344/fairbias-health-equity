@@ -1,9 +1,11 @@
 """Effectiveness regression tests for the reworked FairBias algorithm.
 
-These tests guard against the regression class found in the audit: an algorithm
-that passes contract tests while producing zero bias reduction. They verify that
-mitigation actually lowers d_phi, that polynomial powers change d_phi, that the
-NMI information-loss gate works, and that public type annotations are resolvable.
+These tests guard against the regression class found in the audit: an
+algorithm that passes contract tests while producing zero bias reduction.
+They verify that mitigation actually lowers d_phi under the paper
+epsilon-ball acceptance rule, that polynomial powers change d_phi, that
+the NMI information-loss gate works, and that public type annotations
+are resolvable.
 """
 
 import typing
@@ -32,8 +34,7 @@ def _make_biased_frame(n: int = 600, seed: int = 7):
     )
     # Numerical feature whose mean depends on the group
     num_bias = rng.normal(loc=group * 2.0, scale=1.0, size=n)
-    # Second group-independent numerical feature (gives the mean-scaling family
-    # a relative ratio so power transforms can move the scaled divergence)
+    # Group-independent numerical feature
     num_indep = rng.normal(loc=0.0, scale=1.5, size=n) + group * 0.05
     # Unbiased noise feature
     noise_cat = rng.integers(0, 2, n)
@@ -53,7 +54,8 @@ def _make_biased_frame(n: int = 600, seed: int = 7):
 
 
 class TestMitigationEffectiveness(unittest.TestCase):
-    """Verifies that bias mitigation produces measurable d_phi reductions."""
+    """Verifies that bias mitigation produces measurable d_phi reductions
+    under the paper epsilon-ball acceptance rule."""
 
     def setUp(self):
         self.config = FairBiasConfig(random_seed=0)
@@ -74,6 +76,9 @@ class TestMitigationEffectiveness(unittest.TestCase):
         )
 
     def test_mitigation_strictly_reduces_dphi(self):
+        # Paper acceptance: the transform search for the top attribute
+        # continues until its d_phi < epsilon.  Setting epsilon to 90% of the
+        # current top d_phi therefore forces a strictly lower value.
         X, Y, O = _make_biased_frame()
         nmi_org = calculate_nmi_dict(X, Y)
         eps0 = self.evaluator.calculate_epsilon(X, O)
@@ -82,14 +87,16 @@ class TestMitigationEffectiveness(unittest.TestCase):
 
         transformed_df, changed, sel_o, sel_attr = self.bm.mitigate_step(
             X=X, Y=Y, O=O, nmi_org=nmi_org,
-            changed_dict={}, current_epsilon=eps0, X_search=X,
+            changed_dict={}, current_epsilon=eps0,
+            epsilon_threshold=0.9 * dphi_before, X_search=X,
         )
 
         self.assertIsNotNone(sel_attr, "Mitigation accepted no candidate on clearly biased data")
         eps1 = self.evaluator.calculate_epsilon(transformed_df, O)
+        new_value = eps1[sel_o].get(sel_attr, 0.0)  # dropped attributes have d_phi 0
         self.assertLess(
-            eps1[sel_o][sel_attr], dphi_before if sel_attr == top_attr else eps0["group"][sel_attr],
-            "Accepted candidate must strictly lower the selected feature's d_phi",
+            new_value, dphi_before if sel_attr == top_attr else eps0["group"][sel_attr],
+            "Accepted candidate must bring the selected feature below epsilon",
         )
         self.assertGreater(len(changed), 0)
 
@@ -102,9 +109,11 @@ class TestMitigationEffectiveness(unittest.TestCase):
         changed = {}
         current = X
         for _ in range(3):
+            current_max = max(eps["group"].values())
             current, changed, sel_o, sel_attr = self.bm.mitigate_step(
                 X=X, Y=Y, O=O, nmi_org=nmi_org,
-                changed_dict=changed, current_epsilon=eps, X_search=current,
+                changed_dict=changed, current_epsilon=eps,
+                epsilon_threshold=0.8 * current_max, X_search=current,
             )
             if sel_attr is None:
                 break
@@ -126,10 +135,19 @@ class TestMitigationEffectiveness(unittest.TestCase):
         # transforms left it bit-invariant in the audited regression).
         self.assertGreater(abs(eps1 - eps0), 1e-9)
 
+    def test_paper_power_grid(self):
+        # The searched grid must be the paper grid: odd fractions 1/3, 1/5,
+        # 1/7 and odd integers 3, 5, 7 (no 1/2 or 2/3), in increasing order.
+        expected = tuple(sorted((1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)))
+        self.assertEqual(self.bm.poly_exponents, expected)
+        self.assertNotIn(1 / 2, self.bm.poly_exponents)
+        self.assertNotIn(2 / 3, self.bm.poly_exponents)
+
     def test_nmi_gate_rejects_information_destroying_candidate(self):
         X, Y, O = _make_biased_frame()
         nmi_org = calculate_nmi_dict(X, Y)
         eps = self.evaluator.calculate_epsilon(X, O)
+        top_dphi = max(eps["group"].values())
 
         strict_bm = FairBiasMitigation(
             evaluator=self.evaluator,
@@ -147,7 +165,8 @@ class TestMitigationEffectiveness(unittest.TestCase):
         ):
             _, changed, sel_o, sel_attr = strict_bm.mitigate_step(
                 X=X, Y=Y, O=O, nmi_org=nmi_org,
-                changed_dict={}, current_epsilon=eps, X_search=X,
+                changed_dict={}, current_epsilon=eps,
+                epsilon_threshold=0.5 * top_dphi, X_search=X,
             )
         self.assertIsNone(sel_attr, "NMI gate must reject all candidates under strict threshold")
         self.assertEqual(changed, {})
@@ -159,7 +178,8 @@ class TestMitigationEffectiveness(unittest.TestCase):
         ):
             _, _, lenient_o, lenient_attr = self.bm.mitigate_step(
                 X=X, Y=Y, O=O, nmi_org=nmi_org,
-                changed_dict={}, current_epsilon=eps, X_search=X,
+                changed_dict={}, current_epsilon=eps,
+                epsilon_threshold=0.5 * top_dphi, X_search=X,
             )
         self.assertIsNotNone(lenient_attr)
 
@@ -175,6 +195,7 @@ class TestAnnotationIntegrity(unittest.TestCase):
         typing.get_type_hints(evaluator_mod.round_up_125)
         typing.get_type_hints(bias_metric_mod.get_subsets)
         typing.get_type_hints(bias_metric_mod.compute_bias_concentration)
+        typing.get_type_hints(bias_metric_mod.w_max)
 
 
 if __name__ == "__main__":

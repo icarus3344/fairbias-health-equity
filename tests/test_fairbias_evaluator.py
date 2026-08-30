@@ -114,18 +114,25 @@ class TestFairEvaluator(unittest.TestCase):
         # Low cluster mean ~ 0.02125, rounded up via 1-2-5 rule -> 0.05
         self.assertEqual(threshold, 0.05)
 
-    def test_get_subsets_low_order(self):
+    def test_get_subsets_level_h_exclusion(self):
         from fairbias.evaluator import get_subsets
 
         feats = ["f1", "f2", "f3", "f4", "f5"]
-        # H=1 should produce exactly 5 singleton subsets
+        # Eq. (4): at level h the companion set excludes h attributes, so
+        # H=1 keeps near-full contexts (sizes 4 and 5), NOT small subsets.
         subsets_h1 = get_subsets(feats, h_order=1)
-        self.assertEqual(len(subsets_h1), 5)
-        self.assertTrue(all(len(s) == 1 for s in subsets_h1))
+        self.assertEqual(len(subsets_h1), 6)  # C(5,4) + C(5,5)
+        self.assertTrue(all(len(s) >= 4 for s in subsets_h1))
 
-        # H=2 should produce 5 (size 1) + 10 (size 2) = 15 subsets
+        # H=2 keeps sizes 3..5 -> C(5,3)+C(5,4)+C(5,5) = 16 contexts
         subsets_h2 = get_subsets(feats, h_order=2)
-        self.assertEqual(len(subsets_h2), 15)
+        self.assertEqual(len(subsets_h2), 16)
+        self.assertTrue(all(len(s) >= 3 for s in subsets_h2))
+
+        # H >= |features| degenerates to the full Shapley enumeration
+        subsets_full = get_subsets(["a", "b"], h_order=5)
+        self.assertEqual(len(subsets_full), 4)
+        self.assertIn([], subsets_full)
 
 
 if __name__ == "__main__":

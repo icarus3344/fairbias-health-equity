@@ -1,17 +1,37 @@
 """Paper-level bias concentration metric (d_phi).
 
-Implements the bias concentration pipeline described in the reference paper:
+Implements the bias concentration pipeline of Tang, Lu & Li (2024),
+"Metric-Independent Mitigation of Unpredefined Bias in Machine
+Classification", Intell. Comput. 2024;3:Article 0083:
 
-1. Group-wise feature divergences ``df_S`` for every protected-attribute group pair.
-2. Subset values ``v(S) = sqrt(sum_{f in S} divergence_f^2)`` (baseline ``d1B`` aggregation).
-3. Shapley-truncated distance matrix over features plus an ``origin`` node,
-   ``dist(a, b) = mean_S |v(S + a) - v(S + b)|``.
-4. Metric MDS embedding with stress-elbow dimension selection, translated so the
-   origin node sits at (0, ..., 0).
-5. ``d_phi``: Euclidean distance of each feature embedding to the origin.
+1. Per-feature group-pair divergences ``g_m`` (Eq. 2): numerical
+   attributes use the distance between the group centroids after
+   min-max normalization (``num-a``); categorical attributes use the
+   mean absolute frequency gap across the K categories (``cat-a``).
+2. Set separating capability (Eq. 1, alpha = 2 RMS norm)::
 
-Reference implementations in the frozen baseline: ``eval.py`` (calculate_epsilon)
-and ``config.py`` (default divergence/scale/MDS parameters).
+       w_max(S) = sqrt( sum_{m in S} g_m^2 / |S| )
+
+   (the previous implementation omitted the ``/ |S|`` normalization).
+3. Sub-distance (Eq. 3)::
+
+       d_{Xc}(xa, xb) = | w_max(Xc + {xa}) - w_max(Xc + {xb}) |
+
+   aggregated over level-h exclusion contexts (Eq. 4): at level h,
+   ``Xc`` excludes any h attributes besides xa/xb, so
+   ``|Xc| = |X| - 2 - h``.  H therefore enumerates *near-full* contexts
+   (H = 1 keeps the full remaining set and the sets missing exactly one
+   attribute), not small subsets.  The origin distance (Eq. 5) is the
+   analogous mean over contexts of ``X \\ {xm}`` excluding up to h
+   attributes.  ``h_order >= |available|`` degrades to the full Shapley
+   enumeration of all subsets.
+4. Metric MDS embedding of the distance matrix with stress-elbow
+   dimension selection; the origin node is translated to (0, ..., 0).
+5. ``d_phi`` (Eq. 6): Euclidean distance of each attribute's embedding
+   coordinates to the origin.
+
+MDS failures are NOT masked: an embedding error raises instead of
+returning a fake all-zero (perfectly fair) d_phi vector.
 """
 
 from __future__ import annotations
@@ -26,17 +46,33 @@ from sklearn.manifold import MDS
 ORIGIN = "origin"
 
 
+def w_max(g_values: Sequence[float]) -> float:
+    """
+    Eq. (1) with alpha = 2: the RMS norm of the individual contributions.
+
+    ``w_max(S) = sqrt(sum_{m in S} g_m^2 / |S|)``; ``w_max(empty) = 0``.
+    """
+    arr = np.asarray(list(g_values), dtype=float)
+    if arr.size == 0:
+        return 0.0
+    return float(np.sqrt(np.sum(arr ** 2) / arr.size))
+
+
 def get_subsets(features: Sequence[str], h_order: int = 1) -> List[List[str]]:
     """
-    Generate low-order interaction subsets of size k in [1, H] (truncated Shapley orders).
+    Level-h exclusion contexts (Eq. 4/5): every subset obtained from
+    ``features`` by excluding at most ``h_order`` attributes.
 
-    Complexity is O(N^H) instead of the legacy O(2^N) high-order enumeration;
-    H is capped at 3 as a safety bound.
+    Level 0 keeps the full set, level 1 removes exactly one attribute,
+    and so on, so ``H = 1`` produces near-full contexts.  When
+    ``h_order >= len(features)`` this degenerates to the complete Shapley
+    enumeration of all subsets (including the empty set).
     """
     feats = list(features)
-    max_h = max(1, min(int(h_order), 3, len(feats)))
+    n = len(feats)
+    h = max(0, min(int(h_order), n))
     subsets: List[List[str]] = []
-    for k in range(1, max_h + 1):
+    for k in range(n - h, n + 1):
         for comb in combinations(feats, k):
             subsets.append(list(comb))
     return subsets
@@ -49,17 +85,21 @@ def compute_pairwise_divergences(
     num_attrs: List[str],
     num_method: str = "num-a",
     cat_method: str = "cat-a",
-    scale: str = "mean",
 ) -> pd.DataFrame:
     """
-    Compute per-feature divergence between every pair of protected groups.
+    Compute per-feature divergence ``g_m`` (Eq. 2) between every pair of
+    protected groups.
 
     Returns a DataFrame with features as index and one column per group pair
-    (keyed ``"{p}_{n}"``). Divergence definitions follow the frozen baseline:
+    (keyed ``"{p}_{n}"``):
 
-    - ``cat-a``: ``(1/K) * sum |prop_p - prop_n|`` over the union of categories.
-    - ``num-a``: absolute difference of group means after within-pair min-max
-      normalization of the feature.
+    - ``cat-a`` (Eq. 2, categorical): ``(1/K) * sum |N_k^p/N^p - N_k^n/N^n|``
+      over the union of categories (K categories, group-wise frequencies).
+    - ``num-a`` (Eq. 2, numerical): absolute difference of the group means
+      after within-pair min-max normalization of the feature.
+
+    No additional family scaling is applied: the paper applies Eq. (1)
+    directly to the raw ``g_m`` values.
     """
     o_col = "_prot_"
     df = pd.concat(
@@ -67,8 +107,6 @@ def compute_pairwise_divergences(
         axis=1,
     )
     groups = sorted(df[o_col].dropna().unique())
-    cate_set = set(cate_attrs)
-    num_set = set(num_attrs)
 
     columns: Dict[str, pd.Series] = {}
     for p, n in combinations(groups, 2):
@@ -115,18 +153,10 @@ def compute_pairwise_divergences(
             else:
                 raise ValueError(f"Unsupported cat divergence method: {cat_method}")
 
-        # Scale each divergence family separately (baseline 'mean' semantics)
-        num_series = pd.Series(num_diff, dtype="float64")
-        cat_series = pd.Series(cat_diff, dtype="float64")
-        if scale == "mean":
-            if not num_series.empty and float(num_series.mean()) > 1e-12:
-                num_series = num_series / float(num_series.mean())
-            if not cat_series.empty and float(cat_series.mean()) > 1e-12:
-                cat_series = cat_series / float(cat_series.mean())
-        elif scale != "none":
-            raise ValueError(f"Unsupported divergence scale: {scale}")
-
-        columns[f"{p}_{n}"] = pd.concat([num_series, cat_series])
+        columns[f"{p}_{n}"] = pd.concat([
+            pd.Series(num_diff, dtype="float64"),
+            pd.Series(cat_diff, dtype="float64"),
+        ])
 
     if not columns:
         return pd.DataFrame(index=list(X.columns))
@@ -144,11 +174,16 @@ def compute_shapley_distance_matrix(
     h_order: int = 1,
 ) -> Tuple[np.ndarray, List[str]]:
     """
-    Build the Shapley-truncated distance matrix over features plus the origin node.
+    Build the paper distance matrix (Eq. 3-5) over features plus the origin.
 
-    ``dist(a, b) = mean over pair-columns of mean over subsets S (|v(S+a) - v(S+b)|)``,
-    where subsets S range over the empty set and all subsets of the remaining
-    features of size <= h_order (subset values use the ``d1B`` norm).
+    ``dist(a, b) = mean over level-h exclusion contexts S of
+    |w_max(S + a) - w_max(S + b)|`` where S ranges over subsets of the
+    remaining features obtained by excluding at most ``h_order``
+    attributes (level 0..H exclusion, Eq. 4).  For the origin node the
+    contexts range over subsets of ``features \\ {m}`` (Eq. 5) and the
+    sub-distance is ``|w_max(S + m) - w_max(S)|``.  ``w_max`` is the RMS
+    norm of Eq. (1).  With multiple protected groups the per-pair
+    sub-distances are averaged (extension of the binary-o paper setting).
     """
     nodes = list(features) + [ORIGIN]
     n_nodes = len(nodes)
@@ -157,11 +192,21 @@ def compute_shapley_distance_matrix(
     if df_s.empty or df_s.shape[1] == 0:
         return dist, nodes
 
+    df_s_arr = df_s.to_numpy(dtype=float)
+    if not np.isfinite(df_s_arr).all():
+        # NaN divergences would be silently skipped by downstream sums and
+        # could masquerade as "no bias"; fail loudly instead.
+        raise ValueError(
+            "Pairwise divergence table contains NaN/Inf entries; refusing to "
+            "build the bias distance matrix"
+        )
+
     df_s_sq = df_s ** 2
     value_cache: Dict[Tuple[str, ...], np.ndarray] = {}
     zero_vec = np.zeros(df_s.shape[1])
 
     def subset_value(subset: Sequence[str]) -> np.ndarray:
+        """Eq. (1) applied per group-pair column: sqrt(sum g^2 / |S|)."""
         key = tuple(sorted(subset))
         if not key:
             return zero_vec
@@ -169,7 +214,9 @@ def compute_shapley_distance_matrix(
         if cached is None:
             rows = [c for c in key if c in df_s_sq.index]
             if rows:
-                cached = np.sqrt(df_s_sq.loc[rows].sum(axis=0).to_numpy(dtype=float))
+                cached = np.sqrt(
+                    df_s_sq.loc[rows].sum(axis=0).to_numpy(dtype=float) / len(rows)
+                )
             else:
                 cached = zero_vec
             value_cache[key] = cached
@@ -178,13 +225,24 @@ def compute_shapley_distance_matrix(
     for i in range(n_nodes):
         for j in range(i + 1, n_nodes):
             a, b = nodes[i], nodes[j]
-            available = [f for f in features if f != a and f != b]
-            subset_candidates: List[List[str]] = [[]] + get_subsets(available, h_order)
+            if a != ORIGIN and b != ORIGIN:
+                available = [f for f in features if f != a and f != b]
+            else:
+                m = a if b == ORIGIN else b
+                available = [f for f in features if f != m]
+
+            # Level 0..H exclusion contexts (near-full companion sets)
+            contexts = get_subsets(available, h_order)
 
             pair_means = []
-            for s in subset_candidates:
-                s1 = sorted(s + [a]) if a != ORIGIN else sorted(s)
-                s2 = sorted(s + [b]) if b != ORIGIN else sorted(s)
+            for s in contexts:
+                if b == ORIGIN or a == ORIGIN:
+                    m = a if b == ORIGIN else b
+                    s1 = list(s) + [m]
+                    s2 = list(s)
+                else:
+                    s1 = list(s) + [a]
+                    s2 = list(s) + [b]
                 diff = np.abs(subset_value(s1) - subset_value(s2))
                 pair_means.append(float(np.mean(diff)) if diff.size else 0.0)
 
@@ -245,13 +303,15 @@ def compute_bias_concentration(
     random_state: int = 0,
     num_method: str = "num-a",
     cat_method: str = "cat-a",
-    scale: str = "mean",
 ) -> Dict[str, float]:
     """
-    Compute d_phi (Euclidean distance to origin after metric MDS) for each feature.
+    Compute d_phi (Eq. 6: Euclidean distance to the origin after metric MDS)
+    for each feature.
 
-    Returns ``{feature: d_phi}``. Falls back to all-zero concentrations when the
-    embedding cannot be computed (e.g. degenerate zero distance matrix).
+    Returns ``{feature: d_phi}``.  A fully degenerate (all-zero) distance
+    matrix legitimately means no measurable bias and returns all zeros; any
+    MDS or input failure raises ``RuntimeError`` instead of being masked as
+    a zero-bias result.
     """
     features = list(X.columns)
     if not features:
@@ -259,14 +319,23 @@ def compute_bias_concentration(
 
     df_s = compute_pairwise_divergences(
         X, o_series, cate_attrs, num_attrs,
-        num_method=num_method, cat_method=cat_method, scale=scale,
+        num_method=num_method, cat_method=cat_method,
     )
     dist, nodes = compute_shapley_distance_matrix(df_s, features, h_order=h_order)
 
-    try:
-        if not np.any(dist > 0):
-            return {f: 0.0 for f in features}
+    if np.isnan(dist).any() or np.isinf(dist).any():
+        # NaN/Inf entries compare False against 0, so this check must run
+        # BEFORE the all-zero early return below (a NaN matrix would
+        # otherwise masquerade as "no bias").
+        raise ValueError(
+            "Bias distance matrix contains NaN/Inf entries; refusing to "
+            f"compute d_phi (features={len(features)})"
+        )
+    if not np.any(dist > 0):
+        # All group-pair divergences are exactly zero: no measurable bias.
+        return {f: 0.0 for f in features}
 
+    try:
         optimal_n = _find_optimal_mds_components(
             dist, mds_max_components, mds_slope_threshold, random_state
         )
@@ -280,12 +349,17 @@ def compute_bias_concentration(
             normalized_stress="auto",
         )
         pts = mds.fit_transform(dist)
-        # Translate so the origin node sits at (0, ..., 0)
-        pts = pts - pts[nodes.index(ORIGIN)]
-        d_phi = np.sqrt((pts ** 2).sum(axis=1))
-        return {node: float(d_phi[idx]) for idx, node in enumerate(nodes) if node != ORIGIN}
-    except Exception:
-        return {f: 0.0 for f in features}
+    except Exception as exc:
+        raise RuntimeError(
+            "MDS embedding of the bias-distance matrix failed; refusing to "
+            "fabricate a zero-bias d_phi vector "
+            f"(features={len(features)}, nodes={dist.shape[0]}): {exc!r}"
+        ) from exc
+
+    # Translate so the origin node sits at (0, ..., 0)
+    pts = pts - pts[nodes.index(ORIGIN)]
+    d_phi = np.sqrt((pts ** 2).sum(axis=1))
+    return {node: float(d_phi[idx]) for idx, node in enumerate(nodes) if node != ORIGIN}
 
 
 def compute_dphi_matrix(
@@ -299,7 +373,6 @@ def compute_dphi_matrix(
     random_state: int = 0,
     num_method: str = "num-a",
     cat_method: str = "cat-a",
-    scale: str = "mean",
 ) -> Dict[str, Dict[str, float]]:
     """Compute d_phi for every protected attribute column in O."""
     results: Dict[str, Dict[str, float]] = {}
@@ -320,6 +393,5 @@ def compute_dphi_matrix(
             random_state=random_state,
             num_method=num_method,
             cat_method=cat_method,
-            scale=scale,
         )
     return results

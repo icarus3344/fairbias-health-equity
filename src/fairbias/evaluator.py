@@ -113,9 +113,13 @@ class FairEvaluator:
         """
         Compute performance and group fairness metrics on the evaluation partition.
 
-        Fairness disparity definitions are ported from the frozen baseline ``eval.py``
-        (multi-class one-vs-rest formulations, averaged over group pairs). BNC/BPC are
-        score-based and use the predicted probability ``y_prob`` when available.
+        Fairness disparity definitions follow the reference paper (Eqs. 8-9)
+        and the frozen baseline ``eval.py`` (multi-class one-vs-rest
+        formulations, averaged over group pairs). SP is the Eq. (8)
+        positive-prediction rate gap; EO is the Eq. (9) sum
+        ``|TPR gap| + |FPR gap|`` (range [0, 2], NOT a max). BNC/BPC are
+        score-based and use the predicted probability ``y_prob`` when
+        available.
         """
         y_t = np.asarray(y_true, dtype=int).ravel()
         y_p = np.asarray(y_pred, dtype=int).ravel()
@@ -200,11 +204,27 @@ class FairEvaluator:
                     pair_vals.append(max_diff)
                 return float(np.mean(pair_vals)) if pair_vals else 0.0
 
+            def eo_gap() -> float:
+                """Paper Eq. (9): per one-vs-rest class, |TPR gap| + |FPR gap|
+                (binary case: ΔEO = |TPR gap| + |FPR gap|, range [0, 2]);
+                max over classes, averaged over group pairs."""
+                pair_vals = []
+                for g_a, g_b in combinations(list(stats.keys()), 2):
+                    max_sum = 0.0
+                    for c in all_classes:
+                        if c not in stats[g_a] or c not in stats[g_b]:
+                            continue
+                        tpr_diff = abs(stats[g_a][c]["TPR"] - stats[g_b][c]["TPR"])
+                        fpr_diff = abs(stats[g_a][c]["FPR"] - stats[g_b][c]["FPR"])
+                        max_sum = max(max_sum, tpr_diff + fpr_diff)
+                    pair_vals.append(max_sum)
+                return float(np.mean(pair_vals)) if pair_vals else 0.0
+
             tpr_gap = rate_gap("TPR")
             fpr_gap = rate_gap("FPR")
 
-            metrics["SP"][p_col] = rate_gap("PPOS")
-            metrics["EO"][p_col] = conditional_gap(("TPR", "FPR"))
+            metrics["SP"][p_col] = rate_gap("PPOS")  # Eq. (8)
+            metrics["EO"][p_col] = eo_gap()  # Eq. (9): |TPR gap| + |FPR gap|, range [0, 2]
             metrics["EOpp"][p_col] = tpr_gap
             metrics["CUAE"][p_col] = conditional_gap(("PPV", "NPV"))
             metrics["OAE"][p_col] = rate_gap("ACC")
@@ -266,7 +286,6 @@ class FairEvaluator:
             random_state=cfg.random_seed,
             num_method=cfg.eval_divergence_num,
             cat_method=cfg.eval_divergence_cat,
-            scale=cfg.eval_divergence_scale,
         )
 
     def compute_threshold(

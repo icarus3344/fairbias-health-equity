@@ -1,4 +1,12 @@
-"""Leakage-free feature transformation engine with chained category composition and polynomial power transforms."""
+"""Leakage-free feature transformation engine with chained category composition and polynomial power transforms.
+
+Drop semantics: the sentinel ``"dropped"`` records an explicit, auditable
+attribute exclusion (paper: merging the two categories of a binary
+attribute, or numerical overflow beyond numpy.float32, is equivalent to
+dropping the attribute).  A raw category mapping that merely collapses a
+feature to a constant is still rejected by ``check_transform_validity``;
+collapse must be represented through the recorded ``"dropped"`` state.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +16,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from sklearn.metrics import normalized_mutual_info_score
+
+# Paper overflow bound: transformed values beyond numpy.float32 are set
+# uniformly to 1, i.e. the attribute is dropped.
+FLOAT32_MAX = float(np.finfo(np.float32).max)
 
 
 def calculate_nmi_dict(X: pd.DataFrame, Y: pd.Series) -> Dict[str, float]:
@@ -57,6 +69,18 @@ def apply_power_transform(s: pd.Series, power: float) -> pd.Series:
     return np.sign(s_float) * (np.abs(s_float) ** float(power))
 
 
+def power_transform_overflows(s: pd.Series, power: float) -> bool:
+    """
+    Paper overflow rule: if the maximum absolute transformed value exceeds
+    numpy.float32 (≈3.4e38), the attribute's records are set uniformly to 1,
+    which is equivalent to dropping the attribute.
+    """
+    with np.errstate(over="ignore", invalid="ignore"):
+        transformed = apply_power_transform(s, power).abs()
+    arr = transformed.to_numpy(dtype=float)
+    return bool(np.any(np.isinf(arr)) or np.any(arr > FLOAT32_MAX))
+
+
 class FairTransform:
     """Transformation engine supporting simultaneous categorical rebinning and numerical scaling."""
 
@@ -80,6 +104,11 @@ class FairTransform:
     ) -> bool:
         """
         Validate that a candidate transform does not collapse feature variance or introduce NaNs.
+
+        ``change == "dropped"`` is always valid: it is the explicit, recorded
+        exclusion state.  A category ``dict`` whose mapping collapses the
+        feature to a constant is rejected here; such a collapse must instead
+        be requested explicitly as the recorded ``"dropped"`` state.
         """
         if attr not in df.columns:
             return False

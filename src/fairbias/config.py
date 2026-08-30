@@ -15,7 +15,9 @@ class FairBiasConfig:
     label_Y: str = "two_year_recid"
     label_O: tuple[str, ...] = ("sex",)
     
-    test_size: float = 0.3
+    # Paper split: training 64% / validation 16% / test 20% (Eq. "Implementation details")
+    test_size: float = 0.20
+    val_size: float = 0.16
     random_seed: int = 0
     stratify_split: bool = True
     
@@ -37,18 +39,19 @@ class FairBiasConfig:
     transform_x_max: float = 1e9
     
     adaptive_threshold_method: str = "kmeans_125"  # "kmeans_125" or "ratio"
-    h_order: int = 1  # Shapley truncation order (low-order combinations: k <= h_order)
+    h_order: int = 1  # Level-H exclusion order (Eq. 4/5): near-full companion contexts
 
-    # Paper-level d_phi computation (bias_metric)
+    # Paper-level d_phi computation (bias_metric, Eqs. 1-6)
     mds_max_components: int = 15
     mds_slope_threshold: float = 0.01
-    eval_divergence_num: str = "num-a"  # baseline default: group mean difference on normalized values
-    eval_divergence_cat: str = "cat-a"  # baseline default: normalized proportion L1 / K
-    eval_divergence_scale: str = "mean"  # baseline default scaling family
+    eval_divergence_num: str = "num-a"  # Eq. 2 numerical: centroid distance after min-max normalization
+    eval_divergence_cat: str = "cat-a"  # Eq. 2 categorical: mean absolute frequency gap over K categories
 
     # Mitigation acceptance criteria
     phi_threshold: float = 100.0  # NMI information-loss gate (baseline PARAMS_MAIN_THRESHOLD_PHI)
-    transform_poly_exponents: tuple = (1 / 3, 1 / 2, 2 / 3, 3.0, 5.0)
+    # Paper power grid: odd fractions 1/3, 1/5, 1/7 and odd integers 3, 5, 7
+    # (searched in increasing order until d_phi < epsilon)
+    transform_poly_exponents: tuple = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
     
     verbose: bool = False
     output_dir: str = "runs"
@@ -61,7 +64,8 @@ class FairBiasConfig:
             "dataset_path": "data_COMPAS.csv",
             "label_Y": "two_year_recid",
             "label_O": ("sex",),
-            "test_size": 0.3,
+            "test_size": 0.20,
+            "val_size": 0.16,
             "random_seed": 0,
             "classifier": "LR",
             "eval_norm": "min-max",
@@ -82,7 +86,8 @@ class FairBiasConfig:
             "dataset_path": "data_Credit_Card.csv",
             "label_Y": "default payment next month",
             "label_O": ("SEX",),
-            "test_size": 0.3,
+            "test_size": 0.20,
+            "val_size": 0.16,
             "random_seed": 0,
             "classifier": "LR",
             "eval_norm": "min-max",

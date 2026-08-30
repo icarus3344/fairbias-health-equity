@@ -25,22 +25,25 @@ def run_and_report(cfg_factory, name, max_iterations=3):
     res = run_fairbias_pipeline(cfg)
     elapsed = time.time() - t0
 
-    print(f"[init] ACC={res.initial_metrics['ACC']:.4f} "
+    print(f"[init] ACC={res.initial_metrics['ACC']:.4f} (validation) "
           f"EO={_eo_mean(res.initial_metrics):.4f} "
-          f"max_dphi={max(v for g in res.initial_epsilon.values() for v in g.values()):.4f}")
+          f"max_dphi={max(v for g in res.initial_epsilon.values() for v in g.values()):.4f} "
+          f"epsilon_threshold={res.epsilon_threshold:.4f}")
     for o_col, d in res.initial_epsilon.items():
         top = sorted(d.items(), key=lambda kv: -kv[1])[:3]
         print(f"  init d_phi top3 [{o_col}]: " + ", ".join(f"{k}={v:.4f}" for k, v in top))
 
     for it in res.iterations:
         sel = it["selected_attributes"]
+        dropped = [k for k, v in it["changed_dict"].items() if v == "dropped"]
         print(f"[iter {it['iteration']}] attr={sel.get('selected_attribute')} "
               f"O={sel.get('selected_label_O')} "
               f"max_dphi={it['max_epsilon']:.4f} avg_dphi={it['avg_epsilon']:.4f} "
-              f"ACC={it['metrics']['ACC']:.4f} EO={_eo_mean(it['metrics']):.4f}")
+              f"ACC={it['metrics']['ACC']:.4f} (validation) EO={_eo_mean(it['metrics']):.4f} "
+              f"dropped={dropped or '-'}")
 
     print(f"[pareto] best_iteration={res.best_iteration} reason={res.best_selection_reason}")
-    print(f"[final] ACC={res.final_metrics['ACC']:.4f} EO={_eo_mean(res.final_metrics):.4f}")
+    print(f"[final] ACC={res.final_metrics['ACC']:.4f} EO={_eo_mean(res.final_metrics):.4f} (test, single locked-in evaluation)")
     print(f"[time] {elapsed:.1f}s")
 
 

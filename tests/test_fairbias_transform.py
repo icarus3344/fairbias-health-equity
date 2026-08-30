@@ -46,6 +46,25 @@ class TestFairTransform(unittest.TestCase):
         )
         self.assertFalse(is_valid, "Collapsing a binary feature to a single category must be rejected")
 
+    def test_explicit_dropped_state_is_valid_and_recorded(self):
+        # Paper: merging the two categories of a binary attribute is
+        # equivalent to excluding the attribute.  Such an exclusion must be
+        # representable as an explicit, recorded "dropped" state -- unlike
+        # an accidental collapse through a raw mapping, which stays rejected
+        # (test_anti_collapse_rejects_single_constant_category).
+        df = pd.DataFrame({"bin_feat": [0, 1, 0, 1, 1, 0], "other": [1, 2, 3, 4, 5, 6]})
+
+        is_valid = self.transformer.check_transform_validity(
+            df, "bin_feat", "dropped", cate_attrs=["bin_feat"]
+        )
+        self.assertTrue(is_valid, "The explicit 'dropped' state must be accepted")
+
+        transformed = self.transformer.transform_data(
+            df, {"bin_feat": "dropped"}, cate_attrs=["bin_feat"]
+        )
+        self.assertNotIn("bin_feat", transformed.columns)
+        self.assertIn("other", transformed.columns)
+
     def test_polynomial_power_transform(self):
         df = pd.DataFrame({"num_feat": [-2.0, 0.0, 3.0, 4.0]})
         change = {"power": 2.0}

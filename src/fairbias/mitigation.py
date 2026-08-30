@@ -1,10 +1,29 @@
 """Bias Mitigation with paper-aligned acceptance criteria.
 
-Candidates are accepted only when they pass the NMI information-loss gate
-(baseline ``module_BM.py`` phi semantics) AND strictly decrease the feature's
-d_phi bias concentration. Categorical rebin candidates are searched on the
-currently transformed frame; numerical polynomial-power candidates are searched
-on the raw frame with absolute exponent replacement.
+Paper semantics (Tang, Lu & Li 2024, "Implementation details and data
+transforms"):
+
+- When the maximum d_phi exceeds the tolerance threshold epsilon, the
+  attribute with the LARGEST d_phi is transformed, and the transform
+  search for that attribute continues until its d_phi falls below
+  epsilon.  Acceptance is tied to the epsilon ball, not to an arbitrary
+  marginal decrease.
+- Numerical attributes: single sign-preserving polynomial terms at odd
+  fraction (1/3, 1/5, 1/7, ...) or odd integer (3, 5, 7, ...) powers,
+  searched in increasing order until d_phi < epsilon.  Values beyond
+  numpy.float32 are set uniformly to 1, which is equivalent to dropping
+  the attribute (recorded explicitly).
+- Categorical attributes: at each step the two (possibly already
+  rebinned) categories with the largest positive and smallest negative
+  frequency gap are rebinned into one; the search ends when d_phi <
+  epsilon.  Merging the two categories of a binary attribute is
+  equivalent to excluding the attribute and is recorded as an explicit,
+  auditable ``"dropped"`` state.  Accidental collapse through a raw
+  mapping is still rejected.
+
+The baseline NMI information-loss gate (``module_BM.py`` phi semantics)
+is retained as an engineering safety constraint on the accepted final
+state.
 """
 
 from __future__ import annotations
@@ -17,14 +36,17 @@ import numpy as np
 import pandas as pd
 
 from fairbias.evaluator import FairEvaluator
-from fairbias.transform import FairTransform, calculate_nmi_dict, compose_category_mapping
-
-# Minimal strict-improvement margin for d_phi acceptance
-_DPHI_TOL = 1e-12
+from fairbias.transform import (
+    FairTransform,
+    calculate_nmi_dict,
+    compose_category_mapping,
+    power_transform_overflows,
+)
 
 
 class FairBiasMitigation:
-    """Iterative feature rebinning / polynomial-power mitigation with evidence-checked acceptance."""
+    """Iterative feature rebinning / polynomial-power mitigation with
+    epsilon-ball acceptance criteria (paper semantics)."""
 
     def __init__(
         self,
@@ -35,7 +57,7 @@ class FairBiasMitigation:
         num_attrs: List[str],
         max_search_candidates: int = 5,
         phi_threshold: float = 100.0,
-        poly_exponents: Tuple[float, ...] = (1 / 3, 1 / 2, 2 / 3, 3.0, 5.0),
+        poly_exponents: Tuple[float, ...] = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0),
     ):
         self.evaluator = evaluator
         self.transformer = transformer
@@ -44,7 +66,7 @@ class FairBiasMitigation:
         self.num_attrs = num_attrs
         self.max_search_candidates = max_search_candidates
         self.phi_threshold = float(phi_threshold)
-        self.poly_exponents = tuple(float(p) for p in poly_exponents)
+        self.poly_exponents = tuple(sorted(float(p) for p in poly_exponents))
         self.failed_attributes: set[str] = set()
 
     def find_ranked_epsilon_attributes(
@@ -67,6 +89,10 @@ class FairBiasMitigation:
     ) -> Optional[Dict[Any, Any]]:
         """
         Compute category rebinning pair using exact sample proportion differences.
+
+        Paper semantics: the two categories with the largest positive and
+        smallest negative frequency gap between the protected groups are
+        rebinned into one new category.
 
         Uses df.sum() (total sample count in group) as denominator rather than len(df) (category count).
         """
@@ -125,47 +151,193 @@ class FairBiasMitigation:
             return diff_candidates[zorder]["change"]
         return diff_candidates[0]["change"]
 
-    def _build_candidates(
+    # ------------------------------------------------------------------
+    # Acceptance helpers
+    # ------------------------------------------------------------------
+
+    def _nmi_gate_ok(
         self,
+        transformed_df: pd.DataFrame,
+        Y: pd.Series,
+        nmi_org: Dict[str, float],
         attr: str,
-        label_O: str,
+    ) -> bool:
+        """Baseline NMI information-loss gate on the accepted final state."""
+        nmi_new = calculate_nmi_dict(transformed_df, Y)
+        nmi_before = float(nmi_org.get(attr, 1e-6))
+        nmi_after = float(nmi_new.get(attr, 0.0))
+        phi_loss = (nmi_before - nmi_after) / (nmi_before + 1e-10)
+        return phi_loss <= self.phi_threshold
+
+    def _epsilon_of(
+        self, candidate_df: pd.DataFrame, O: pd.DataFrame, label_O: str, attr: str
+    ) -> Optional[float]:
+        """Recompute d_phi for `attr`; a dropped attribute has d_phi = 0."""
+        if attr not in candidate_df.columns:
+            return 0.0
+        eps_new = self.evaluator.calculate_epsilon(
+            candidate_df, O, self.cate_attrs, self.num_attrs
+        )
+        return eps_new.get(label_O, {}).get(attr)
+
+    def _make_candidate(
+        self,
         X: pd.DataFrame,
-        X_search: pd.DataFrame,
-        O: pd.DataFrame,
         changed_dict: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
-        """Build the ordered candidate changed_dict list for one attribute."""
-        candidates: List[Dict[str, Any]] = []
+        attr: str,
+        change: Any,
+        Y: pd.Series,
+        O: pd.DataFrame,
+        nmi_org: Dict[str, float],
+        label_O: str,
+        epsilon_threshold: float,
+    ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any], float]]:
+        """Validate + gate + epsilon-check one candidate transform.
 
-        if attr in self.cate_attrs or not pd.api.types.is_numeric_dtype(X[attr]):
-            existing = changed_dict.get(attr)
-            existing_map = existing if isinstance(existing, dict) else {}
-            for zorder in range(self.max_search_candidates):
-                rebin_change = self.compute_r1_rebin(
-                    df_feature=X_search[attr],
-                    df_prot=O[label_O],
-                    zorder=zorder,
+        Returns (transformed_df, temp_changed, new_dphi) when the candidate
+        passes the structural validity check, the NMI information-loss gate,
+        and brings the attribute's d_phi below `epsilon_threshold`.
+        """
+        if not self.transformer.check_transform_validity(
+            X, attr, change, self.num_attrs, self.cate_attrs
+        ):
+            return None
+
+        temp_changed = copy.deepcopy(changed_dict)
+        temp_changed[attr] = change
+        candidate_df = self.transformer.transform_data(
+            X, temp_changed, self.num_attrs, self.cate_attrs
+        )
+
+        new_dphi = self._epsilon_of(candidate_df, O, label_O, attr)
+        if new_dphi is None:
+            return None
+        if new_dphi >= epsilon_threshold:
+            return None
+        if not self._nmi_gate_ok(candidate_df, Y, nmi_org, attr):
+            return None
+        return candidate_df, temp_changed, float(new_dphi)
+
+    # ------------------------------------------------------------------
+    # Per-attribute transform searches (paper semantics)
+    # ------------------------------------------------------------------
+
+    def _search_categorical(
+        self,
+        X: pd.DataFrame,
+        Y: pd.Series,
+        O: pd.DataFrame,
+        nmi_org: Dict[str, float],
+        changed_dict: Dict[str, Any],
+        label_O: str,
+        attr: str,
+        epsilon_threshold: float,
+    ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
+        """Iteratively rebin the extreme frequency-gap category pair until
+        the attribute's d_phi < epsilon (paper categorical transform).
+
+        Merging down to a single category (the binary-attribute terminal
+        merge) is recorded as an explicit, auditable ``"dropped"`` state.
+        """
+        existing = changed_dict.get(attr)
+        existing_map = dict(existing) if isinstance(existing, dict) else {}
+
+        n_categories = int(X[attr].nunique())
+        max_merges = max(1, n_categories - 1)
+
+        for _ in range(max_merges):
+            # Current (already rebinned) attribute series
+            if existing_map:
+                s_work = self.transformer.transform_series(
+                    X[attr], attr, existing_map, is_categorical=True
                 )
-                if not rebin_change:
-                    continue
-                # Chained composition keeps earlier merges consistent with new ones
-                composed = compose_category_mapping(existing_map, rebin_change)
-                if composed == existing_map:
-                    continue
-                temp_changed = copy.deepcopy(changed_dict)
-                temp_changed[attr] = composed
-                candidates.append(temp_changed)
-        else:
-            existing = changed_dict.get(attr)
-            current_power = float(existing.get("power", 1.0)) if isinstance(existing, dict) else 1.0
-            for power in self.poly_exponents:
-                if abs(power - current_power) < 1e-12 or abs(power - 1.0) < 1e-12:
-                    continue
-                temp_changed = copy.deepcopy(changed_dict)
-                temp_changed[attr] = {"power": power}
-                candidates.append(temp_changed)
+            else:
+                s_work = X[attr]
+            if s_work.nunique() <= 1:
+                break
 
-        return candidates
+            rebin = self.compute_r1_rebin(s_work, O[label_O], zorder=0)
+            if not rebin:
+                break
+
+            composed = compose_category_mapping(existing_map, rebin)
+            mapped = self.transformer.transform_series(
+                X[attr], attr, composed, is_categorical=True
+            )
+
+            if mapped.nunique() <= 1:
+                # Terminal merge: every category collapsed into one.  Paper:
+                # merging the two categories of a binary attribute is
+                # equivalent to excluding the attribute.  Recorded explicitly.
+                accepted = self._make_candidate(
+                    X, changed_dict, attr, "dropped",
+                    Y, O, nmi_org, label_O, epsilon_threshold,
+                )
+                if accepted is not None:
+                    candidate_df, temp_changed, _ = accepted
+                    return candidate_df, temp_changed
+                return None  # drop rejected by the information-loss gate
+
+            accepted = self._make_candidate(
+                X, changed_dict, attr, composed,
+                Y, O, nmi_org, label_O, epsilon_threshold,
+            )
+            if accepted is not None:
+                candidate_df, temp_changed, _ = accepted
+                return candidate_df, temp_changed
+
+            # Below-epsilon not yet met: keep merging (search continues)
+            existing_map = composed
+
+        return None
+
+    def _search_numerical(
+        self,
+        X: pd.DataFrame,
+        Y: pd.Series,
+        O: pd.DataFrame,
+        nmi_org: Dict[str, float],
+        changed_dict: Dict[str, Any],
+        label_O: str,
+        attr: str,
+        epsilon_threshold: float,
+    ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
+        """Search single sign-preserving polynomial powers in increasing
+        order until the attribute's d_phi < epsilon (paper numerical
+        transform).  Powers overflowing numpy.float32 map to the explicit
+        ``"dropped"`` state."""
+        existing = changed_dict.get(attr)
+        current_power = float(existing.get("power", 1.0)) if isinstance(existing, dict) else 1.0
+
+        for power in self.poly_exponents:
+            if abs(power - current_power) < 1e-12 or abs(power - 1.0) < 1e-12:
+                continue
+
+            if power_transform_overflows(X[attr], power):
+                # Paper: values beyond numpy.float32 are set uniformly to 1,
+                # which is equivalent to dropping the attribute.
+                accepted = self._make_candidate(
+                    X, changed_dict, attr, "dropped",
+                    Y, O, nmi_org, label_O, epsilon_threshold,
+                )
+                if accepted is not None:
+                    candidate_df, temp_changed, _ = accepted
+                    return candidate_df, temp_changed
+                continue
+
+            accepted = self._make_candidate(
+                X, changed_dict, attr, {"power": power},
+                Y, O, nmi_org, label_O, epsilon_threshold,
+            )
+            if accepted is not None:
+                candidate_df, temp_changed, _ = accepted
+                return candidate_df, temp_changed
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Main step
+    # ------------------------------------------------------------------
 
     def mitigate_step(
         self,
@@ -175,79 +347,63 @@ class FairBiasMitigation:
         nmi_org: Dict[str, float],
         changed_dict: Dict[str, Any],
         current_epsilon: Dict[str, Dict[str, float]],
+        epsilon_threshold: float,
         X_search: Optional[pd.DataFrame] = None,
     ) -> Tuple[pd.DataFrame, Dict[str, Any], Optional[str], Optional[str]]:
         """
-        Execute one bias mitigation step.
+        Execute one bias mitigation step (paper greedy semantics).
 
-        Acceptance criteria (baseline ``module_BM.py`` semantics):
-        1. structural validity of the candidate transform;
-        2. NMI information-loss gate: phi = (nmi_org - nmi_new) / nmi_org <= phi_threshold;
-        3. the feature's d_phi must strictly decrease after the transform.
+        The attribute with the largest d_phi is selected and transforms are
+        searched for it until its d_phi falls below ``epsilon_threshold``.
+        Attributes already inside the epsilon ball are left untouched.  If
+        the search for an attribute cannot reach the epsilon ball, the
+        attribute is recorded as failed and the next-ranked attribute is
+        considered.
 
         Parameters
         ----------
         X: raw training frame (the frame ``changed_dict`` is applied to).
-        X_search: currently transformed training frame used for rebin search
-            (falls back to ``X`` when omitted).
+        epsilon_threshold: the paper bias tolerance epsilon.
+        X_search: kept for API compatibility; rebin gaps are computed on the
+            raw frame composed with the working mapping, which reproduces the
+            transformed search space exactly.
         """
-        if X_search is None:
-            X_search = X
-
         ranked_candidates = self.find_ranked_epsilon_attributes(current_epsilon)
         if not ranked_candidates:
-            return self.transformer.transform_data(X, changed_dict, self.num_attrs, self.cate_attrs), changed_dict, None, None
+            return self._no_op(X, changed_dict)
 
         for eps, selected_label_O, selected_attribute in ranked_candidates:
+            if eps <= epsilon_threshold:
+                # Every remaining attribute already sits inside the epsilon ball
+                break
             if selected_attribute not in X.columns:
                 continue
 
-            current_dphi = current_epsilon.get(selected_label_O, {}).get(selected_attribute)
-            candidate_dicts = self._build_candidates(
-                selected_attribute, selected_label_O, X, X_search, O, changed_dict
-            )
-
-            for temp_changed in candidate_dicts:
-                # 1. Structural validity
-                if not self.transformer.check_transform_validity(
-                    X,
-                    selected_attribute,
-                    temp_changed[selected_attribute],
-                    self.num_attrs,
-                    self.cate_attrs,
-                ):
-                    continue
-
-                transformed_candidate_df = self.transformer.transform_data(
-                    X, temp_changed, self.num_attrs, self.cate_attrs
+            if (
+                selected_attribute in self.cate_attrs
+                or not pd.api.types.is_numeric_dtype(X[selected_attribute])
+            ):
+                accepted = self._search_categorical(
+                    X, Y, O, nmi_org, changed_dict,
+                    selected_label_O, selected_attribute, epsilon_threshold,
+                )
+            else:
+                accepted = self._search_numerical(
+                    X, Y, O, nmi_org, changed_dict,
+                    selected_label_O, selected_attribute, epsilon_threshold,
                 )
 
-                # 2. NMI information-loss gate
-                nmi_new = calculate_nmi_dict(transformed_candidate_df, Y)
-                nmi_before = float(nmi_org.get(selected_attribute, 1e-6))
-                nmi_after = float(nmi_new.get(selected_attribute, 1e-6))
-                phi_loss = (nmi_before - nmi_after) / (nmi_before + 1e-10)
-                if phi_loss > self.phi_threshold:
-                    continue
+            if accepted is not None:
+                candidate_df, temp_changed = accepted
+                return candidate_df, temp_changed, selected_label_O, selected_attribute
 
-                # 3. d_phi must strictly decrease
-                eps_new = self.evaluator.calculate_epsilon(
-                    transformed_candidate_df, O, self.cate_attrs, self.num_attrs
-                )
-                new_dphi = eps_new.get(selected_label_O, {}).get(selected_attribute)
-                if current_dphi is None or new_dphi is None:
-                    continue
-                if new_dphi < current_dphi - _DPHI_TOL:
-                    return (
-                        transformed_candidate_df,
-                        temp_changed,
-                        selected_label_O,
-                        selected_attribute,
-                    )
-
-            # All candidates for this attribute failed to improve d_phi
+            # The transform search could not bring this attribute below epsilon
             self.failed_attributes.add(selected_attribute)
 
-        # Fallback: return current state without modifications
+        return self._no_op(X, changed_dict)
+
+    def _no_op(
+        self, X: pd.DataFrame, changed_dict: Dict[str, Any]
+    ) -> Tuple[pd.DataFrame, Dict[str, Any], Optional[str], Optional[str]]:
         current_df = self.transformer.transform_data(X, changed_dict, self.num_attrs, self.cate_attrs)
         return current_df, changed_dict, None, None

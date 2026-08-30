@@ -100,7 +100,8 @@ class FairAccuracyEnhancement:
             if target_attr in temp_changed and isinstance(temp_changed[target_attr], dict):
                 base_power = float(temp_changed[target_attr].get("power", 1.0))
             chosen_power = None
-            for power in (1 / 3, 1 / 2, 2 / 3, 3.0, 5.0):
+            # Paper power grid: odd fractions and odd integers, increasing order
+            for power in (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0):
                 if abs(power - base_power) < 1e-12:
                     continue
                 candidate_change = {"power": power}
