@@ -1,7 +1,18 @@
 """Empirical validation script for the reworked FairBias pipeline.
 
-Runs run_fairbias_pipeline on COMPAS and Credit, printing per-iteration:
-selected feature, max d_phi, ACC and EO, plus best iteration selection.
+Runs run_fairbias_pipeline on COMPAS and Credit in BOTH algorithm modes
+(Round 4.1):
+
+- ``official_unweighted_reproduction``: MDS fixed dim=2, official
+  interleaved power stream [3, 1/3, ..., 1999, 1/1999] (order
+  preserved), NO iteration budget, NO Pareto rollback — the greedy
+  termination state is the sole reported state.
+- ``engineering_bounded``: automatic MDS dim, six-value grid, bounded
+  iterations, dual terminal states (configured greedy terminal + Pareto
+  checkpoint).
+
+Prints per-iteration: selected feature, max d_phi, ACC and EO, plus
+termination records and per-mode terminal-state metrics.
 """
 
 import json
@@ -19,9 +30,14 @@ def _eo_mean(metrics):
     return float(eo)
 
 
-def run_and_report(cfg_factory, name, max_iterations=3):
-    cfg = cfg_factory(max_iterations=max_iterations, output_dir="runs/rework_empirical")
-    print(f"\n===== {name} (seed={cfg.random_seed}, iterations={max_iterations}) =====")
+def run_and_report(cfg_factory, name, max_iterations=3, mode="engineering"):
+    cfg = cfg_factory(
+        max_iterations=max_iterations,
+        output_dir="runs/rework_empirical",
+        mode=mode,
+    )
+    print(f"\n===== {name} [mode={cfg.algorithm_mode}] "
+          f"(seed={cfg.random_seed}) =====")
     t0 = time.time()
     res = run_fairbias_pipeline(cfg)
     elapsed = time.time() - t0
@@ -59,14 +75,21 @@ def run_and_report(cfg_factory, name, max_iterations=3):
           f"terminal_max_dphi={res.termination['terminal_max_dphi']:.7f} "
           f"epsilon={res.termination['epsilon_threshold']:.7f}")
 
-    print(f"[pareto_engineering] best_iteration={res.best_iteration} "
-          f"reason={res.best_selection_reason}")
-    print(f"[paper_strict] ACC={res.paper_strict_metrics['ACC']:.4f} "
-          f"EO={_eo_mean(res.paper_strict_metrics):.4f} "
-          f"(test, greedy termination state of the paper algorithm)")
-    print(f"[pareto_engineering] ACC={res.pareto_engineering_metrics['ACC']:.4f} "
-          f"EO={_eo_mean(res.pareto_engineering_metrics):.4f} "
-          f"(test, ENGINEERING Pareto checkpoint — not the paper output)")
+    if res.algorithm_mode == "official_unweighted_reproduction":
+        print(f"[official_unweighted_reproduction] ACC={res.greedy_terminal_metrics['ACC']:.4f} "
+              f"EO={_eo_mean(res.greedy_terminal_metrics):.4f} "
+              f"(test, greedy termination state — sole reported state, "
+              f"no Pareto rollback in this mode)")
+    else:
+        print(f"[pareto_engineering] best_iteration={res.best_iteration} "
+              f"reason={res.best_selection_reason}")
+        print(f"[configured_greedy_terminal] ACC={res.greedy_terminal_metrics['ACC']:.4f} "
+              f"EO={_eo_mean(res.greedy_terminal_metrics):.4f} "
+              f"(test, configured greedy termination state — no "
+              f"paper-alignment claim)")
+        print(f"[pareto_engineering] ACC={res.pareto_engineering_metrics['ACC']:.4f} "
+              f"EO={_eo_mean(res.pareto_engineering_metrics):.4f} "
+              f"(test, ENGINEERING Pareto checkpoint — not the paper output)")
     if res.non_convergence is not None:
         print(f"[non-convergence] attribute={res.non_convergence['attribute']} "
               f"O={res.non_convergence['label_O']} "
@@ -79,5 +102,6 @@ def run_and_report(cfg_factory, name, max_iterations=3):
 
 
 if __name__ == "__main__":
-    run_and_report(FairBiasConfig.compas_default, "COMPAS")
-    run_and_report(FairBiasConfig.credit_default, "Credit")
+    for mode in ("official", "engineering"):
+        run_and_report(FairBiasConfig.compas_default, "COMPAS", mode=mode)
+        run_and_report(FairBiasConfig.credit_default, "Credit", mode=mode)

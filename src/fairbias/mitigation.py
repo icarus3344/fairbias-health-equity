@@ -63,6 +63,7 @@ class FairBiasMitigation:
         phi_threshold: float = 100.0,
         poly_exponents: Tuple[float, ...] = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0),
         failed_attribute_mode: str = "stop",
+        preserve_exponent_order: bool = False,
     ):
         self.evaluator = evaluator
         self.transformer = transformer
@@ -71,7 +72,15 @@ class FairBiasMitigation:
         self.num_attrs = num_attrs
         self.max_search_candidates = max_search_candidates
         self.phi_threshold = float(phi_threshold)
-        self.poly_exponents = tuple(sorted(float(p) for p in poly_exponents))
+        # Round 4.1: the power stream is searched IN THE ORDER GIVEN when
+        # ``preserve_exponent_order`` is True (official mode: the official
+        # implementation searches the interleaved stream [3, 1/3, 5, 1/5,
+        # ...] in that order, which differs from an ascending sort).  The
+        # engineering mode keeps the legacy ascending sort.
+        if preserve_exponent_order:
+            self.poly_exponents = tuple(float(p) for p in poly_exponents)
+        else:
+            self.poly_exponents = tuple(sorted(float(p) for p in poly_exponents))
 
         if failed_attribute_mode not in ("stop", "next"):
             raise ValueError(

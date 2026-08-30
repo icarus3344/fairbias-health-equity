@@ -32,18 +32,53 @@ Classification", Intell. Comput. 2024;3:Article 0083:
 
 MDS failures are NOT masked: an embedding error raises instead of
 returning a fake all-zero (perfectly fair) d_phi vector.
+
+``mds_fixed_components`` (Round 4.1): when not None, the MDS embedding
+dimension is FIXED at that value and the stress-elbow selection is
+skipped entirely — this is the ``official_unweighted_reproduction``
+behavior (the official implementation fixes the embedding dimension at
+2).  None keeps the automatic elbow selection (engineering mode).
+
+SURVEY-WEIGHTED EXTENSION POINT (pre-declared, Gate D scope): the ONLY
+planned deviation for the survey-weighted FairBias variant replaces the
+two empirical group statistics feeding Eq. (2) —
+
+    mu_hat_{m,g}      = sum_{i: O_i=g} w_i * X_im / sum_{i: O_i=g} w_i
+    p_hat_{m,k,g}     = sum_{i: O_i=g} w_i * 1(X_im = k) / sum_{i: O_i=g} w_i
+
+— inside ``compute_pairwise_divergences`` (numerical group means and
+categorical group frequencies).  The distance matrix, MDS embedding,
+attribute ranking, and greedy transform search remain UNCHANGED.  With
+equal weights (w_i = const) both estimators must degenerate EXACTLY to
+the unweighted statistics implemented here; that degeneracy is a
+mandatory unit test of the extension (see the round-4.1 report).
 """
 
 from __future__ import annotations
 
 from itertools import combinations
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
 from sklearn.manifold import MDS
 
 ORIGIN = "origin"
+
+# Pre-declared survey-weighted extension contract (see module docstring).
+# Pinned as a module constant so the declaration itself is testable:
+# any weighted implementation must (a) only replace the group statistics
+# below, and (b) degenerate exactly to the unweighted statistics at equal
+# weights.
+SURVEY_WEIGHTED_EXTENSION_DECLARATION = (
+    "Survey-weighted extension (Gate D, pre-declared): replace ONLY the "
+    "empirical group statistics in compute_pairwise_divergences with "
+    "weighted versions mu_hat_mg = sum(w_i * X_im)/sum(w_i) over i:O_i=g "
+    "and p_hat_mkg = sum(w_i * 1(X_im=k))/sum(w_i) over i:O_i=g; keep the "
+    "distance matrix, MDS, ranking, and greedy search unchanged; equal "
+    "weights must degenerate EXACTLY to the unweighted statistics "
+    "(mandatory unit test)."
+)
 
 
 def w_max(g_values: Sequence[float]) -> float:
@@ -100,6 +135,11 @@ def compute_pairwise_divergences(
 
     No additional family scaling is applied: the paper applies Eq. (1)
     directly to the raw ``g_m`` values.
+
+    SURVEY-WEIGHTED EXTENSION POINT: the group means (``p_vals.mean()`` /
+    ``n_vals.mean()``) and the group frequencies (``p_counts / p_counts.sum()``
+    etc.) are exactly the two statistics the pre-declared weighted
+    extension replaces (see ``SURVEY_WEIGHTED_EXTENSION_DECLARATION``).
     """
     o_col = "_prot_"
     df = pd.concat(
@@ -303,6 +343,7 @@ def compute_bias_concentration(
     random_state: int = 0,
     num_method: str = "num-a",
     cat_method: str = "cat-a",
+    mds_fixed_components: Optional[int] = None,
 ) -> Dict[str, float]:
     """
     Compute d_phi (Eq. 6: Euclidean distance to the origin after metric MDS)
@@ -312,6 +353,9 @@ def compute_bias_concentration(
     matrix legitimately means no measurable bias and returns all zeros; any
     MDS or input failure raises ``RuntimeError`` instead of being masked as
     a zero-bias result.
+
+    ``mds_fixed_components``: when not None, fix the embedding dimension
+    and skip the stress-elbow selection (official mode behavior).
     """
     features = list(X.columns)
     if not features:
@@ -336,9 +380,13 @@ def compute_bias_concentration(
         return {f: 0.0 for f in features}
 
     try:
-        optimal_n = _find_optimal_mds_components(
-            dist, mds_max_components, mds_slope_threshold, random_state
-        )
+        if mds_fixed_components is not None:
+            # Official mode: fixed embedding dimension, NO elbow search.
+            optimal_n = int(mds_fixed_components)
+        else:
+            optimal_n = _find_optimal_mds_components(
+                dist, mds_max_components, mds_slope_threshold, random_state
+            )
         mds = MDS(
             n_components=optimal_n,
             dissimilarity="precomputed",
@@ -373,6 +421,7 @@ def compute_dphi_matrix(
     random_state: int = 0,
     num_method: str = "num-a",
     cat_method: str = "cat-a",
+    mds_fixed_components: Optional[int] = None,
 ) -> Dict[str, Dict[str, float]]:
     """Compute d_phi for every protected attribute column in O."""
     results: Dict[str, Dict[str, float]] = {}
@@ -393,5 +442,6 @@ def compute_dphi_matrix(
             random_state=random_state,
             num_method=num_method,
             cat_method=cat_method,
+            mds_fixed_components=mds_fixed_components,
         )
     return results

@@ -270,6 +270,8 @@ class FairEvaluator:
         Pipeline: group-pair feature divergences -> Shapley-truncated (H-order)
         distance matrix with an origin node -> metric MDS embedding -> Euclidean
         distance of each feature to the origin. See ``fairbias.bias_metric``.
+        When the config fixes ``mds_fixed_components`` (official mode), the
+        embedding dimension is fixed and the stress-elbow search is skipped.
         """
         cate_list = list(self.cate_attrs) if cate_attrs is None else list(cate_attrs)
         num_list = list(self.num_attrs) if num_attrs is None else list(num_attrs)
@@ -286,6 +288,7 @@ class FairEvaluator:
             random_state=cfg.random_seed,
             num_method=cfg.eval_divergence_num,
             cat_method=cfg.eval_divergence_cat,
+            mds_fixed_components=cfg.mds_fixed_components,
         )
 
     def compute_threshold(

@@ -65,6 +65,33 @@ class TestCleanCheckout(unittest.TestCase):
             ),
         )
 
+    def test_golden_fixture_files_are_tracked(self):
+        """Round-4.1 P0 regression guard: test fixtures must be TRACKED.
+
+        The round-4 commit tracked ``PROVENANCE.json`` but left
+        ``distance_matrix_step_0.csv`` untracked — the MDS golden tests
+        passed on the workspace (where the file happened to exist) and
+        failed with FileNotFoundError on a clean checkout.  Files under
+        ``tests/fixtures/`` that exist in the workspace MUST therefore be
+        tracked in the index/HEAD.
+        """
+        fixtures_dir = _REPO_ROOT / "tests" / "fixtures"
+        result = _git(["ls-files", "--", "tests/fixtures"])
+        tracked = set(result.stdout.splitlines())
+        on_disk = {
+            str(p.relative_to(_REPO_ROOT))
+            for p in fixtures_dir.rglob("*")
+            if p.is_file()
+        }
+        untracked = on_disk - tracked
+        self.assertEqual(
+            untracked, set(),
+            msg=(
+                "test fixture files present in the workspace but NOT tracked "
+                f"in Git (clean checkouts will fail): {sorted(untracked)}"
+            ),
+        )
+
     def test_import_fairbias_from_head_archive(self):
         """Import the full runtime from an archive of HEAD (no workspace files).
 

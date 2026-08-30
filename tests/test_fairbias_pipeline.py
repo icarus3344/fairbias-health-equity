@@ -34,8 +34,9 @@ class TestFairBiasPipeline(unittest.TestCase):
 
         # Check result object fields
         self.assertIsNotNone(res.run_id)
+        self.assertEqual(res.algorithm_mode, "engineering_bounded")
         self.assertIn("ACC", res.initial_metrics)
-        self.assertIn("ACC", res.paper_strict_metrics)
+        self.assertIn("ACC", res.greedy_terminal_metrics)
         self.assertIn("ACC", res.pareto_engineering_metrics)
         self.assertGreaterEqual(res.best_iteration, 0)
         self.assertLessEqual(res.best_iteration, 3)
@@ -58,13 +59,22 @@ class TestFairBiasPipeline(unittest.TestCase):
             payload = json.load(f)
         self.assertEqual(payload["selection_partition"], "validation")
         self.assertEqual(payload["final_evaluation_partition"], "test")
-        # The two terminal states must be reported SEPARATELY — the merged
-        # single ``final_results`` key must no longer exist.
+        self.assertEqual(payload["algorithm_mode"], "engineering_bounded")
+        # The terminal states must be reported SEPARATELY — the merged
+        # single ``final_results`` key must no longer exist, and the
+        # engineering greedy terminal state must NOT carry a paper_strict
+        # name (round-4.1 rename: configured_greedy_terminal).
         self.assertNotIn("final_results", payload)
-        self.assertIn("final_results_paper_strict", payload)
+        self.assertNotIn("final_results_paper_strict", payload)
+        self.assertIn("final_results_configured_greedy_terminal", payload)
         self.assertIn("final_results_pareto_engineering", payload)
         self.assertEqual(
-            payload["final_results_paper_strict"]["metrics_partition"], "test"
+            payload["final_states"],
+            ["configured_greedy_terminal", "pareto_engineering"],
+        )
+        self.assertEqual(
+            payload["final_results_configured_greedy_terminal"]["metrics_partition"],
+            "test",
         )
         self.assertEqual(
             payload["final_results_pareto_engineering"]["metrics_partition"], "test"
@@ -106,9 +116,10 @@ class TestFairBiasPipeline(unittest.TestCase):
         termination = payload["termination"]
         for key in (
             "converged", "termination_reason", "terminal_iteration",
-            "terminal_max_dphi", "epsilon_threshold",
+            "terminal_max_dphi", "epsilon_threshold", "algorithm_mode",
         ):
             self.assertIn(key, termination)
+        self.assertEqual(termination["algorithm_mode"], "engineering_bounded")
         self.assertIn(
             termination["termination_reason"],
             (
@@ -118,9 +129,10 @@ class TestFairBiasPipeline(unittest.TestCase):
             ),
         )
 
-    def test_paper_strict_state_is_greedy_terminal_state(self):
-        # paper_strict must be the greedy loop's TERMINATION state (last
-        # accepted transform), never a validation-Pareto rollback of it.
+    def test_greedy_terminal_state_is_greedy_terminal_state(self):
+        # The greedy terminal state must be the greedy loop's TERMINATION
+        # state (last accepted transform), never a validation-Pareto
+        # rollback of it.
         config = FairBiasConfig.compas_default(
             max_iterations=5,
             output_dir=self.test_output_dir,
@@ -131,9 +143,9 @@ class TestFairBiasPipeline(unittest.TestCase):
         self.assertGreater(len(res.iterations), 0)
         last_iteration = res.iterations[-1]
         self.assertEqual(
-            res.paper_strict_changed_dict,
+            res.greedy_terminal_changed_dict,
             last_iteration["changed_dict"],
-            "paper_strict state must equal the last ACCEPTED iteration state",
+            "greedy terminal state must equal the last ACCEPTED iteration state",
         )
         self.assertEqual(
             res.termination["terminal_iteration"],
@@ -167,9 +179,10 @@ class TestFairBiasPipeline(unittest.TestCase):
             res.termination["epsilon_threshold"],
             "budget-exhausted run must still be OUTSIDE the epsilon ball",
         )
-        # paper_strict still reports the budget-exhausted terminal state
-        # (iteration 3), NOT the converged iteration 4 that never ran.
-        self.assertEqual(res.paper_strict_changed_dict, res.iterations[-1]["changed_dict"])
+        # The greedy terminal state still reports the budget-exhausted
+        # terminal state (iteration 3), NOT the converged iteration 4 that
+        # never ran.
+        self.assertEqual(res.greedy_terminal_changed_dict, res.iterations[-1]["changed_dict"])
 
     def test_epsilon_reached_is_recorded_as_converged(self):
         # With a sufficient budget the COMPAS run enters the epsilon ball;
@@ -206,7 +219,7 @@ class TestFairBiasPipeline(unittest.TestCase):
         self.assertEqual(res.termination["termination_reason"], "mitigation_disabled")
         self.assertIsNone(res.termination["converged"])
         self.assertEqual(res.termination["terminal_iteration"], 0)
-        self.assertEqual(res.paper_strict_changed_dict, {})
+        self.assertEqual(res.greedy_terminal_changed_dict, {})
         self.assertEqual(len(res.iterations), 0)
 
     def test_pareto_checkpoint_selection_rule(self):
@@ -245,7 +258,7 @@ class TestFairBiasPipeline(unittest.TestCase):
         res_b = run_fairbias_pipeline(cfg_0_b)
 
         self.assertAlmostEqual(res_a.initial_metrics["ACC"], res_b.initial_metrics["ACC"])
-        self.assertAlmostEqual(res_a.paper_strict_metrics["ACC"], res_b.paper_strict_metrics["ACC"])
+        self.assertAlmostEqual(res_a.greedy_terminal_metrics["ACC"], res_b.greedy_terminal_metrics["ACC"])
         self.assertAlmostEqual(
             res_a.pareto_engineering_metrics["ACC"],
             res_b.pareto_engineering_metrics["ACC"],
