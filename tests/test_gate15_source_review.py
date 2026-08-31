@@ -20,6 +20,11 @@ SRC = str(ROOT / "src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
+from meps_fairness.data.download import (
+    Artifact,
+    SecurityError,
+    validate_artifact_download_scope,
+)
 from meps_fairness.gate15_source_review import (
     DEFAULT_ACCESS_PATH,
     DEFAULT_PERMISSION_PATH,
@@ -29,6 +34,8 @@ from meps_fairness.gate15_source_review import (
     HC217_SOURCE_ARTIFACTS,
     HC217_SURVEY_YEARS,
     PERMISSION_AUTHORIZED_STATUS,
+    PERMISSION_PENDING_STATUS,
+    PREFLIGHT_STATUS,
     SCHEMA_CODEBOOK_ONLY_STAGE,
     SEMANTIC_COMPLETE_STATUS,
     Gate15SourceReviewError,
@@ -174,7 +181,7 @@ class TestGate15SourceReview(unittest.TestCase):
     def test_exact_permission_maps_gate15_types_and_requires_dta(self) -> None:
         permission = load_gate15_artifact_permission()
         self.assertEqual(permission.permission_status, "PENDING_SUPERVISOR_AUTHORIZATION")
-        self.assertEqual(permission.gate14b_prerequisite_status, GATE14B_PENDING_STATUS)
+        self.assertEqual(permission.gate14b_prerequisite_status, GATE14B_ACCEPTED_STATUS)
         self.assertFalse(permission.schema_stage_authorized)
         self.assertEqual(permission.survey_years, HC217_SURVEY_YEARS)
         self.assertEqual(
@@ -184,6 +191,140 @@ class TestGate15SourceReview(unittest.TestCase):
         self.assertEqual(permission.artifacts[0].artifact_type, "data_archives")
         self.assertEqual(permission.artifacts[0].archive_allowed_member_extensions, (".dta",))
         self.assertEqual(permission.artifacts[2].artifact_type, "codebooks")
+
+    def test_pending_gate15_with_pending_gate14b_is_valid(self) -> None:
+        perm_data = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+        perm_data["gate14b_prerequisite_status"] = GATE14B_PENDING_STATUS
+        permission = validate_gate15_artifact_permission(perm_data)
+        self.assertEqual(permission.permission_status, PERMISSION_PENDING_STATUS)
+        self.assertEqual(permission.gate14b_prerequisite_status, GATE14B_PENDING_STATUS)
+        self.assertEqual(permission.active_stage, PREFLIGHT_STATUS)
+        self.assertFalse(permission.schema_stage_authorized)
+
+    def test_pending_gate15_with_accepted_gate14b_is_valid(self) -> None:
+        perm_data = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+        perm_data["gate14b_prerequisite_status"] = GATE14B_ACCEPTED_STATUS
+        permission = validate_gate15_artifact_permission(perm_data)
+        self.assertEqual(permission.permission_status, PERMISSION_PENDING_STATUS)
+        self.assertEqual(permission.gate14b_prerequisite_status, GATE14B_ACCEPTED_STATUS)
+        self.assertEqual(permission.active_stage, PREFLIGHT_STATUS)
+        self.assertFalse(permission.schema_stage_authorized)
+
+    def test_pending_gate15_with_accepted_gate14b_schema_stage_authorized_remains_false(self) -> None:
+        perm_data = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+        perm_data["gate14b_prerequisite_status"] = GATE14B_ACCEPTED_STATUS
+        permission = validate_gate15_artifact_permission(perm_data)
+        self.assertFalse(permission.schema_stage_authorized)
+        self.assertEqual(permission.active_stage, PREFLIGHT_STATUS)
+        self.assertEqual(permission.download_scope.stage, PREFLIGHT_STATUS)
+        self.assertEqual(permission.download_scope.authorization_status, PERMISSION_PENDING_STATUS)
+
+    def test_pending_gate15_with_accepted_gate14b_schema_access_raises_authorization_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            perm_path = pathlib.Path(temp_dir) / "permission.json"
+            perm_data = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+            perm_data["gate14b_prerequisite_status"] = GATE14B_ACCEPTED_STATUS
+            perm_path.write_text(json.dumps(perm_data), encoding="utf-8")
+            self.assert_code(
+                "GATE15_DATA_SCOPE_NOT_AUTHORIZED",
+                require_schema_stage_authorized,
+                "HC-217",
+                permission_path=perm_path,
+            )
+
+    def test_pending_gate15_with_accepted_gate14b_scoped_downloader_remains_unavailable(self) -> None:
+        perm_data = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+        perm_data["gate14b_prerequisite_status"] = GATE14B_ACCEPTED_STATUS
+        permission = validate_gate15_artifact_permission(perm_data)
+        artifact = Artifact(
+            artifact_id=permission.artifacts[0].artifact_id,
+            puf_id=permission.artifacts[0].puf_id,
+            panel_number=permission.artifacts[0].panel_number,
+            survey_years="2018-2019",
+            artifact_type=permission.artifacts[0].artifact_type,
+            description="synthetic test artifact",
+            url=permission.artifacts[0].url,
+            relative_destination=permission.artifacts[0].relative_destination,
+            expected_content_type=permission.artifacts[0].expected_content_type,
+            archive_allowed_member_extensions=permission.artifacts[0].archive_allowed_member_extensions,
+        )
+        with self.assertRaises(SecurityError):
+            validate_artifact_download_scope(artifact, permission.download_scope)
+
+    def test_supervisor_authorized_gate15_with_pending_gate14b_fails_closed(self) -> None:
+        perm_data = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+        perm_data["permission_status"] = PERMISSION_AUTHORIZED_STATUS
+        perm_data["active_stage"] = SCHEMA_CODEBOOK_ONLY_STAGE
+        perm_data["gate14b_prerequisite_status"] = GATE14B_PENDING_STATUS
+        perm_data["schema_stage_authorized"] = True
+        perm_data["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["enabled"] = True
+        perm_data["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["local_artifact_read_allowed"] = True
+        with self.assertRaises(Gate15SourceReviewError) as context:
+            validate_gate15_artifact_permission(perm_data)
+        self.assertEqual(context.exception.code, "GATE15_PREREQUISITE_NOT_ACCEPTED")
+
+    def test_supervisor_authorized_gate15_with_accepted_gate14b_requires_all_schema_conditions(self) -> None:
+        base_perm = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+        base_perm["permission_status"] = PERMISSION_AUTHORIZED_STATUS
+        base_perm["active_stage"] = SCHEMA_CODEBOOK_ONLY_STAGE
+        base_perm["gate14b_prerequisite_status"] = GATE14B_ACCEPTED_STATUS
+        base_perm["schema_stage_authorized"] = True
+        base_perm["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["enabled"] = True
+        base_perm["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["local_artifact_read_allowed"] = True
+
+        valid_perm = validate_gate15_artifact_permission(base_perm)
+        self.assertEqual(valid_perm.permission_status, PERMISSION_AUTHORIZED_STATUS)
+        self.assertTrue(valid_perm.schema_stage_authorized)
+
+        # Condition 1: active_stage must be SCHEMA_CODEBOOK_ONLY
+        bad_stage = copy.deepcopy(base_perm)
+        bad_stage["active_stage"] = PREFLIGHT_STATUS
+        self.assert_code("GATE15_PERMISSION_INVALID", validate_gate15_artifact_permission, bad_stage)
+
+        # Condition 2: schema_stage_authorized must be True
+        bad_auth = copy.deepcopy(base_perm)
+        bad_auth["schema_stage_authorized"] = False
+        self.assert_code("GATE15_PERMISSION_INVALID", validate_gate15_artifact_permission, bad_auth)
+
+        # Condition 3: stage enabled must match
+        bad_enabled = copy.deepcopy(base_perm)
+        bad_enabled["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["enabled"] = False
+        self.assert_code("GATE15_PERMISSION_INVALID", validate_gate15_artifact_permission, bad_enabled)
+
+        # Condition 4: local_artifact_read_allowed must match
+        bad_read = copy.deepcopy(base_perm)
+        bad_read["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["local_artifact_read_allowed"] = False
+        self.assert_code("GATE15_PERMISSION_INVALID", validate_gate15_artifact_permission, bad_read)
+
+    def test_changing_gate14b_prerequisite_status_does_not_alter_security_boundaries(self) -> None:
+        for status in (GATE14B_PENDING_STATUS, GATE14B_ACCEPTED_STATUS):
+            base_perm = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
+            base_perm["gate14b_prerequisite_status"] = status
+
+            # 1. Outcome authorization cannot be enabled
+            outcome_perm = copy.deepcopy(base_perm)
+            outcome_perm["outcome_values_read"] = True
+            self.assert_code("GATE15_BOUNDARY_VIOLATION", validate_gate15_artifact_permission, outcome_perm)
+
+            # 2. Microdata authorization cannot be enabled
+            micro_perm = copy.deepcopy(base_perm)
+            micro_perm["microdata_rows_read"] = True
+            self.assert_code("GATE15_BOUNDARY_VIOLATION", validate_gate15_artifact_permission, micro_perm)
+
+            # 3. Panel 27 cannot be accessed
+            p27_perm = copy.deepcopy(base_perm)
+            p27_perm["panel_27_accessed"] = True
+            self.assert_code("GATE15_BOUNDARY_VIOLATION", validate_gate15_artifact_permission, p27_perm)
+
+            # 4. Exact artifact list cannot be altered
+            artifact_perm = copy.deepcopy(base_perm)
+            artifact_perm["artifacts"] = artifact_perm["artifacts"][:2]
+            self.assert_code("GATE15_PERMISSION_INVALID", validate_gate15_artifact_permission, artifact_perm)
+
+            # 5. Exact URLs cannot be altered
+            url_perm = copy.deepcopy(base_perm)
+            url_perm["artifacts"][0]["url"] = "https://meps.ahrq.gov/mepsweb/data_files/pufs/h217/unauthorized.zip"
+            self.assert_code("GATE15_SOURCE_URL_INVALID", validate_gate15_artifact_permission, url_perm)
 
     def test_broad_puf_scope_does_not_unlock_pending_exact_permission(self) -> None:
         access = json.loads(DEFAULT_ACCESS_PATH.read_text(encoding="utf-8"))
@@ -209,6 +350,7 @@ class TestGate15SourceReview(unittest.TestCase):
         permission = json.loads(DEFAULT_PERMISSION_PATH.read_text(encoding="utf-8"))
         permission["permission_status"] = PERMISSION_AUTHORIZED_STATUS
         permission["active_stage"] = SCHEMA_CODEBOOK_ONLY_STAGE
+        permission["gate14b_prerequisite_status"] = GATE14B_PENDING_STATUS
         permission["schema_stage_authorized"] = True
         permission["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["enabled"] = True
         permission["stages"][SCHEMA_CODEBOOK_ONLY_STAGE]["local_artifact_read_allowed"] = True

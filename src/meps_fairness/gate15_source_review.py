@@ -373,11 +373,6 @@ def validate_gate15_artifact_permission(
             "GATE15_PERMISSION_INVALID",
             "pending permission must remain in SOURCE_METADATA_PREFLIGHT_ONLY",
         )
-    if permission_status == PERMISSION_PENDING_STATUS and gate14b_prerequisite_status != GATE14B_PENDING_STATUS:
-        raise Gate15SourceReviewError(
-            "GATE15_PERMISSION_INVALID",
-            "the pending Gate 15 permission must disclose the unaccepted Gate 14B prerequisite",
-        )
     if permission_status == PERMISSION_AUTHORIZED_STATUS and active_stage != SCHEMA_CODEBOOK_ONLY_STAGE:
         raise Gate15SourceReviewError(
             "GATE15_PERMISSION_INVALID",

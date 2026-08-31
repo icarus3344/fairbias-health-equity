@@ -9,7 +9,7 @@
     2019
   ],
   "active_stage": "SOURCE_METADATA_PREFLIGHT_ONLY",
-  "gate14b_prerequisite_status": "PENDING_CODEX_ACCEPTANCE",
+  "gate14b_prerequisite_status": "ACCEPTED_AND_COMMITTED",
   "schema_stage_authorized": false,
   "outcome_values_read": false,
   "microdata_rows_read": false,
