@@ -24,6 +24,7 @@ _SRC_DIR = str(pathlib.Path(__file__).resolve().parents[1] / "src")
 if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
 
+from meps_fairness import data as data_package
 from meps_fairness.data.download import (
     CHUNK_SIZE,
     MAX_COMPRESSION_RATIO,
@@ -1566,9 +1567,7 @@ class TestCLIScriptSubprocess(unittest.TestCase):
     def setUp(self) -> None:
         self.repo_root = pathlib.Path(__file__).resolve().parents[1]
         self.script_path = self.repo_root / "scripts" / "download_meps.py"
-        self.py311_bin = "/Users/lkc/.local/bin/python3.11"
-        if not pathlib.Path(self.py311_bin).is_file():
-            self.py311_bin = shutil.which("python3.11") or sys.executable
+        self.py311_bin = sys.executable
 
         # Clean environment with PYTHONPATH removed
         self.clean_env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
@@ -1623,6 +1622,267 @@ class TestCLIScriptSubprocess(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"Expected exit code 0, got {proc.returncode}. Stderr: {proc.stderr}")
         self.assertIn("usage: download_meps.py", proc.stdout)
         self.assertEqual(proc.stderr.strip(), "")
+
+
+class TestManifestExtensionGeneralization(unittest.TestCase):
+    """Tests verifying manifest-declared archive member extension generalization and safety boundaries."""
+
+    def test_package_exports_preparation_security_helpers(self) -> None:
+        """Package-level exports must bind every name advertised by ``data.__all__``."""
+        for name in ("get_peak_rss_gb", "guard_against_prohibited_inspections"):
+            self.assertIn(name, data_package.__all__)
+            self.assertTrue(callable(getattr(data_package, name, None)))
+
+    def test_default_extension_when_omitted(self) -> None:
+        raw_art = {
+            "artifact_id": "hc244_archive",
+            "puf_id": "HC-244",
+            "artifact_type": "data_archives",
+            "url": "https://meps.ahrq.gov/data_files/pufs/h244/h244ssp.zip",
+            "relative_destination": "h244/h244ssp.zip",
+        }
+        art = Artifact.from_dict(raw_art)
+        self.assertEqual(art.archive_allowed_member_extensions, (".ssp", ".xpt"))
+
+    def test_custom_dta_extension(self) -> None:
+        raw_art = {
+            "artifact_id": "hc244_stata_archive",
+            "puf_id": "HC-244",
+            "artifact_type": "data_archives",
+            "url": "https://meps.ahrq.gov/mepsweb/data_files/pufs/h244/h244dta.zip",
+            "relative_destination": "h244/h244dta.zip",
+            "archive_allowed_member_extensions": [".dta"],
+        }
+        art = Artifact.from_dict(raw_art)
+        self.assertEqual(art.archive_allowed_member_extensions, (".dta",))
+
+    def test_reject_empty_extension_list(self) -> None:
+        raw_art = {
+            "artifact_id": "test",
+            "puf_id": "HC-244",
+            "artifact_type": "data_archives",
+            "url": "https://meps.ahrq.gov/data.zip",
+            "relative_destination": "test.zip",
+            "archive_allowed_member_extensions": [],
+        }
+        with self.assertRaises(IntegrityError):
+            Artifact.from_dict(raw_art)
+
+    def test_reject_wildcard_extension(self) -> None:
+        for bad in ["*", ".*", ".*.", "[a-z]"]:
+            raw_art = {
+                "artifact_id": "test",
+                "puf_id": "HC-244",
+                "artifact_type": "data_archives",
+                "url": "https://meps.ahrq.gov/data.zip",
+                "relative_destination": "test.zip",
+                "archive_allowed_member_extensions": [bad],
+            }
+            with self.assertRaises(SecurityError):
+                Artifact.from_dict(raw_art)
+
+    def test_reject_missing_leading_dot(self) -> None:
+        raw_art = {
+            "artifact_id": "test",
+            "puf_id": "HC-244",
+            "artifact_type": "data_archives",
+            "url": "https://meps.ahrq.gov/data.zip",
+            "relative_destination": "test.zip",
+            "archive_allowed_member_extensions": ["dta"],
+        }
+        with self.assertRaises(SecurityError):
+            Artifact.from_dict(raw_art)
+
+    def test_reject_path_traversal_extension(self) -> None:
+        for bad in ["../.dta", ".dta/", "/.dta", ".."]:
+            raw_art = {
+                "artifact_id": "test",
+                "puf_id": "HC-244",
+                "artifact_type": "data_archives",
+                "url": "https://meps.ahrq.gov/data.zip",
+                "relative_destination": "test.zip",
+                "archive_allowed_member_extensions": [bad],
+            }
+            with self.assertRaises(SecurityError):
+                Artifact.from_dict(raw_art)
+
+    def test_reject_non_alphanumeric_extension(self) -> None:
+        for bad in [".dta$", ".dta#", ".d ta", ".dta\0"]:
+            raw_art = {
+                "artifact_id": "test",
+                "puf_id": "HC-244",
+                "artifact_type": "data_archives",
+                "url": "https://meps.ahrq.gov/data.zip",
+                "relative_destination": "test.zip",
+                "archive_allowed_member_extensions": [bad],
+            }
+            with self.assertRaises(SecurityError):
+                Artifact.from_dict(raw_art)
+
+    def test_load_meps_stata_artifacts_manifest(self) -> None:
+        repo_root = pathlib.Path(__file__).resolve().parents[1]
+        manifest_path = repo_root / "configs" / "meps_stata_artifacts.json"
+        manifest = ArtifactManifest.load(manifest_path)
+        self.assertEqual(len(manifest.artifacts), 2)
+        for art in manifest.artifacts:
+            self.assertEqual(art.archive_allowed_member_extensions, (".dta",))
+            self.assertEqual(art.expected_content_type, "application/zip")
+            self.assertIsNone(art.publisher_checksum)
+
+
+class TestStataZipValidationAndWorkflow(unittest.TestCase):
+    """Tests verifying ZIP validation for .dta members, attack defenses, and mock download workflow."""
+
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_path = pathlib.Path(self.temp_dir.name)
+        self.output_root = self.temp_path / "raw"
+        self.provenance_path = self.temp_path / "provenance.json"
+
+        self.policy = DataAccessPolicy.from_dict(
+            {
+                "schema_version": "1.0.0",
+                "scope": {
+                    "authorized_pufs": [
+                        {"puf_id": "HC-244"},
+                        {"puf_id": "HC-252"},
+                    ]
+                },
+                "gate_5_network_policy": {
+                    "download_authorization": True,
+                    "allowed_scheme": "https",
+                    "allowed_hosts": ["meps.ahrq.gov"],
+                    "enforce_same_host_redirects": True,
+                    "allowed_artifact_types": ["data_archives", "documentation", "codebooks"],
+                },
+            }
+        )
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def test_validate_zip_archive_with_dta_valid(self) -> None:
+        zip_path = self.temp_path / "h244dta.zip"
+        zip_bytes = create_mock_zip(member_name="h244.dta", content=b"STATA_DATA_BYTES")
+        zip_path.write_bytes(zip_bytes)
+
+        meta = validate_zip_archive(zip_path, allowed_member_extensions=[".dta"])
+        self.assertEqual(meta["member_name"], "h244.dta")
+        self.assertEqual(meta["uncompressed_size"], len(b"STATA_DATA_BYTES"))
+
+    def test_validate_zip_archive_dta_rejected_under_default_ssp(self) -> None:
+        zip_path = self.temp_path / "h244dta.zip"
+        zip_bytes = create_mock_zip(member_name="h244.dta", content=b"STATA_DATA_BYTES")
+        zip_path.write_bytes(zip_bytes)
+
+        with self.assertRaises(IntegrityError) as ctx:
+            validate_zip_archive(zip_path)  # Default (".ssp", ".xpt")
+        self.assertIn("permitted archive member extension", str(ctx.exception))
+
+    def test_validate_zip_archive_ssp_rejected_under_dta_allowed(self) -> None:
+        zip_path = self.temp_path / "h244ssp.zip"
+        zip_bytes = create_mock_zip(member_name="h244.ssp", content=b"SAS_DATA_BYTES")
+        zip_path.write_bytes(zip_bytes)
+
+        with self.assertRaises(IntegrityError) as ctx:
+            validate_zip_archive(zip_path, allowed_member_extensions=[".dta"])
+        self.assertIn("permitted archive member extension", str(ctx.exception))
+
+    def test_validate_zip_archive_dta_attacks_rejected(self) -> None:
+        # Multiple members
+        multi_zip = self.temp_path / "multi_dta.zip"
+        with zipfile.ZipFile(multi_zip, "w") as zf:
+            zf.writestr("h244.dta", b"data1")
+            zf.writestr("extra.txt", b"data2")
+        with self.assertRaises(IntegrityError) as ctx:
+            validate_zip_archive(multi_zip, allowed_member_extensions=[".dta"])
+        self.assertIn("must contain exactly 1 member", str(ctx.exception))
+
+        # Traversal
+        trav_zip = self.temp_path / "trav_dta.zip"
+        with zipfile.ZipFile(trav_zip, "w") as zf:
+            zf.writestr("../h244.dta", b"data1")
+        with self.assertRaises(SecurityError) as ctx:
+            validate_zip_archive(trav_zip, allowed_member_extensions=[".dta"])
+        self.assertIn("Path traversal", str(ctx.exception))
+
+        # Backslash
+        bs_zip = self.temp_path / "bs_dta.zip"
+        with zipfile.ZipFile(bs_zip, "w") as zf:
+            zf.writestr("dir\\h244.dta", b"data1")
+        with self.assertRaises(SecurityError) as ctx:
+            validate_zip_archive(bs_zip, allowed_member_extensions=[".dta"])
+        self.assertIn("Backslash", str(ctx.exception))
+
+        # Compression bomb
+        bomb_zip = self.temp_path / "bomb_dta.zip"
+        with zipfile.ZipFile(bomb_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("h244.dta", b"0" * 15_000_000)
+        with self.assertRaises(SecurityError) as ctx:
+            validate_zip_archive(bomb_zip, allowed_member_extensions=[".dta"], max_ratio=2.0)
+        self.assertIn("compression ratio", str(ctx.exception))
+
+    def test_download_stata_artifact_mock_workflow(self) -> None:
+        zip_bytes = create_mock_zip(member_name="h244.dta", content=b"MOCK_STATA_DATA_FOR_H244")
+        mock_response = MockHTTPResponse(
+            data=zip_bytes,
+            headers={"Content-Type": "application/zip", "Content-Length": str(len(zip_bytes))},
+            status=200,
+            url="https://meps.ahrq.gov/mepsweb/data_files/pufs/h244/h244dta.zip",
+        )
+
+        mock_opener = MagicMock()
+        mock_opener.open.return_value = mock_response
+
+        manifest = ArtifactManifest(
+            schema_version="1.0.0",
+            metadata={"title": "Test Manifest"},
+            artifacts=(
+                Artifact(
+                    artifact_id="hc244_stata_archive",
+                    puf_id="HC-244",
+                    panel_number=26,
+                    survey_years="2021-2022",
+                    artifact_type="data_archives",
+                    description="Test Stata ZIP",
+                    url="https://meps.ahrq.gov/mepsweb/data_files/pufs/h244/h244dta.zip",
+                    relative_destination="h244/h244dta.zip",
+                    expected_content_type="application/zip",
+                    archive_allowed_member_extensions=(".dta",),
+                ),
+            ),
+        )
+
+        # 1. First run -> downloads and records provenance
+        results = download_artifacts(
+            manifest=manifest,
+            policy=self.policy,
+            output_root=self.output_root,
+            provenance_path=self.provenance_path,
+            opener=mock_opener,
+        )
+
+        self.assertIn("hc244_stata_archive", results)
+        status, rec = results["hc244_stata_archive"]
+        self.assertEqual(status, "downloaded")
+        self.assertEqual(rec.byte_size, len(zip_bytes))
+        self.assertIsNotNone(rec.archive_member_metadata)
+        self.assertEqual(rec.archive_member_metadata["member_name"], "h244.dta")
+
+        dest_file = self.output_root / "h244/h244dta.zip"
+        self.assertTrue(dest_file.is_file())
+
+        # 2. Second run -> pure skip
+        results_rerun = download_artifacts(
+            manifest=manifest,
+            policy=self.policy,
+            output_root=self.output_root,
+            provenance_path=self.provenance_path,
+            opener=mock_opener,
+        )
+        status_rerun, rec_rerun = results_rerun["hc244_stata_archive"]
+        self.assertEqual(status_rerun, "skipped")
+        self.assertEqual(rec_rerun.sha256, rec.sha256)
 
 
 if __name__ == "__main__":

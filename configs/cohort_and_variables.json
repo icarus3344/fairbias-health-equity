@@ -1,0 +1,1896 @@
+{
+  "schema_version": "1.1.0",
+  "source_codebooks": {
+    "hc244": {
+      "puf_id": "HC-244",
+      "panel": 26,
+      "years": [
+        2021,
+        2022
+      ],
+      "codebook_pdf": "data/raw/meps/h244/h244cb.pdf",
+      "doc_pdf": "data/raw/meps/h244/h244doc.pdf"
+    },
+    "hc252": {
+      "puf_id": "HC-252",
+      "panel": 27,
+      "years": [
+        2022,
+        2023
+      ],
+      "codebook_pdf": "data/raw/meps/h252/h252cb.pdf",
+      "doc_pdf": "data/raw/meps/h252/h252doc.pdf"
+    }
+  },
+  "survey_design": {
+    "strata_variable": "VARSTR",
+    "psu_variable": "VARPSU",
+    "weight_variable": "LONGWT",
+    "cluster_group_variable": "DUID",
+    "person_id_variable": "DUPERSID",
+    "pid_variable": "PID",
+    "panel_variable": "PANEL",
+    "codebook_references": {
+      "VARSTR": {
+        "hc244_page": 939,
+        "hc252_page": 908,
+        "type": "numeric"
+      },
+      "VARPSU": {
+        "hc244_page": 939,
+        "hc252_page": 908,
+        "type": "numeric"
+      },
+      "LONGWT": {
+        "hc244_page": 939,
+        "hc252_page": 908,
+        "type": "numeric"
+      },
+      "DUID": {
+        "hc244_page": 105,
+        "hc252_page": 103,
+        "type": "numeric"
+      },
+      "PID": {
+        "hc244_page": 105,
+        "hc252_page": 103,
+        "type": "numeric"
+      },
+      "DUPERSID": {
+        "hc244_page": 105,
+        "hc252_page": 103,
+        "type": "character"
+      },
+      "PANEL": {
+        "hc244_page": 105,
+        "hc252_page": 103,
+        "type": "numeric"
+      }
+    }
+  },
+  "cohort_eligibility": {
+    "year_indicator": {
+      "variable": "YEARIND",
+      "required_value": 1,
+      "description": "In scope in both years (2021 & 2022 / 2022 & 2023)",
+      "codebook_references": {
+        "hc244_page": 106,
+        "hc252_page": 104
+      }
+    },
+    "five_rounds": {
+      "variable": "ALL5RDS",
+      "required_value": 1,
+      "description": "Data collected in all 5 survey rounds",
+      "codebook_references": {
+        "hc244_page": 106,
+        "hc252_page": 104
+      }
+    },
+    "analysis_weight": {
+      "variable": "LONGWT",
+      "min_exclusive": 0.0,
+      "description": "Positive longitudinal analysis weight",
+      "codebook_references": {
+        "hc244_page": 939,
+        "hc252_page": 908
+      }
+    },
+    "baseline_age": {
+      "variable": "AGEY1X",
+      "min_age": 18,
+      "max_age": 64,
+      "description": "Age as of 12/31 of baseline Year 1 (working age 18-64)",
+      "codebook_references": {
+        "hc244_page": 153,
+        "hc252_page": 153
+      }
+    },
+    "baseline_continuous_coverage": {
+      "description": "Covered by health insurance in all 12 calendar months of Year 1",
+      "required_value": 1,
+      "monthly_variables": [
+        {
+          "month": "JAN",
+          "variable": "INSJAY1X",
+          "hc244_page": 652,
+          "hc252_page": 621
+        },
+        {
+          "month": "FEB",
+          "variable": "INSFEY1X",
+          "hc244_page": 652,
+          "hc252_page": 622
+        },
+        {
+          "month": "MAR",
+          "variable": "INSMAY1X",
+          "hc244_page": 653,
+          "hc252_page": 622
+        },
+        {
+          "month": "APR",
+          "variable": "INSAPY1X",
+          "hc244_page": 653,
+          "hc252_page": 623
+        },
+        {
+          "month": "MAY",
+          "variable": "INSMYY1X",
+          "hc244_page": 654,
+          "hc252_page": 623
+        },
+        {
+          "month": "JUN",
+          "variable": "INSJUY1X",
+          "hc244_page": 654,
+          "hc252_page": 624
+        },
+        {
+          "month": "JUL",
+          "variable": "INSJLY1X",
+          "hc244_page": 655,
+          "hc252_page": 624
+        },
+        {
+          "month": "AUG",
+          "variable": "INSAUY1X",
+          "hc244_page": 655,
+          "hc252_page": 625
+        },
+        {
+          "month": "SEP",
+          "variable": "INSSEY1X",
+          "hc244_page": 656,
+          "hc252_page": 625
+        },
+        {
+          "month": "OCT",
+          "variable": "INSOCY1X",
+          "hc244_page": 656,
+          "hc252_page": 626
+        },
+        {
+          "month": "NOV",
+          "variable": "INSNOY1X",
+          "hc244_page": 657,
+          "hc252_page": 626
+        },
+        {
+          "month": "DEC",
+          "variable": "INSDEY1X",
+          "hc244_page": 657,
+          "hc252_page": 627
+        }
+      ]
+    }
+  },
+  "target_outcomes": {
+    "primary_any_uninsured_y2": {
+      "description": "Any month uninsured during follow-up Year 2 (at least one INS...Y2X == 2)",
+      "monthly_variables": [
+        {
+          "month": "JAN",
+          "variable": "INSJAY2X",
+          "hc244_page": 652,
+          "hc252_page": 622
+        },
+        {
+          "month": "FEB",
+          "variable": "INSFEY2X",
+          "hc244_page": 652,
+          "hc252_page": 622
+        },
+        {
+          "month": "MAR",
+          "variable": "INSMAY2X",
+          "hc244_page": 653,
+          "hc252_page": 623
+        },
+        {
+          "month": "APR",
+          "variable": "INSAPY2X",
+          "hc244_page": 653,
+          "hc252_page": 623
+        },
+        {
+          "month": "MAY",
+          "variable": "INSMYY2X",
+          "hc244_page": 654,
+          "hc252_page": 624
+        },
+        {
+          "month": "JUN",
+          "variable": "INSJUY2X",
+          "hc244_page": 654,
+          "hc252_page": 624
+        },
+        {
+          "month": "JUL",
+          "variable": "INSJLY2X",
+          "hc244_page": 655,
+          "hc252_page": 625
+        },
+        {
+          "month": "AUG",
+          "variable": "INSAUY2X",
+          "hc244_page": 655,
+          "hc252_page": 625
+        },
+        {
+          "month": "SEP",
+          "variable": "INSSEY2X",
+          "hc244_page": 656,
+          "hc252_page": 626
+        },
+        {
+          "month": "OCT",
+          "variable": "INSOCY2X",
+          "hc244_page": 656,
+          "hc252_page": 626
+        },
+        {
+          "month": "NOV",
+          "variable": "INSNOY2X",
+          "hc244_page": 657,
+          "hc252_page": 627
+        },
+        {
+          "month": "DEC",
+          "variable": "INSDEY2X",
+          "hc244_page": 657,
+          "hc252_page": 627
+        }
+      ],
+      "positive_condition": "any_month_equal_2",
+      "negative_condition": "all_months_equal_1",
+      "invalid_code_handling": "fail_closed_error"
+    },
+    "sensitivity_prolonged_uninsured_y2": {
+      "description": "At least 3 months uninsured during follow-up Year 2",
+      "positive_condition": "sum_months_equal_2_gte_3",
+      "invalid_code_handling": "fail_closed_error"
+    },
+    "sensitivity_yearend_uninsured_y2": {
+      "description": "Uninsured in December of follow-up Year 2 (INSDEY2X == 2)",
+      "variable": "INSDEY2X",
+      "positive_value": 2,
+      "invalid_code_handling": "fail_closed_error"
+    }
+  },
+  "audit_dimensions": {
+    "primary": {
+      "race_ethnicity": {
+        "variable": "RACETHX",
+        "description": "Race/Ethnicity (OMB 5-Category Summary)",
+        "codebook_references": {
+          "hc244_page": 157,
+          "hc252_page": 157
+        },
+        "categories": {
+          "1": "Hispanic",
+          "2": "Non-Hispanic White",
+          "3": "Non-Hispanic Black",
+          "4": "Non-Hispanic Asian",
+          "5": "Non-Hispanic Other/Multiple"
+        }
+      },
+      "sex": {
+        "variable": "SEX",
+        "description": "Sex",
+        "codebook_references": {
+          "hc244_page": 155,
+          "hc252_page": 155
+        },
+        "categories": {
+          "1": "Male",
+          "2": "Female"
+        }
+      }
+    },
+    "secondary": {
+      "poverty_category": {
+        "variable": "POVCATY1",
+        "description": "Family Income as % of Poverty Line (Categorical Y1)",
+        "codebook_references": {
+          "hc244_page": 476,
+          "hc252_page": 446
+        },
+        "categories": {
+          "1": "Poor/Negative (<100% FPL)",
+          "2": "Near Poor (100%-<125% FPL)",
+          "3": "Low Income (125%-<200% FPL)",
+          "4": "Middle Income (200%-<400% FPL)",
+          "5": "High Income (>=400% FPL)"
+        }
+      },
+      "age_band": {
+        "source_variable": "AGEY1X",
+        "description": "Working Age Bands at Baseline Year-End",
+        "bands": [
+          {
+            "label": "18-24",
+            "min_age": 18,
+            "max_age": 24
+          },
+          {
+            "label": "25-44",
+            "min_age": 25,
+            "max_age": 44
+          },
+          {
+            "label": "45-64",
+            "min_age": 45,
+            "max_age": 64
+          }
+        ]
+      },
+      "disability_status": {
+        "description": "Baseline Functional Limitations / Disability Indicator (Any vs None, Round 1 screeners only)",
+        "components": [
+          {
+            "domain": "activity_limitation",
+            "vars": [
+              "ACTLIM1"
+            ],
+            "hc244_page": 228,
+            "hc252_page": 230
+          },
+          {
+            "domain": "adl",
+            "vars": [
+              "ADLHLP1"
+            ],
+            "hc244_page": 220,
+            "hc252_page": 222
+          },
+          {
+            "domain": "iadl",
+            "vars": [
+              "IADLHP1"
+            ],
+            "hc244_page": 219,
+            "hc252_page": 222
+          },
+          {
+            "domain": "walking",
+            "vars": [
+              "WLKLIM1"
+            ],
+            "hc244_page": 221,
+            "hc252_page": 224
+          },
+          {
+            "domain": "social",
+            "vars": [
+              "SOCLIM1"
+            ],
+            "hc244_page": 231,
+            "hc252_page": 233
+          },
+          {
+            "domain": "cognitive",
+            "vars": [
+              "COGLIM1"
+            ],
+            "hc244_page": 232,
+            "hc252_page": 234
+          }
+        ],
+        "positive_value": 1,
+        "negative_value": 2
+      }
+    }
+  },
+  "baseline_predictors": {
+    "demographics_geography": {
+      "continuous": [
+        "AGEY1X",
+        "EDUCYR",
+        "FAMSZEY1"
+      ],
+      "categorical": [
+        "HIDEG",
+        "MARRY1X",
+        "MARRY2X",
+        "MARRYY1X",
+        "REGION1",
+        "REGION2",
+        "REGIONY1"
+      ]
+    },
+    "socioeconomic_employment": {
+      "continuous": [
+        "POVLEVY1",
+        "FAMINCY1",
+        "TTLPY1X",
+        "WAGEPY1X",
+        "HOUR1",
+        "HOUR2",
+        "NUMEMP1",
+        "NUMEMP2"
+      ],
+      "categorical": [
+        "POVCATY1",
+        "EMPST1",
+        "EMPST2",
+        "OFFER1X",
+        "OFFER2X",
+        "HELD1X",
+        "HELD2X",
+        "CHOIC1",
+        "CHOIC2",
+        "SELFCM1",
+        "SELFCM2",
+        "UNION1",
+        "UNION2"
+      ]
+    },
+    "health_status_conditions": {
+      "continuous": [],
+      "categorical": [
+        "RTHLTH1",
+        "RTHLTH2",
+        "MNHLTH1",
+        "MNHLTH2",
+        "HIBPDXY1",
+        "DIABDXY1_M18",
+        "ASTHDXY1",
+        "CHDDXY1",
+        "ANGIDXY1",
+        "MIDXY1",
+        "OHRTDXY1",
+        "STRKDXY1",
+        "EMPHDXY1",
+        "CHBRON1",
+        "CHOLDXY1",
+        "CANCERY1",
+        "ARTHDXY1",
+        "JTPAIN1_M18"
+      ]
+    },
+    "functional_limitations": {
+      "continuous": [],
+      "categorical": [
+        "ACTLIM1",
+        "ADLHLP1",
+        "IADLHP1",
+        "WLKLIM1",
+        "SOCLIM1",
+        "COGLIM1"
+      ]
+    },
+    "healthcare_access_utilization": {
+      "continuous": [
+        "OBTOTVY1",
+        "OBDRVY1",
+        "OPTOTVY1",
+        "ERTOTY1",
+        "IPDISY1",
+        "RXTOTY1",
+        "TOTEXPY1",
+        "TOTSLFY1"
+      ],
+      "categorical": [
+        "HAVEUS2",
+        "LOCATN2",
+        "PROVTY2_M18"
+      ]
+    },
+    "baseline_coverage_type": {
+      "continuous": [],
+      "categorical": [
+        "INSCOVY1",
+        "PRIEUY1",
+        "PRINGY1",
+        "PUBY1X",
+        "MCAIDY1X",
+        "MCAREY1X",
+        "TRICRY1X",
+        "VAPROGY1"
+      ]
+    }
+  },
+  "variable_contracts": {
+    "AGEY1X": {
+      "variable": "AGEY1X",
+      "codebook_references": {
+        "hc244_page": 153,
+        "hc252_page": 153
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "EDUCYR": {
+      "variable": "EDUCYR",
+      "codebook_references": {
+        "hc244_page": 166,
+        "hc252_page": 166
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "FAMSZEY1": {
+      "variable": "FAMSZEY1",
+      "codebook_references": {
+        "hc244_page": 121,
+        "hc252_page": 121
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "POVLEVY1": {
+      "variable": "POVLEVY1",
+      "codebook_references": {
+        "hc244_page": 477,
+        "hc252_page": 446
+      },
+      "type": "continuous",
+      "preserve_negative_values": true,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Legitimate continuous income/poverty percentage: negative values represent business/farm losses or negative income and must be preserved; exact codebook sentinel -1 is missing."
+    },
+    "FAMINCY1": {
+      "variable": "FAMINCY1",
+      "codebook_references": {
+        "hc244_page": 475,
+        "hc252_page": 445
+      },
+      "type": "continuous",
+      "preserve_negative_values": true,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Legitimate continuous income/poverty percentage: negative values represent business/farm losses or negative income and must be preserved; exact codebook sentinel -1 is missing."
+    },
+    "TTLPY1X": {
+      "variable": "TTLPY1X",
+      "codebook_references": {
+        "hc244_page": 475,
+        "hc252_page": 444
+      },
+      "type": "continuous",
+      "preserve_negative_values": true,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Legitimate continuous income/poverty percentage: negative values represent business/farm losses or negative income and must be preserved; exact codebook sentinel -1 is missing."
+    },
+    "WAGEPY1X": {
+      "variable": "WAGEPY1X",
+      "codebook_references": {
+        "hc244_page": 477,
+        "hc252_page": 447
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "structural_zero",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "description": "Nonnegative wage income: -1 inapplicable (no wage income) is coded as structural zero (0.0)."
+    },
+    "HOUR1": {
+      "variable": "HOUR1",
+      "codebook_references": {
+        "hc244_page": 395,
+        "hc252_page": 363
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "structural_zero",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "description": "Continuous employment characteristic: -1 inapplicable unemployment is coded as structural zero (0.0); item non-response (-7, -8, -15) is imputed with training median; -2 inherits Round 1 value."
+    },
+    "HOUR2": {
+      "variable": "HOUR2",
+      "codebook_references": {
+        "hc244_page": 396,
+        "hc252_page": 363
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "structural_zero",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "prior_round_inheritance": {
+        "sentinel": -2,
+        "source_variable": "HOUR1"
+      },
+      "description": "Continuous employment characteristic: -1 inapplicable unemployment is coded as structural zero (0.0); item non-response (-7, -8, -15) is imputed with training median; -2 inherits Round 1 value."
+    },
+    "NUMEMP1": {
+      "variable": "NUMEMP1",
+      "codebook_references": {
+        "hc244_page": 409,
+        "hc252_page": 376
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "structural_zero",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "description": "Continuous employment characteristic: -1 inapplicable unemployment is coded as structural zero (0.0); item non-response (-7, -8, -15) is imputed with training median; -2 inherits Round 1 value."
+    },
+    "NUMEMP2": {
+      "variable": "NUMEMP2",
+      "codebook_references": {
+        "hc244_page": 409,
+        "hc252_page": 377
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "structural_zero",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "prior_round_inheritance": {
+        "sentinel": -2,
+        "source_variable": "NUMEMP1"
+      },
+      "description": "Continuous employment characteristic: -1 inapplicable unemployment is coded as structural zero (0.0); item non-response (-7, -8, -15) is imputed with training median; -2 inherits Round 1 value."
+    },
+    "OBTOTVY1": {
+      "variable": "OBTOTVY1",
+      "codebook_references": {
+        "hc244_page": 758,
+        "hc252_page": 728
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "OBDRVY1": {
+      "variable": "OBDRVY1",
+      "codebook_references": {
+        "hc244_page": 768,
+        "hc252_page": 738
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "OPTOTVY1": {
+      "variable": "OPTOTVY1",
+      "codebook_references": {
+        "hc244_page": 778,
+        "hc252_page": 748
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "ERTOTY1": {
+      "variable": "ERTOTY1",
+      "codebook_references": {
+        "hc244_page": 825,
+        "hc252_page": 795
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "IPDISY1": {
+      "variable": "IPDISY1",
+      "codebook_references": {
+        "hc244_page": 853,
+        "hc252_page": 823
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "RXTOTY1": {
+      "variable": "RXTOTY1",
+      "codebook_references": {
+        "hc244_page": 930,
+        "hc252_page": 898
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "TOTEXPY1": {
+      "variable": "TOTEXPY1",
+      "codebook_references": {
+        "hc244_page": 749,
+        "hc252_page": 719
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "TOTSLFY1": {
+      "variable": "TOTSLFY1",
+      "codebook_references": {
+        "hc244_page": 750,
+        "hc252_page": 720
+      },
+      "type": "continuous",
+      "preserve_negative_values": false,
+      "missing_sentinels": [
+        -1,
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_handling": "missing_sentinel",
+      "description": "Standard continuous predictor: negative codes (-1, -7, -8, -15) are missing sentinels imputed with training median."
+    },
+    "HIDEG": {
+      "variable": "HIDEG",
+      "codebook_references": {
+        "hc244_page": 167,
+        "hc252_page": 167
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MARRY1X": {
+      "variable": "MARRY1X",
+      "codebook_references": {
+        "hc244_page": 158,
+        "hc252_page": 158
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MARRY2X": {
+      "variable": "MARRY2X",
+      "codebook_references": {
+        "hc244_page": 159,
+        "hc252_page": 159
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MARRYY1X": {
+      "variable": "MARRYY1X",
+      "codebook_references": {
+        "hc244_page": 161,
+        "hc252_page": 161
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "REGION1": {
+      "variable": "REGION1",
+      "codebook_references": {
+        "hc244_page": 124,
+        "hc252_page": 123
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "REGION2": {
+      "variable": "REGION2",
+      "codebook_references": {
+        "hc244_page": 124,
+        "hc252_page": 124
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "REGIONY1": {
+      "variable": "REGIONY1",
+      "codebook_references": {
+        "hc244_page": 126,
+        "hc252_page": 125
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "POVCATY1": {
+      "variable": "POVCATY1",
+      "codebook_references": {
+        "hc244_page": 476,
+        "hc252_page": 446
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "EMPST1": {
+      "variable": "EMPST1",
+      "codebook_references": {
+        "hc244_page": 383,
+        "hc252_page": 349
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "EMPST2": {
+      "variable": "EMPST2",
+      "codebook_references": {
+        "hc244_page": 383,
+        "hc252_page": 349
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "OFFER1X": {
+      "variable": "OFFER1X",
+      "codebook_references": {
+        "hc244_page": 439,
+        "hc252_page": 407
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "OFFER2X": {
+      "variable": "OFFER2X",
+      "codebook_references": {
+        "hc244_page": 439,
+        "hc252_page": 407
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "HELD1X": {
+      "variable": "HELD1X",
+      "codebook_references": {
+        "hc244_page": 437,
+        "hc252_page": 405
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "HELD2X": {
+      "variable": "HELD2X",
+      "codebook_references": {
+        "hc244_page": 437,
+        "hc252_page": 406
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "CHOIC1": {
+      "variable": "CHOIC1",
+      "codebook_references": {
+        "hc244_page": 404,
+        "hc252_page": 371
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "CHOIC2": {
+      "variable": "CHOIC2",
+      "codebook_references": {
+        "hc244_page": 404,
+        "hc252_page": 372
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "prior_round_inheritance": {
+        "sentinel": -2,
+        "source_variable": "CHOIC1"
+      },
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "SELFCM1": {
+      "variable": "SELFCM1",
+      "codebook_references": {
+        "hc244_page": 400,
+        "hc252_page": 368
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "SELFCM2": {
+      "variable": "SELFCM2",
+      "codebook_references": {
+        "hc244_page": 401,
+        "hc252_page": 368
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "prior_round_inheritance": {
+        "sentinel": -2,
+        "source_variable": "SELFCM1"
+      },
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "UNION1": {
+      "variable": "UNION1",
+      "codebook_references": {
+        "hc244_page": 412,
+        "hc252_page": 380
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "UNION2": {
+      "variable": "UNION2",
+      "codebook_references": {
+        "hc244_page": 412,
+        "hc252_page": 380
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "prior_round_inheritance": {
+        "sentinel": -2,
+        "source_variable": "UNION1"
+      },
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "RTHLTH1": {
+      "variable": "RTHLTH1",
+      "codebook_references": {
+        "hc244_page": 179,
+        "hc252_page": 218
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "RTHLTH2": {
+      "variable": "RTHLTH2",
+      "codebook_references": {
+        "hc244_page": 179,
+        "hc252_page": 219
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MNHLTH1": {
+      "variable": "MNHLTH1",
+      "codebook_references": {
+        "hc244_page": 181,
+        "hc252_page": 220
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MNHLTH2": {
+      "variable": "MNHLTH2",
+      "codebook_references": {
+        "hc244_page": 181,
+        "hc252_page": 220
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "HIBPDXY1": {
+      "variable": "HIBPDXY1",
+      "codebook_references": {
+        "hc244_page": 182,
+        "hc252_page": 179
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "DIABDXY1_M18": {
+      "variable": "DIABDXY1_M18",
+      "codebook_references": {
+        "hc244_page": 204,
+        "hc252_page": 200
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "ASTHDXY1": {
+      "variable": "ASTHDXY1",
+      "codebook_references": {
+        "hc244_page": 208,
+        "hc252_page": 204
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "CHDDXY1": {
+      "variable": "CHDDXY1",
+      "codebook_references": {
+        "hc244_page": 184,
+        "hc252_page": 181
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "ANGIDXY1": {
+      "variable": "ANGIDXY1",
+      "codebook_references": {
+        "hc244_page": 186,
+        "hc252_page": 182
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MIDXY1": {
+      "variable": "MIDXY1",
+      "codebook_references": {
+        "hc244_page": 187,
+        "hc252_page": 184
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "OHRTDXY1": {
+      "variable": "OHRTDXY1",
+      "codebook_references": {
+        "hc244_page": 188,
+        "hc252_page": 185
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "STRKDXY1": {
+      "variable": "STRKDXY1",
+      "codebook_references": {
+        "hc244_page": 191,
+        "hc252_page": 187
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "EMPHDXY1": {
+      "variable": "EMPHDXY1",
+      "codebook_references": {
+        "hc244_page": 192,
+        "hc252_page": 188
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "CHBRON1": {
+      "variable": "CHBRON1",
+      "codebook_references": {
+        "hc244_page": 193,
+        "hc252_page": 190
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "CHOLDXY1": {
+      "variable": "CHOLDXY1",
+      "codebook_references": {
+        "hc244_page": 194,
+        "hc252_page": 190
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "CANCERY1": {
+      "variable": "CANCERY1",
+      "codebook_references": {
+        "hc244_page": 195,
+        "hc252_page": 192
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "ARTHDXY1": {
+      "variable": "ARTHDXY1",
+      "codebook_references": {
+        "hc244_page": 206,
+        "hc252_page": 202
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "JTPAIN1_M18": {
+      "variable": "JTPAIN1_M18",
+      "codebook_references": {
+        "hc244_page": 205,
+        "hc252_page": 202
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "ACTLIM1": {
+      "variable": "ACTLIM1",
+      "codebook_references": {
+        "hc244_page": 228,
+        "hc252_page": 230
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "ADLHLP1": {
+      "variable": "ADLHLP1",
+      "codebook_references": {
+        "hc244_page": 220,
+        "hc252_page": 222
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "IADLHP1": {
+      "variable": "IADLHP1",
+      "codebook_references": {
+        "hc244_page": 219,
+        "hc252_page": 222
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "WLKLIM1": {
+      "variable": "WLKLIM1",
+      "codebook_references": {
+        "hc244_page": 221,
+        "hc252_page": 224
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "SOCLIM1": {
+      "variable": "SOCLIM1",
+      "codebook_references": {
+        "hc244_page": 231,
+        "hc252_page": 233
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "COGLIM1": {
+      "variable": "COGLIM1",
+      "codebook_references": {
+        "hc244_page": 232,
+        "hc252_page": 234
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "HAVEUS2": {
+      "variable": "HAVEUS2",
+      "codebook_references": {
+        "hc244_page": 357,
+        "hc252_page": 329
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "LOCATN2": {
+      "variable": "LOCATN2",
+      "codebook_references": {
+        "hc244_page": 362,
+        "hc252_page": 334
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "PROVTY2_M18": {
+      "variable": "PROVTY2_M18",
+      "codebook_references": {
+        "hc244_page": 359,
+        "hc252_page": 331
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "INSCOVY1": {
+      "variable": "INSCOVY1",
+      "codebook_references": {
+        "hc244_page": 662,
+        "hc252_page": 632
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "PRIEUY1": {
+      "variable": "PRIEUY1",
+      "codebook_references": {
+        "hc244_page": 716,
+        "hc252_page": 686
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "PRINGY1": {
+      "variable": "PRINGY1",
+      "codebook_references": {
+        "hc244_page": 718,
+        "hc252_page": 688
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "PUBY1X": {
+      "variable": "PUBY1X",
+      "codebook_references": {
+        "hc244_page": 730,
+        "hc252_page": 700
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MCAIDY1X": {
+      "variable": "MCAIDY1X",
+      "codebook_references": {
+        "hc244_page": 690,
+        "hc252_page": 660
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "MCAREY1X": {
+      "variable": "MCAREY1X",
+      "codebook_references": {
+        "hc244_page": 694,
+        "hc252_page": 663
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "TRICRY1X": {
+      "variable": "TRICRY1X",
+      "codebook_references": {
+        "hc244_page": 685,
+        "hc252_page": 655
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    },
+    "VAPROGY1": {
+      "variable": "VAPROGY1",
+      "codebook_references": {
+        "hc244_page": 708,
+        "hc252_page": 677
+      },
+      "type": "categorical",
+      "missing_sentinels": [
+        -7,
+        -8,
+        -15
+      ],
+      "inapplicable_sentinels": [
+        -1
+      ],
+      "inapplicable_handling": "preserve_category",
+      "description": "Categorical predictor: codebook-defined inapplicable category (-1) is preserved as a distinct structural category dummy; item non-response codes (-7, -8, -15) are treated as missing."
+    }
+  },
+  "temporal_contract": {
+    "description": "Strict zero-leakage temporal contract: Only Round 1, Round 2, and annual Year 1 (Y1) variables are permitted as baseline predictors. Round 3 is fielded in Year 2 and is strictly prohibited along with Rounds 4 and 5.",
+    "permitted_rounds": [
+      "Round 1",
+      "Round 2",
+      "Annual Year 1 (Y1)"
+    ],
+    "prohibited_rounds": [
+      "Round 3 (Fielded in Year 2)",
+      "Round 4 (Fielded in Year 2)",
+      "Round 5 (Fielded in Year 2/3)"
+    ],
+    "prohibited_temporal_patterns": [
+      "Y2$",
+      "Y2X$",
+      "YR2$",
+      "Y2_M18$",
+      "^INS.*Y2",
+      ".*3$",
+      ".*3X$",
+      ".*3_M18$",
+      ".*4$",
+      ".*4X$",
+      ".*4_M18$",
+      ".*5$",
+      ".*5X$",
+      ".*5_M18$"
+    ]
+  },
+  "prohibited_leakage_variables": [
+    "INS..Y2X (Follow-up monthly insurance)",
+    "Y2_annual_variables (Year 2 expenditures, income, health status)",
+    "Rounds_3_4_5_variables (Post-baseline interview rounds fielded in Year 2)",
+    "Identifiers (DUPERSID, DUID, PID, PANEL, FAMID...)",
+    "Design_variables (VARSTR, VARPSU, LONGWT as predictive features)",
+    "Audit_demographics (RACETHX, SEX in primary predictor matrix X)"
+  ]
+}

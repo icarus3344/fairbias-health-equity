@@ -1,8 +1,8 @@
 # Research Protocol: Longitudinal Prediction and Fair Allocation of Health Insurance Retention Outreach
 
 **Date**: 2026-08-28
-**Protocol Version**: 1.0.0-pre-data
-**Status**: Frozen (Pending Gate 7 Codebook Verification)
+**Protocol Version**: 1.1.0-pre-experiment-repair
+**Status**: Gate 7 mappings verified; experiment remains blocked and Panel 27 locked
 
 ---
 
@@ -55,11 +55,11 @@ where $Y = 1$ indicates $\ge 1$ uninsured month in Year 2, and $X_{\text{Y1}}$ r
 `LONGWT` supports survey-weighted domain estimates representing the civilian noninstitutionalized population satisfying the frozen eligible cohort criteria, rather than an unrestricted claim about all US adults.
 
 ### 3.3 Status of Variable Names
-In accordance with Gate 3 protocol, exact monthly insurance coverage variable names and codebook category values are not guessed and remain unresolved until verified against official codebooks in Gate 7.
+Gate 7 verified the exact age, monthly insurance, survey-design, audit, and 74-predictor mappings. The canonical machine-readable contract is `configs/cohort_and_variables.json`, mirrored by `configs/study.json` and source constants in `src/meps_fairness/data/cohort.py`.
 
 ---
 
-## 4. Two-Panel Temporal Validation Framework
+## 4. Development-Panel and Locked Temporal Holdout Framework
 
 ```mermaid
 flowchart TD
@@ -100,6 +100,11 @@ flowchart TD
   - **Validation Partition (20%)**: Used solely to select model hyperparameters, feature selection policies, and fairness mitigation trade-off settings.
   - **Refit Step**: Once choices are frozen, the selected preprocessing, mitigation arm, and base model are refit on the combined Train + Validation partition (80%).
   - **Calibration Partition (20%)**: Untouched during model/hyperparameter selection. Used to fit a survey-weighted Platt logistic calibrator and freeze the operational 10% weighted selection probability threshold.
+  - Diagnostics computed on this same partition after fitting the calibrator are apparent calibration-fit diagnostics, not independent validation.
+
+### 4.1.1 Fixed candidate development sequence
+
+Because the observed Panel 26 development cohort is underpowered, the pre-experiment repair freezes HC-217 Panel 23 (2018–2019), HC-225 Panel 24 (2019–2020), HC-234 Panel 25 (2020–2021), and HC-244 Panel 26 (2021–2022) as the only candidate development sequence. This is a metadata decision only: no additional outcome access or pooling is authorized. A separate gate must resolve common-variable harmonization, survey-weight normalization, repeated calendar years, and pandemic-era comparability before any combined development analysis.
 
 ### 4.2 Locked Temporal Holdout: HC-252 Panel 27 Longitudinal Data PUF (2022–2023)
 - Maintained under strict holdout lock during pipeline development.
@@ -112,18 +117,18 @@ Panel 27 constitutes a **temporal holdout** providing a stronger temporal transp
 
 ---
 
-## 5. Scientific Questions, Primary Comparison & Endpoints
+## 5. Scientific Questions, Implemented Comparison & Future Endpoints
 
 ### 5.1 Estimable Research Questions
 1. **Q1 (Predictive Utility)**: What level of discrimination (weighted AUPRC and AUROC) is achieved on temporal holdout Panel 27 by models trained on baseline sociodemographic, health status, and healthcare access indicators in the eligible working-age cohort?
 2. **Q2 (Temporal Transport & Calibration Drift)**: What is the magnitude of discrimination and calibration shift (measured descriptively via survey-weighted calibration intercept, slope, and ECE) when models developed on Panel 26 are evaluated on temporal holdout Panel 27?
-3. **Q3 (Fairness Mitigation Trade-offs)**: What is the paired difference in predictive utility (weighted AUPRC) and subgroup error-rate disparity (maximum absolute TPR gap at 10% weighted capacity across primary audit dimensions) between the survey-weighted mitigation extension and unmitigated survey-weighted logistic regression on Panel 27?
+3. **Q3 (Exploratory Engineering Comparison)**: What descriptive utility and subgroup-metric differences arise between the implemented survey-weighted group-aware centering heuristic and the unmitigated survey-weighted logistic regression? The heuristic requires protected-group information at prediction time and is not FairBias or Tang et al. (2024); it is not presently a confirmatory primary arm.
 
-### 5.2 Primary Method Comparison & Primary Endpoints
-- **Primary Method Comparison**: Survey-weighted mitigation extension versus unmitigated survey-weighted logistic regression, both evaluated using the identical predictor policy and split structure.
+### 5.2 Current implemented comparison and future locked-holdout endpoints
+- **Current Implemented Comparison**: Exploratory survey-weighted group-aware centering versus unmitigated survey-weighted logistic regression, both using the identical predictor policy and split structure. No FairBias/Tang implementation claim is made.
 - **Primary Utility Endpoint**: Survey-weighted Area Under the Precision-Recall Curve (weighted AUPRC) on Panel 27.
-- **Primary Fairness Endpoint**: For each primary audit dimension, compute the maximum absolute pairwise group difference in TPR at 10% weighted capacity; the endpoint is the maximum of those dimension-level gaps on Panel 27. Demographic category mappings remain deferred to Gate 7.
-- **Statistical Inference**: Primary comparison estimated via paired differences with design-aware 95% confidence intervals. No single scalar is defined as proof of fairness, and no arbitrary noninferiority margin is invented. All other models, metrics, subgroups, and intersections are designated secondary or exploratory.
+- **Future Fairness Endpoint**: For each primary audit dimension, compute the maximum absolute pairwise group difference in TPR at 10% weighted capacity; the endpoint is the maximum of those dimension-level gaps on Panel 27. Gate 7 verified the demographic source-variable and category mappings, but Panel 27 evaluation remains locked.
+- **Statistical Inference Boundary**: No confirmatory mitigation comparison is presently accepted. Paired differences from the current group-aware centering arm are exploratory; no scalar is defined as proof of fairness and no arbitrary noninferiority margin is invented.
 
 ---
 

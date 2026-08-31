@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0.0",
+  "metadata": {
+    "title": "MEPS HC-244 & HC-252 Schema & Structural Expectations",
+    "protocol_version": "1.0.0-gate-6",
+    "creation_date": "2026-08-28",
+    "description": "Machine-readable structural expectations, dimension limits, authorized integrity checks, and holdout locks for Gate 6 schema verification."
+  },
+  "computational_constraints": {
+    "bounded_chunk_size": 512,
+    "max_rss_gb": 16.0,
+    "prohibit_simultaneous_panel_materialization": true
+  },
+  "required_columns": [
+    "DUPERSID",
+    "DUID",
+    "PID",
+    "PANEL",
+    "YEARIND",
+    "ALL5RDS",
+    "LONGWT",
+    "VARSTR",
+    "VARPSU"
+  ],
+  "authorized_structural_checks": {
+    "duplicate_dupersid_allowed": 0,
+    "missing_dupersid_allowed": 0,
+    "negative_or_nonfinite_longwt_allowed": 0,
+    "missing_varstr_allowed": 0,
+    "missing_varpsu_allowed": 0,
+    "unexpected_panel_allowed": 0,
+    "yearind_action": "validate_domain_or_defer_gate_7"
+  },
+  "prohibited_inspections": {
+    "outcome_prevalence_inspection": false,
+    "protected_demographic_distributions": false,
+    "feature_summary_statistics": false,
+    "row_level_microdata_access": false,
+    "unweighted_or_weighted_outcome_cohorts": false
+  },
+  "panels": {
+    "hc244": {
+      "puf_id": "HC-244",
+      "panel_number": 26,
+      "role": "development_cohort",
+      "expected_rows": 6741,
+      "expected_columns": 2737,
+      "expected_all5rds_1_count": 6295,
+      "expected_panel_value": 26,
+      "source_archive_relative_path": "data/raw/meps/h244/h244dta.zip",
+      "expected_member_name": "h244.dta",
+      "interim_relative_path": "data/interim/meps/h244/h244.dta",
+      "expected_uncompressed_bytes": null
+    },
+    "hc252": {
+      "puf_id": "HC-252",
+      "panel_number": 27,
+      "role": "temporal_holdout_cohort",
+      "expected_rows": 8292,
+      "expected_columns": 2648,
+      "expected_all5rds_1_count": 7812,
+      "expected_panel_value": 27,
+      "source_archive_relative_path": "data/raw/meps/h252/h252dta.zip",
+      "expected_member_name": "h252.dta",
+      "interim_relative_path": "data/interim/meps/h252/h252.dta",
+      "expected_uncompressed_bytes": null
+    }
+  },
+  "temporal_holdout_lock": {
+    "target_puf_id": "HC-252",
+    "target_panel_number": 27,
+    "status": "locked",
+    "claim_boundary": "temporal_transport_assessment_within_meps_not_external_validation_or_deployment_simulation",
+    "allowed_prelock_checks": [
+      "schema_column_names_and_types",
+      "documented_code_compatibility",
+      "file_dimensions_and_record_counts",
+      "file_hashes",
+      "non_outcome_structural_integrity_checks"
+    ],
+    "prohibited_prelock_checks": [
+      "outcome_prevalence_inspection",
+      "protected_group_rates_or_distributions",
+      "feature_summaries_or_marginal_distributions",
+      "performance_metric_evaluation_or_tuning"
+    ]
+  }
+}

@@ -1,8 +1,8 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "study_metadata": {
     "title": "MEPS Longitudinal Coverage Interruption and Algorithmic Fairness Study",
-    "protocol_version": "1.0.0-pre-data",
+    "protocol_version": "1.1.0-pre-experiment-repair",
     "creation_date": "2026-08-28",
     "evidence_access_date": "2026-08-28",
     "purpose": "beneficial_retention_and_outreach_research_only",
@@ -34,6 +34,37 @@
       "codebook_url": "https://meps.ahrq.gov/data_stats/download_data/pufs/h244/h244cb.pdf",
       "candidate_download_url": "https://meps.ahrq.gov/data_files/pufs/h244/h244ssp.zip"
     },
+    "additional_development_candidates": [
+      {
+        "puf_id": "HC-217",
+        "panel_number": 23,
+        "years": [2018, 2019],
+        "role": "locked_candidate_development_panel_metadata_only",
+        "official_details_url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-217"
+      },
+      {
+        "puf_id": "HC-225",
+        "panel_number": 24,
+        "years": [2019, 2020],
+        "role": "locked_candidate_development_panel_metadata_only",
+        "official_details_url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-225"
+      },
+      {
+        "puf_id": "HC-234",
+        "panel_number": 25,
+        "years": [2020, 2021],
+        "role": "locked_candidate_development_panel_metadata_only",
+        "official_details_url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-234",
+        "comparability_note": "AHRQ documents pandemic-era low response and cautions comparisons or pooling; separate review required."
+      }
+    ],
+    "development_panel_policy": {
+      "fixed_candidate_sequence": ["HC-217", "HC-225", "HC-234", "HC-244"],
+      "selection_basis": "consecutive_two_year_longitudinal_pufs_preceding_locked_hc252_holdout",
+      "outcome_access_in_this_gate": "prohibited",
+      "pooling_status": "not_authorized_pending_variable_harmonization_weight_normalization_and_pandemic_heterogeneity_review",
+      "three_or_four_year_files": "excluded_to_keep_a_common_two_year_estimand"
+    },
     "temporal_holdout": {
       "title": "MEPS HC-252 Panel 27 Longitudinal Data Public Use File",
       "puf_id": "HC-252",
@@ -52,12 +83,19 @@
       "candidate_download_url": "https://meps.ahrq.gov/mepsweb/data_files/pufs/h252/h252ssp.zip"
     }
   },
+  "development_power_gate": {
+    "minimum_positive_events": 200,
+    "count_source": "runtime_eligible_development_outcomes_never_literal_status_text",
+    "threshold_met_action": "keep_panel_27_locked_pending_independent_codex_authorization",
+    "threshold_not_met_action": "stop_locked_underpowered",
+    "additional_panel_outcome_access_status": "not_authorized_in_pre_experiment_repair_gate"
+  },
   "population_eligibility": {
     "age_min": 18,
     "age_max": 64,
     "age_timing": "baseline_year_1_end",
-    "age_variable_name": null,
-    "age_variable_status": "pending_gate_7_codebook_verification",
+    "age_variable_name": "AGEY1X",
+    "age_variable_status": "verified_gate_7_against_cohort_and_variables_v1_1_0",
     "require_both_years": true,
     "year_indicator_variable": "YEARIND",
     "year_indicator_expected_value": 1,
@@ -68,8 +106,11 @@
     "longitudinal_weight_variable": "LONGWT",
     "require_continuous_baseline_insurance": true,
     "baseline_insurance_timing": "all_12_months_year_1",
-    "baseline_insurance_variables": null,
-    "baseline_insurance_status": "pending_gate_7_codebook_verification"
+    "baseline_insurance_variables": [
+      "INSJAY1X", "INSFEY1X", "INSMAY1X", "INSAPY1X", "INSMYY1X", "INSJUY1X",
+      "INSJLY1X", "INSAUY1X", "INSSEY1X", "INSOCY1X", "INSNOY1X", "INSDEY1X"
+    ],
+    "baseline_insurance_status": "verified_gate_7_against_cohort_and_variables_v1_1_0"
   },
   "temporal_holdout_lock": {
     "status": "locked",
@@ -92,21 +133,27 @@
     "primary_outcome": {
       "name": "any_uninsured_month_y2",
       "description": "At least one month uninsured during calendar Year 2",
-      "exact_monthly_variables": null,
-      "variable_mapping_status": "pending_gate_7_codebook_verification"
+      "exact_monthly_variables": [
+        "INSJAY2X", "INSFEY2X", "INSMAY2X", "INSAPY2X", "INSMYY2X", "INSJUY2X",
+        "INSJLY2X", "INSAUY2X", "INSSEY2X", "INSOCY2X", "INSNOY2X", "INSDEY2X"
+      ],
+      "variable_mapping_status": "verified_gate_7_against_cohort_and_variables_v1_1_0"
     },
     "sensitivity_outcomes": [
       {
         "name": "prolonged_uninsurance_y2",
         "description": "Three or more months uninsured during calendar Year 2",
-        "exact_monthly_variables": null,
-        "variable_mapping_status": "pending_gate_7_codebook_verification"
+        "exact_monthly_variables": [
+          "INSJAY2X", "INSFEY2X", "INSMAY2X", "INSAPY2X", "INSMYY2X", "INSJUY2X",
+          "INSJLY2X", "INSAUY2X", "INSSEY2X", "INSOCY2X", "INSNOY2X", "INSDEY2X"
+        ],
+        "variable_mapping_status": "verified_gate_7_against_cohort_and_variables_v1_1_0"
       },
       {
         "name": "year_end_uninsurance_y2",
         "description": "Uninsured in December (Month 12) of calendar Year 2",
-        "exact_monthly_variables": null,
-        "variable_mapping_status": "pending_gate_7_codebook_verification"
+        "exact_monthly_variables": ["INSDEY2X"],
+        "variable_mapping_status": "verified_gate_7_against_cohort_and_variables_v1_1_0"
       }
     ]
   },
@@ -126,8 +173,21 @@
       "PID",
       "PANEL"
     ],
-    "exact_predictor_list": null,
-    "predictor_status": "pending_gate_7_codebook_verification"
+    "exact_predictor_list": [
+      "ACTLIM1", "ADLHLP1", "AGEY1X", "ANGIDXY1", "ARTHDXY1", "ASTHDXY1", "CANCERY1",
+      "CHBRON1", "CHDDXY1", "CHOIC1", "CHOIC2", "CHOLDXY1", "COGLIM1", "DIABDXY1_M18",
+      "EDUCYR", "EMPHDXY1", "EMPST1", "EMPST2", "ERTOTY1", "FAMINCY1", "FAMSZEY1",
+      "HAVEUS2", "HELD1X", "HELD2X", "HIBPDXY1", "HIDEG", "HOUR1", "HOUR2", "IADLHP1",
+      "INSCOVY1", "IPDISY1", "JTPAIN1_M18", "LOCATN2", "MARRY1X", "MARRY2X", "MARRYY1X",
+      "MCAIDY1X", "MCAREY1X", "MIDXY1", "MNHLTH1", "MNHLTH2", "NUMEMP1", "NUMEMP2",
+      "OBDRVY1", "OBTOTVY1", "OFFER1X", "OFFER2X", "OHRTDXY1", "OPTOTVY1", "POVCATY1",
+      "POVLEVY1", "PRIEUY1", "PRINGY1", "PROVTY2_M18", "PUBY1X", "REGION1", "REGION2",
+      "REGIONY1", "RTHLTH1", "RTHLTH2", "RXTOTY1", "SELFCM1", "SELFCM2", "SOCLIM1",
+      "STRKDXY1", "TOTEXPY1", "TOTSLFY1", "TRICRY1X", "TTLPY1X", "UNION1", "UNION2",
+      "VAPROGY1", "WAGEPY1X", "WLKLIM1"
+    ],
+    "predictor_status": "verified_gate_7_74_predictors_19_continuous_55_categorical",
+    "canonical_mapping_source": "configs/cohort_and_variables.json#/baseline_predictors"
   },
   "data_partitioning": {
     "panel": "HC-244",
@@ -146,9 +206,12 @@
   },
   "calibration": {
     "method": "survey_weighted_platt_scaling",
-    "primary_partition": "calibration",
-    "calibrator_type": "logistic_calibrator_on_untouched_calibration_set",
-    "data_dependent_selection": false
+    "fit_partition": "calibration",
+    "development_diagnostic_partition": "same_calibration_partition",
+    "calibrator_type": "logistic_calibrator_fit_on_untouched_calibration_partition",
+    "development_evidence_nature": "apparent_calibration_fit_diagnostics_not_out_of_sample_validation",
+    "data_dependent_selection": false,
+    "holdout_evaluation_status": "locked_pending_independent_codex_authorization"
   },
   "survey_design": {
     "weight_variable": "LONGWT",
@@ -172,8 +235,18 @@
       "age_band",
       "disability_limitation_status"
     ],
-    "exact_protected_variable_mappings": null,
-    "category_mapping_status": "pending_gate_7_codebook_verification",
+    "exact_protected_variable_mappings": {
+      "race_ethnicity": {"source": "RACETHX", "role": "primary_audit"},
+      "sex": {"source": "SEX", "role": "primary_audit"},
+      "poverty_category": {"source": "POVCATY1", "role": "secondary_audit"},
+      "age_band": {"source": "AGEY1X", "derivation": "18-24|25-44|45-64", "role": "secondary_audit"},
+      "disability_limitation_status": {
+        "sources": ["ACTLIM1", "ADLHLP1", "IADLHP1", "WLKLIM1", "SOCLIM1", "COGLIM1"],
+        "derivation": "any_round1_limitation_yes",
+        "role": "secondary_audit"
+      }
+    },
+    "category_mapping_status": "verified_gate_7_source_variables_derivations_frozen",
     "role": "audit_variables_only_not_primary_predictors",
     "suppression_rules": {
       "min_unweighted_subgroup_n": 100,
@@ -192,20 +265,21 @@
     "secondary_requirements": "native_sample_weight_support_and_deterministic_seed"
   },
   "mitigation_arms": [
-    "unmitigated_baseline",
-    "paper_informed_reconstruction",
-    "survey_weighted_mitigation_extension"
+    "unmitigated_survey_weighted_logistic_regression",
+    "exploratory_survey_weighted_group_aware_centering_requires_protected_attribute_at_inference"
   ],
-  "primary_comparison": {
-    "mitigated_arm": "survey_weighted_mitigation_extension",
+  "implemented_comparison": {
+    "mitigated_arm": "exploratory_survey_weighted_group_aware_centering_requires_protected_attribute_at_inference",
     "baseline_arm": "unmitigated_survey_weighted_logistic_regression",
     "feature_policy": "identical_baseline_predictors",
-    "split_policy": "identical_duid_grouped_split"
+    "split_policy": "identical_duid_grouped_split",
+    "scientific_role": "exploratory_engineering_comparison_not_fairbias_or_tang",
+    "inference_requirement": "protected_group_required_by_centering_arm_at_prediction_time"
   },
   "primary_endpoints": {
     "utility": "weighted_auprc_panel_27",
     "fairness": "maximum_across_primary_dimensions_of_max_absolute_pairwise_group_tpr_gap_at_10_percent_weighted_capacity",
-    "fairness_category_mapping_status": "deferred_to_gate_7"
+    "fairness_category_mapping_status": "verified_gate_7"
   },
   "paired_difference_inference": {
     "method": "stratified_psu_resampling",
@@ -287,7 +361,7 @@
   "stop_conditions": [
     "missing_or_unharmonizable_target_variables",
     "failed_weight_or_design_validation",
-    "eligible_positive_outcomes_fewer_than_200",
+    "frozen_development_panel_policy_positive_outcomes_fewer_than_200",
     "data_leakage_test_failure",
     "unsupported_stratified_psu_resampling_structure",
     "manifest_reproduction_failure"

@@ -134,7 +134,8 @@ class Artifact:
     url: str
     relative_destination: str
     expected_content_type: str | None
-    endpoint_preflight: dict[str, Any] | None
+    archive_allowed_member_extensions: tuple[str, ...] = (".ssp", ".xpt")
+    endpoint_preflight: dict[str, Any] | None = None
     publisher_checksum: str | None = None
 
     @classmethod
@@ -160,6 +161,25 @@ class Artifact:
         if not dest or not isinstance(dest, str):
             raise IntegrityError("Artifact must contain a non-empty string relative_destination.")
 
+        if "archive_allowed_member_extensions" in data:
+            exts = data["archive_allowed_member_extensions"]
+        elif "allowed_member_extensions" in data:
+            exts = data["allowed_member_extensions"]
+        else:
+            exts = None
+
+        if exts is not None:
+            if not isinstance(exts, (list, tuple)) or len(exts) == 0:
+                raise IntegrityError("archive_allowed_member_extensions must be a non-empty sequence.")
+            validated_exts: list[str] = []
+            for ext in exts:
+                if not isinstance(ext, str) or not ext.startswith(".") or len(ext) < 2 or not ext[1:].isalnum():
+                    raise SecurityError(f"Invalid or unsafe archive member extension: {ext!r}")
+                validated_exts.append(ext.lower())
+            archive_allowed_member_extensions = tuple(validated_exts)
+        else:
+            archive_allowed_member_extensions = (".ssp", ".xpt")
+
         return cls(
             artifact_id=art_id,
             puf_id=puf_id,
@@ -170,6 +190,7 @@ class Artifact:
             url=url,
             relative_destination=dest,
             expected_content_type=data.get("expected_content_type"),
+            archive_allowed_member_extensions=archive_allowed_member_extensions,
             endpoint_preflight=data.get("endpoint_preflight"),
             publisher_checksum=data.get("publisher_checksum"),
         )
@@ -406,13 +427,26 @@ def validate_pdf_magic(file_path: pathlib.Path) -> None:
 
 def validate_zip_archive(
     file_path: pathlib.Path,
+    allowed_member_extensions: Sequence[str] | None = None,
     max_uncompressed_bytes: int = MAX_UNCOMPRESSED_ARCHIVE_BYTES,
     max_ratio: float = MAX_COMPRESSION_RATIO,
 ) -> dict[str, Any]:
-    """Validate ZIP archive structure, single-member SAS transport rule, and safety constraints.
+    """Validate ZIP archive structure, single-member allowed extension rule, and safety constraints.
 
     Does not extract archive contents.
     """
+    if allowed_member_extensions is None:
+        valid_exts: tuple[str, ...] = (".ssp", ".xpt")
+    else:
+        if not isinstance(allowed_member_extensions, (list, tuple, set, frozenset)) or len(allowed_member_extensions) == 0:
+            raise IntegrityError("allowed_member_extensions must be a non-empty sequence.")
+        validated_exts: list[str] = []
+        for ext in allowed_member_extensions:
+            if not isinstance(ext, str) or not ext.startswith(".") or len(ext) < 2 or not ext[1:].isalnum():
+                raise SecurityError(f"Invalid or unsafe archive member extension: {ext!r}")
+            validated_exts.append(ext.lower())
+        valid_exts = tuple(validated_exts)
+
     if not file_path.is_file():
         raise IntegrityError(f"ZIP file does not exist: {file_path}")
     if file_path.stat().st_size == 0:
@@ -447,9 +481,9 @@ def validate_zip_archive(
                 raise SecurityError(f"Path traversal in ZIP member name rejected: '{info.filename}'")
 
             lower_name = info.filename.lower()
-            if not (lower_name.endswith(".ssp") or lower_name.endswith(".xpt")):
+            if not any(lower_name.endswith(ext) for ext in valid_exts):
                 raise IntegrityError(
-                    f"ZIP member '{info.filename}' does not have a permitted SAS transport extension (.ssp or .xpt)."
+                    f"ZIP member '{info.filename}' does not have a permitted archive member extension ({valid_exts})."
                 )
 
             mode = (info.external_attr >> 16) & 0o170000
@@ -704,7 +738,10 @@ def download_single_artifact(
                 if artifact.expected_content_type == "application/pdf" or dest_path.suffix.lower() == ".pdf":
                     validate_pdf_magic(dest_path)
                 elif artifact.expected_content_type == "application/zip" or dest_path.suffix.lower() == ".zip":
-                    validate_zip_archive(dest_path)
+                    validate_zip_archive(
+                        dest_path,
+                        allowed_member_extensions=artifact.archive_allowed_member_extensions,
+                    )
                 return "skipped", prev_rec
             else:
                 raise FileExistsError(
@@ -798,7 +835,10 @@ def download_single_artifact(
         if artifact.expected_content_type == "application/pdf" or dest_path.suffix.lower() == ".pdf":
             validate_pdf_magic(part_path)
         elif artifact.expected_content_type == "application/zip" or dest_path.suffix.lower() == ".zip":
-            archive_meta = validate_zip_archive(part_path)
+            archive_meta = validate_zip_archive(
+                part_path,
+                allowed_member_extensions=artifact.archive_allowed_member_extensions,
+            )
 
         # 7. No-clobber atomic promotion to final path via os.link
         _promote_data_artifact_no_clobber(part_path, dest_path)

@@ -2,17 +2,20 @@
 
 **Study Title**: Longitudinal Prediction and Fair Allocation of Health Insurance Retention Outreach in MEPS
 **Date**: 2026-08-28
-**SAP Version**: 1.0.0-pre-data
-**Status**: Frozen (Pending Gate 7 Codebook Verification)
+**SAP Version**: 1.1.0-pre-experiment-repair
+**Status**: Partially frozen — Gate 7 mappings verified; no new experiment authorized
 
 ---
 
 ## 1. Study Design & Cohort Flow
 
 ### 1.1 Source Datasets
-The study employs two consecutive longitudinal panels from the Medical Expenditure Panel Survey (MEPS):
-- **Development Panel**: MEPS HC-244 Panel 26 Longitudinal Data Public Use File (covering 2021 [Year 1] to 2022 [Year 2]; released September 2024; 6,741 total person records; 6,295 with `ALL5RDS = 1`).
+The study keeps Panel 27 as the sole locked temporal holdout. The fixed candidate development sequence is the four consecutive two-year longitudinal PUFs immediately preceding it:
+- **Candidate Development Panels (metadata frozen; additional outcome access not authorized here)**: HC-217 Panel 23 (2018–2019), HC-225 Panel 24 (2019–2020), HC-234 Panel 25 (2020–2021), and HC-244 Panel 26 (2021–2022).
+- **Currently observed development panel**: HC-244 Panel 26; its prior development audit found 136 eligible positive outcomes, below the frozen threshold of 200.
 - **Temporal Holdout Panel**: MEPS HC-252 Panel 27 Longitudinal Data Public Use File (covering 2022 [Year 1] to 2023 [Year 2]; released September 2025; 8,292 total person records; 7,812 with `ALL5RDS = 1`).
+
+The four candidate development PUFs must not be naively concatenated. Common-variable harmonization, across-panel survey-weight normalization, overlapping calendar years, and AHRQ's documented pandemic-era comparability concerns for Panel 25 require a separate statistical-design gate before any pooled analysis.
 
 ### 1.2 Inclusion and Exclusion Criteria
 
@@ -36,7 +39,7 @@ flowchart TD
 3. **Target Age Range**: Must be aged 18 to 64 inclusive at the end of baseline Year 1 (Y1 age variable).
 4. **Positive Longitudinal Weight**: Must have a positive longitudinal analysis weight (`LONGWT > 0`).
 5. **Continuous Baseline Insurance**: Must have active health insurance coverage in all 12 calendar months of baseline Year 1. Individuals with any uninsurance month in Year 1 are excluded to isolate the transition from continuous coverage to coverage disruption.
-6. **Exact Variable Mapping Status**: Exact monthly coverage variable names, age variable names, and codebook values remain unresolved pending Gate 7 codebook verification. No variable names are guessed in this plan.
+6. **Exact Variable Mapping Status**: Gate 7 verified `AGEY1X`, the 12 `INS...Y1X` baseline months, the 12 `INS...Y2X` follow-up months, 74 baseline predictors, survey-design variables, and audit-variable derivations. The canonical machine-readable mapping is `configs/cohort_and_variables.json`; `configs/study.json` must remain mechanically consistent with it.
 
 ---
 
@@ -53,6 +56,7 @@ To prevent intra-household information leakage while preserving population balan
   - Once model hyperparameters, feature selection policies, and mitigation settings are frozen, the selected preprocessing pipeline, mitigation arm, and base model are **refit on the combined Train + Validation partition (80%)**.
 - **Probability Calibration**:
   - A survey-weighted Platt logistic calibrator is fit on the untouched Calibration Set (20%). Platt scaling is prespecified as the primary calibration method (not left data-dependent).
+  - Metrics computed on that same Calibration Set after fitting the calibrator are **apparent calibration-fit diagnostics**, not out-of-sample validation. Independent performance claims remain unavailable while Panel 27 is locked.
 - **Threshold Freezing**:
   - One conventional probability threshold is frozen from the calibrated Panel 26 calibration set at 10% weighted population selection. This numeric threshold is applied unchanged to Panel 27, distinguishing fixed-threshold evaluation from rank-based top-K capacity evaluation within each panel.
 - **Grouping Algorithm**: Grouped stratified split approximately balancing the target prevalence and survey weight deciles across folds. The grouping seed and assignment hashes are permanently recorded in the run manifest.
@@ -94,20 +98,18 @@ To prevent intra-household information leakage while preserving population balan
    - *Constraint*: Secondary models will only be executed if installed library versions natively support survey sample weights and deterministic reproducibility; unsupported features will not be promised.
 
 ### 4.2 Fairness Mitigation Arms
-Three comparative arms are evaluated:
-1. **Unmitigated Baseline**: Standard models trained on survey-weighted baseline features without fairness constraints.
-2. **Paper-Informed Reconstruction**: A leakage-free reconstruction of the metric-independent bias mitigation methodology from Tang, Z., Lu, T., & Li, T. (2024). Candidate settings are learned on Training and selected on Validation; after freezing, the selected reconstruction is refit on Train + Validation under the development flow in Section 2.1.
-   - *Provenance Note*: This is a clean, paper-informed re-implementation and is never characterized as an exact reproduction of the flawed legacy `code_v_0_3` root scripts.
-3. **Survey-Weighted Mitigation Extension**: An extension of the paper-informed reconstruction incorporating survey analysis weights (`LONGWT`) into the mitigation objective and feature transformation.
+Only two implemented arms are currently named:
+1. **Unmitigated Survey-Weighted Logistic Regression**: Group-agnostic at inference.
+2. **Exploratory Survey-Weighted Group-Aware Centering Heuristic**: Learns survey-weighted group offsets and requires the protected group at prediction time. It is an engineering heuristic, not FairBias, not Tang et al. (2024), and not a paper reconstruction. Its results are exploratory and cannot support a deployable group-blind intervention claim.
 
 ---
 
-## 5. Primary Comparison, Endpoints & Capacity-Aware Metrics
+## 5. Implemented Comparison Boundary, Future Endpoints & Capacity-Aware Metrics
 
-### 5.1 Primary Method Comparison & Primary Endpoints
-- **Primary Comparison**: Survey-weighted mitigation extension versus unmitigated survey-weighted logistic regression, both evaluated using the identical predictor policy and split structure.
-- **Primary Utility Endpoint**: Survey-weighted Area Under the Precision-Recall Curve (weighted AUPRC) on Panel 27.
-- **Primary Fairness Endpoint**: Within each primary audit dimension, take the maximum absolute pairwise group difference in TPR at 10% weighted capacity; then take the maximum across primary dimensions on Panel 27. Demographic category mappings remain deferred to Gate 7.
+### 5.1 Implemented comparison and prespecified future locked-holdout endpoints
+- **Exploratory Comparison**: The implemented group-aware centering heuristic versus unmitigated survey-weighted logistic regression, using identical baseline predictors and split structure. This is not yet an accepted primary scientific comparison.
+- **Prespecified Future Utility Endpoint**: Survey-weighted Area Under the Precision-Recall Curve (weighted AUPRC) on Panel 27, if a later supervisor-authorized holdout evaluation becomes permissible.
+- **Prespecified Future Fairness Endpoint**: Within each primary audit dimension, take the maximum absolute pairwise group difference in TPR at 10% weighted capacity; then take the maximum across primary dimensions on Panel 27. Gate 7 verified the source-variable and category mappings, but the endpoint remains unavailable while Panel 27 is locked.
 - **Primary Inference Standard**: Paired difference estimation with design-aware 95% confidence intervals. No single scalar will be defined as proof of fairness, and no arbitrary noninferiority margin will be invented. All other models, metrics, groups, and intersections are designated secondary or exploratory.
 
 ### 5.2 Discrimination & Probabilistic Accuracy Metrics
@@ -142,7 +144,7 @@ Reflecting practical resource constraints in public health retention outreach:
   - Baseline Family Poverty Category
   - Baseline Age Band
   - Baseline Disability / Functional Limitation Status
-- **Category Mapping Status**: All category mappings, coding definitions, and group boundaries are strictly deferred to Gate 7 codebook verification. No category labels are pre-enumerated before Gate 7.
+- **Category Mapping Status**: Gate 7 verified the source variables, coding definitions, and group derivations. No Panel 27 subgroup result is available while the holdout remains locked.
 - **Role**: Protected attributes serve exclusively as audit and evaluation variables; they are not primary predictors.
 
 ### 6.2 Primary Fairness Metrics
@@ -152,7 +154,7 @@ Reflecting practical resource constraints in public health retention outreach:
   - False Positive Rate (FPR) Gap / Predictive Equality Disparity.
   - Positive Predictive Value (PPV) Gap / Predictive Parity Disparity.
   - Selection Rate Gap / Demographic Parity Disparity.
-- **Bias Concentration Quantity**: Paper-informed metric quantifying the concentration of predictive bias across feature sub-spaces.
+- **Bias Concentration Quantity**: Not an active MEPS endpoint. Any simple group-mean-difference helper in the exploratory implementation is an engineering diagnostic only; it is not a Tang et al. (2024) or FairBias metric and must not be presented as reproducing the published method.
 - **Reporting Standard**: Disaggregate group-specific values and inter-group gaps with design-aware 95% confidence intervals. No single fairness scalar will be used to assert that a model is "fair."
 
 ### 6.3 Subgroup Suppression & Sample Size Rules
@@ -175,7 +177,7 @@ To prevent unreliable statistical estimation and disclosure risks in small subgr
 ### 7.2 Variance Estimation & Confidence Intervals
 - **Primary Methodology**: 95% confidence intervals and paired difference tests are computed using design-aware stratified PSU bootstrap/resampling using `VARSTR` and `VARPSU`, subject to implementation validation.
 - **Strict Substitution Policy**: BRR and generic menus of alternative variance estimators are removed. If the survey design or data structure cannot support the validated stratified PSU resampling method, execution must stop for escalation rather than silently substituting an unvalidated method.
-- **Multiplicity Control**: One primary model comparison (survey-weighted mitigation extension vs. unmitigated survey-weighted logistic regression on primary endpoints) is pre-specified. Subgroup and intersectional comparisons are treated as secondary/exploratory, reported with 95% confidence intervals and effect sizes.
+- **Multiplicity Control**: No confirmatory mitigation comparison is currently accepted. The implemented centering comparison and all subgroup/intersectional analyses remain exploratory unless a later gate freezes an estimable primary arm.
 
 ---
 
@@ -212,7 +214,7 @@ To guarantee exact reproducibility across all stochastic operations (splitting, 
 Execution must immediately pause and escalate to the supervisor under any of the following conditions:
 1. **Target Variable Harmonization Failure**: Monthly insurance status variables cannot be consistently harmonized between HC-244 and HC-252.
 2. **Design Structure Invalidation**: Survey design variables (`LONGWT`, `VARSTR`, `VARPSU`) fail structural validity checks (e.g., negative weights, unlinked PSUs).
-3. **Statistical Underpowering**: Fewer than 200 eligible positive outcome cases ($Y=1$) in either HC-244 or HC-252 analytic cohorts. The study must be marked underpowered before considering any estimand change.
+3. **Statistical Underpowering**: Fewer than 200 eligible positive outcomes across an authorized, frozen development design. The observed HC-244 result fails this threshold. Panel 27 outcomes must not be inspected to evaluate power; Panel 27 remains locked until development power and all independent-review prerequisites are satisfied.
 4. **Data Leakage Failure**: Any automated leakage test fails. Note: Nonzero mutual information between legitimate baseline predictors and the Year 2 outcome is expected predictive signal and is not leakage. Leakage failures include:
    - Inclusion of Year 2 or post-baseline columns in predictor feature sets.
    - Person-level or household (`DUID`) overlap across train/validation/calibration partitions.
@@ -229,14 +231,14 @@ Execution must immediately pause and escalate to the supervisor under any of the
 |---|---|---|
 | Primary Estimand & Target Population Definition | **FROZEN** | Confirmed against decoded codebook |
 | Both-Years Eligibility Rule (`YEARIND == 1`) | **FROZEN** | Verified in data extraction filter |
-| Two-Panel Design (HC-244 Dev / HC-252 Holdout) | **FROZEN** | Implemented in data loader |
+| Candidate development sequence (HC-217/225/234/244) / HC-252 holdout | **FROZEN AS METADATA ONLY** | Pooling and outcome access require a separate gate |
 | DUID-Grouped Partitioning (60/20/20) & Refit Flow | **FROZEN** | Split assigned and hashed |
 | Survey-Weighted Platt Calibration on Calibration Set | **FROZEN** | Implemented in calibrator module |
 | Fixed 10% Weighted Calibration Threshold Policy | **FROZEN** | Frozen and transferred to holdout |
-| Primary Method Comparison & Primary Endpoints | **FROZEN** | Implemented in evaluation module |
+| Implemented method-arm naming | **FROZEN** | Exploratory group-aware centering; not FairBias/Tang |
 | Subgroup Suppression Rules ($n<100$, pos/neg $<20$, $n_{\text{eff}}<50$) | **FROZEN** | Implemented in reporting tables |
 | Reproducibility Seeds (`20260828`–`20260832`) | **FROZEN** | Bound in configuration files |
-| Exact Monthly Insurance Variable Names & Codes | *DEFERRED* | Verified against official PDF codebooks |
-| Exact Sociodemographic Predictor Variable List | *DEFERRED* | Harmonized and mapped across panels |
-| Protected Dimension Category Mappings & Codes | *DEFERRED* | Verified against official PDF codebooks |
-| Baseline Year-End Age Variable Name | *DEFERRED* | Verified against official PDF codebooks |
+| Exact Monthly Insurance Variable Names & Codes | **VERIFIED** | Canonical mapping in `configs/cohort_and_variables.json` |
+| Exact 74-variable baseline predictor list | **VERIFIED** | 19 continuous + 55 categorical |
+| Protected-dimension sources and derivations | **VERIFIED** | `RACETHX`, `SEX`, poverty, age-band and disability contracts |
+| Baseline Year-End Age Variable Name | **VERIFIED** | `AGEY1X` |

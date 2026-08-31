@@ -1,5 +1,7 @@
 # Gate 3: Pre-Data Scientific Protocol & Study Specification Report
 
+> **Superseded method-arm note (2026-08-30):** Decision 0006 invalidates this historical report's `paper-informed reconstruction` and `survey-weighted mitigation extension` arm names. The implemented method is an exploratory survey-weighted group-aware centering heuristic requiring protected-group information at prediction time; it is not FairBias or Tang et al. This historical Gate 3 report is not current authorization to run an experiment.
+
 ## 1. Executive Summary & Audit Verdict
 
 Gate 3 establishes the formal pre-data scientific research protocol, statistical analysis plan, official MEPS source registry, architectural decision record for two-panel temporal validation, machine-readable study configuration, and governance milestone reports for the MEPS longitudinal fairness investigation on branch `research/meps-hc252-longitudinal`.
