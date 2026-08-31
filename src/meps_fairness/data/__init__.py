@@ -7,6 +7,8 @@ from meps_fairness.data.download import (
     MAX_COMPRESSION_RATIO,
     MAX_UNCOMPRESSED_ARCHIVE_BYTES,
     Artifact,
+    ArtifactDownloadPermission,
+    ArtifactDownloadScope,
     ArtifactManifest,
     DataAccessPolicy,
     DownloadError,
@@ -16,6 +18,7 @@ from meps_fairness.data.download import (
     ProvenanceRecord,
     SecurityError,
     download_artifacts,
+    validate_artifact_download_scope,
 )
 
 try:
@@ -64,6 +67,8 @@ __all__ = [
     "MAX_COMPRESSION_RATIO",
     "MAX_UNCOMPRESSED_ARCHIVE_BYTES",
     "Artifact",
+    "ArtifactDownloadPermission",
+    "ArtifactDownloadScope",
     "ArtifactManifest",
     "DataAccessPolicy",
     "DownloadError",
@@ -73,6 +78,7 @@ __all__ = [
     "ProvenanceRecord",
     "SecurityError",
     "download_artifacts",
+    "validate_artifact_download_scope",
     "BOUNDED_SCAN_CHUNK_SIZE",
     "MAX_RSS_GB_LIMIT",
     "REQUIRED_STRUCTURAL_COLUMNS",

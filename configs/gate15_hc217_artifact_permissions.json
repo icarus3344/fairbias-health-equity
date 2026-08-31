@@ -1,0 +1,99 @@
+{
+  "schema_version": "0.1.0",
+  "gate": "15",
+  "permission_status": "PENDING_SUPERVISOR_AUTHORIZATION",
+  "puf_id": "HC-217",
+  "panel_number": 23,
+  "survey_years": [
+    2018,
+    2019
+  ],
+  "active_stage": "SOURCE_METADATA_PREFLIGHT_ONLY",
+  "gate14b_prerequisite_status": "PENDING_CODEX_ACCEPTANCE",
+  "schema_stage_authorized": false,
+  "outcome_values_read": false,
+  "microdata_rows_read": false,
+  "panel_27_accessed": false,
+  "stages": {
+    "SOURCE_METADATA_PREFLIGHT_ONLY": {
+      "enabled": true,
+      "local_artifact_read_allowed": false,
+      "allowed_artifact_ids": [],
+      "allowed_operations": [
+        "HEAD_METADATA"
+      ]
+    },
+    "SCHEMA_CODEBOOK_ONLY": {
+      "enabled": false,
+      "local_artifact_read_allowed": false,
+      "allowed_artifact_ids": [
+        "hc217_stata_archive",
+        "hc217_documentation",
+        "hc217_codebook"
+      ],
+      "allowed_artifact_types": [
+        "data_archives",
+        "documentation",
+        "codebooks"
+      ],
+      "allowed_operations": [
+        "DOWNLOAD_EXACT_ARTIFACTS",
+        "READ_SCHEMA_COLUMNS_AND_TYPES",
+        "READ_DOCUMENTATION",
+        "READ_CODEBOOK"
+      ],
+      "outcome_values_read": false,
+      "microdata_rows_read": false,
+      "panel_27_accessed": false
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "hc217_stata_archive",
+      "puf_id": "HC-217",
+      "panel_number": 23,
+      "survey_years": [
+        2018,
+        2019
+      ],
+      "source_artifact_type": "archive",
+      "downloader_artifact_type": "data_archives",
+      "url": "https://meps.ahrq.gov/mepsweb/data_files/pufs/h217/h217dta.zip",
+      "relative_destination": "h217/h217dta.zip",
+      "expected_content_type": "application/zip",
+      "archive_allowed_member_extensions": [
+        ".dta"
+      ]
+    },
+    {
+      "artifact_id": "hc217_documentation",
+      "puf_id": "HC-217",
+      "panel_number": 23,
+      "survey_years": [
+        2018,
+        2019
+      ],
+      "source_artifact_type": "documentation",
+      "downloader_artifact_type": "documentation",
+      "url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data/pufs/h217/h217doc.pdf",
+      "relative_destination": "h217/h217doc.pdf",
+      "expected_content_type": "application/pdf",
+      "archive_allowed_member_extensions": []
+    },
+    {
+      "artifact_id": "hc217_codebook",
+      "puf_id": "HC-217",
+      "panel_number": 23,
+      "survey_years": [
+        2018,
+        2019
+      ],
+      "source_artifact_type": "codebook",
+      "downloader_artifact_type": "codebooks",
+      "url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data/pufs/h217/h217cb.pdf",
+      "relative_destination": "h217/h217cb.pdf",
+      "expected_content_type": "application/pdf",
+      "archive_allowed_member_extensions": []
+    }
+  ]
+}

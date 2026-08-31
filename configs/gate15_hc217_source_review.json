@@ -1,0 +1,111 @@
+{
+  "schema_version": "0.1.0",
+  "gate": "15",
+  "review_status": "SOURCE_METADATA_PREFLIGHT_ONLY",
+  "puf_id": "HC-217",
+  "panel": {
+    "panel_number": 23,
+    "candidate_order": 1,
+    "baseline_year": 2018,
+    "follow_up_year": 2019,
+    "role": "candidate_development_panel_source_schema_review"
+  },
+  "source": {
+    "official_host": "meps.ahrq.gov",
+    "details_url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data_files_detail.jsp?cboPufNumber=HC-217",
+    "artifacts": [
+      {
+        "artifact_id": "hc217_stata_archive",
+        "artifact_type": "archive",
+        "url": "https://meps.ahrq.gov/mepsweb/data_files/pufs/h217/h217dta.zip",
+        "http_status": 200,
+        "content_type": "application/zip",
+        "content_length_bytes": 6429746,
+        "last_modified": "2024-09-17T05:12:18Z",
+        "sha256": null,
+        "sha256_status": "PENDING_AUTHORIZED_DOWNLOAD",
+        "publisher_checksum": null
+      },
+      {
+        "artifact_id": "hc217_documentation",
+        "artifact_type": "documentation",
+        "url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data/pufs/h217/h217doc.pdf",
+        "http_status": 200,
+        "content_type": "application/pdf",
+        "content_length_bytes": 373468,
+        "last_modified": "2024-09-17T05:14:18Z",
+        "sha256": null,
+        "sha256_status": "PENDING_AUTHORIZED_DOWNLOAD",
+        "publisher_checksum": null
+      },
+      {
+        "artifact_id": "hc217_codebook",
+        "artifact_type": "codebook",
+        "url": "https://meps.ahrq.gov/mepsweb/data_stats/download_data/pufs/h217/h217cb.pdf",
+        "http_status": 200,
+        "content_type": "application/pdf",
+        "content_length_bytes": 8428624,
+        "last_modified": "2024-09-17T05:14:18Z",
+        "sha256": null,
+        "sha256_status": "PENDING_AUTHORIZED_DOWNLOAD",
+        "publisher_checksum": null
+      }
+    ]
+  },
+  "documented_structure": {
+    "status": "DOCUMENTATION_METADATA_ONLY",
+    "two_year_period": [
+      2018,
+      2019
+    ],
+    "rounds": 5,
+    "documented_variables": [
+      "PANEL",
+      "DUID",
+      "PID",
+      "DUPERSID",
+      "YEARIND",
+      "ALL5RDS",
+      "LONGWT",
+      "VARSTR",
+      "VARPSU"
+    ],
+    "source_references": {
+      "details_page": "official HC-217 details page",
+      "documentation_section": "h217doc.pdf C-1 to C-2",
+      "codebook": "h217cb.pdf"
+    }
+  },
+  "semantic_review": {
+    "status": "PENDING_SCHEMA_AND_CODEBOOK_REVIEW",
+    "required_checks": [
+      "variable labels and substantive meaning",
+      "calendar timing and round placement",
+      "valid, missing, negative, and unknown codes",
+      "universe and eligibility restrictions",
+      "numeric versus categorical type and scale",
+      "LONGWT target population and construction",
+      "VARSTR and VARPSU sampling-design meaning",
+      "identifier and calendar-year structure"
+    ]
+  },
+  "schema": {
+    "status": "NOT_READ_PENDING_DATA_SCOPE",
+    "column_names": null,
+    "column_types": null,
+    "schema_sha256": null
+  },
+  "authorization": {
+    "source_metadata_read_allowed": true,
+    "schema_read_allowed": false,
+    "microdata_rows_read": false,
+    "outcome_values_read": false,
+    "panel_27_accessed": false,
+    "reason": "The separate exact-artifact Gate 15 permission remains pending supervisor authorization; configs/data_access.json is intentionally unchanged and a broad PUF entry alone cannot unlock schema access."
+  },
+  "provenance": {
+    "retrieved_at_utc": "2026-08-31T08:35:23Z",
+    "source": "Official AHRQ details page plus HTTPS HEAD metadata; no archive or PDF was downloaded in this preflight.",
+    "publisher_checksum_policy": "AHRQ publisher SHA-256 was not listed; null is intentional until a local authorized download is made."
+  }
+}

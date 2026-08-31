@@ -197,6 +197,54 @@ class Artifact:
 
 
 @dataclasses.dataclass(frozen=True)
+class ArtifactDownloadPermission:
+    """Exact identity and content contract for one narrowly scoped artifact."""
+
+    artifact_id: str
+    puf_id: str
+    panel_number: int
+    survey_years: tuple[int, int]
+    artifact_type: str
+    url: str
+    relative_destination: str
+    expected_content_type: str
+    archive_allowed_member_extensions: tuple[str, ...] = ()
+
+
+@dataclasses.dataclass(frozen=True)
+class ArtifactDownloadScope:
+    """Stage-specific authorization layered above the broad data policy.
+
+    The existing data-access policy remains the network and artifact-type
+    boundary.  This optional scope adds exact artifact identity and stage
+    restrictions without widening the project-wide ``authorized_pufs`` list.
+    """
+
+    gate: str
+    puf_id: str
+    panel_number: int
+    survey_years: tuple[int, int]
+    stage: str
+    authorization_status: str
+    allowed_artifact_types: frozenset[str]
+    allowed_artifacts: tuple[ArtifactDownloadPermission, ...]
+    outcome_values_read: bool = False
+    microdata_rows_read: bool = False
+    panel_27_accessed: bool = False
+    gate14b_prerequisite_status: str | None = None
+
+    def permission_for(self, artifact_id: str) -> ArtifactDownloadPermission | None:
+        """Return the exact permission entry for ``artifact_id``, if present."""
+
+        matches = tuple(
+            item for item in self.allowed_artifacts if item.artifact_id == artifact_id
+        )
+        if len(matches) != 1:
+            return None
+        return matches[0]
+
+
+@dataclasses.dataclass(frozen=True)
 class ArtifactManifest:
     """Parsed manifest containing a collection of MEPS artifacts."""
 
@@ -702,12 +750,92 @@ def compute_file_sha256_and_size(file_path: pathlib.Path) -> tuple[str, int]:
     return hasher.hexdigest(), total_bytes
 
 
+def validate_artifact_download_scope(
+    artifact: Artifact,
+    scope: ArtifactDownloadScope,
+) -> None:
+    """Fail closed unless an artifact matches an authorized exact scope.
+
+    A broad PUF-level authorization is intentionally insufficient when a
+    caller supplies a stage-specific scope.  The scope must be explicitly
+    authorized for the schema/codebook stage and the requested artifact must
+    match every identity and destination field recorded in that scope.
+    """
+
+    if not isinstance(scope, ArtifactDownloadScope):
+        raise SecurityError("artifact_scope must be an ArtifactDownloadScope instance.")
+    if scope.gate != "15" or scope.puf_id != "HC-217" or scope.panel_number != 23:
+        raise SecurityError("the scoped downloader contract must target HC-217 Panel 23 in Gate 15.")
+    if scope.survey_years != (2018, 2019):
+        raise SecurityError("the scoped downloader contract must target survey years 2018-2019.")
+    if scope.authorization_status != "SUPERVISOR_AUTHORIZED":
+        raise SecurityError(
+            "artifact scope is not supervisor-authorized; no artifact download is permitted."
+        )
+    if scope.stage != "SCHEMA_CODEBOOK_ONLY":
+        raise SecurityError(
+            "artifact scope does not authorize the schema/codebook-only download stage."
+        )
+    if scope.gate14b_prerequisite_status != "ACCEPTED_AND_COMMITTED":
+        raise SecurityError(
+            "Gate 15 artifact scope requires an independently accepted and committed Gate 14B."
+        )
+    if scope.outcome_values_read or scope.microdata_rows_read or scope.panel_27_accessed:
+        raise SecurityError(
+            "artifact scope contains a prohibited outcome, microdata, or Panel 27 permission."
+        )
+    if scope.panel_number == 27 or scope.puf_id == "HC-252":
+        raise SecurityError("Panel 27 is a locked temporal holdout.")
+    if artifact.puf_id != scope.puf_id:
+        raise SecurityError(
+            f"artifact PUF '{artifact.puf_id}' does not match scoped PUF '{scope.puf_id}'."
+        )
+    if artifact.artifact_type not in scope.allowed_artifact_types:
+        raise SecurityError(
+            f"artifact type '{artifact.artifact_type}' is not allowed by the exact scope."
+        )
+
+    permission = scope.permission_for(artifact.artifact_id)
+    if permission is None:
+        raise SecurityError(
+            f"artifact '{artifact.artifact_id}' is not one of the exact scoped artifacts."
+        )
+    expected_years = f"{permission.survey_years[0]}-{permission.survey_years[1]}"
+    comparisons = (
+        (artifact.puf_id, permission.puf_id, "PUF"),
+        (artifact.panel_number, permission.panel_number, "panel number"),
+        (artifact.survey_years, expected_years, "survey years"),
+        (artifact.artifact_type, permission.artifact_type, "artifact type"),
+        (artifact.url, permission.url, "URL"),
+        (artifact.relative_destination, permission.relative_destination, "destination"),
+        (
+            (artifact.expected_content_type or "").lower(),
+            permission.expected_content_type.lower(),
+            "content type",
+        ),
+    )
+    for actual, expected, label in comparisons:
+        if actual != expected:
+            raise SecurityError(
+                f"artifact {label} does not match the exact scoped permission."
+            )
+
+    if artifact.artifact_type == "data_archives":
+        expected_extensions = tuple(permission.archive_allowed_member_extensions)
+        actual_extensions = tuple(artifact.archive_allowed_member_extensions)
+        if expected_extensions != (".dta",) or actual_extensions != expected_extensions:
+            raise SecurityError(
+                "Stata archive scope must explicitly allow exactly the .dta member extension."
+            )
+
+
 def download_single_artifact(
     artifact: Artifact,
     policy: DataAccessPolicy,
     output_root: pathlib.Path,
     opener: urllib.request.OpenerDirector,
     existing_records: dict[str, ProvenanceRecord],
+    artifact_scope: ArtifactDownloadScope | None = None,
 ) -> tuple[str, ProvenanceRecord]:
     """Download, validate, and record provenance for a single MEPS artifact.
 
@@ -715,7 +843,9 @@ def download_single_artifact(
     """
     # 1. Enforce data access authorizations
     validate_url(artifact.url, policy)
-    if artifact.puf_id not in policy.authorized_puf_ids:
+    if artifact_scope is not None:
+        validate_artifact_download_scope(artifact, artifact_scope)
+    elif artifact.puf_id not in policy.authorized_puf_ids:
         raise SecurityError(
             f"PUF '{artifact.puf_id}' is not in authorized_pufs: {sorted(policy.authorized_puf_ids)}."
         )
@@ -884,8 +1014,16 @@ def download_artifacts(
     output_root: pathlib.Path,
     provenance_path: pathlib.Path,
     opener: urllib.request.OpenerDirector | None = None,
+    artifact_scope: ArtifactDownloadScope | None = None,
 ) -> dict[str, tuple[str, ProvenanceRecord]]:
     """Execute download and validation workflow for all artifacts in the manifest."""
+    if artifact_scope is not None:
+        # Validate the complete batch before creating directories or opening a
+        # network connection.  An invalid manifest must not leave a partially
+        # downloaded scoped batch behind.
+        for artifact in manifest.artifacts:
+            validate_artifact_download_scope(artifact, artifact_scope)
+
     if opener is None:
         opener = build_secure_opener(policy)
 
@@ -908,6 +1046,7 @@ def download_artifacts(
             output_root=output_root,
             opener=opener,
             existing_records=existing_records,
+            artifact_scope=artifact_scope,
         )
         results[artifact.artifact_id] = (status, record)
 
