@@ -64,6 +64,7 @@ from .download import (
 from .evaluation import (
     compute_evaluation_comparison,
     compute_fairness_gaps,
+    compute_group_coverage,
     compute_group_metrics,
     compute_multicategory_pairwise_differences,
     compute_utility_metrics,
@@ -85,6 +86,8 @@ from .schema import (
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 
+PRIMARY_D4_RANDOM_SEED: int = 0
+
 FROZEN_D4_ARMS: Dict[str, Dict[str, Any]] = {
     "ARM_D3_001": {
         "arm_id": "ARM_D3_001",
@@ -93,6 +96,9 @@ FROZEN_D4_ARMS: Dict[str, Dict[str, Any]] = {
         "feature_set": "PRIMARY_CORE",
         "disability_arm": "full_feature",
         "expected_predictors": 21,
+        "expected_group_count": 2,
+        "expected_groups": [1, 2],
+        "expected_pair_count": 1,
     },
     "ARM_D3_002": {
         "arm_id": "ARM_D3_002",
@@ -101,6 +107,9 @@ FROZEN_D4_ARMS: Dict[str, Dict[str, Any]] = {
         "feature_set": "PRIMARY_CORE",
         "disability_arm": "full_feature",
         "expected_predictors": 21,
+        "expected_group_count": 7,
+        "expected_groups": [1, 2, 3, 4, 5, 6, 7],
+        "expected_pair_count": 21,
     },
     "ARM_D3_003": {
         "arm_id": "ARM_D3_003",
@@ -109,6 +118,9 @@ FROZEN_D4_ARMS: Dict[str, Dict[str, Any]] = {
         "feature_set": "PRIMARY_CORE",
         "disability_arm": "full_feature",
         "expected_predictors": 21,
+        "expected_group_count": 2,
+        "expected_groups": [1, 2],
+        "expected_pair_count": 1,
     },
     "ARM_D3_004": {
         "arm_id": "ARM_D3_004",
@@ -117,6 +129,9 @@ FROZEN_D4_ARMS: Dict[str, Dict[str, Any]] = {
         "feature_set": "PRIMARY_CORE",
         "disability_arm": "exclude_disability_components",
         "expected_predictors": 15,
+        "expected_group_count": 2,
+        "expected_groups": [1, 2],
+        "expected_pair_count": 1,
     },
 }
 
@@ -186,12 +201,19 @@ class NHISD4Runner:
         self,
         arm_id: str = "ARM_D3_001",
         output_dir: Optional[Union[str, pathlib.Path]] = None,
-        random_seed: int = 0,
+        random_seed: int = PRIMARY_D4_RANDOM_SEED,
         sample_weight: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Execute real-data preflight on TRAIN and VALIDATION partitions only.
         """
+        if random_seed != PRIMARY_D4_RANDOM_SEED:
+            raise ValueError(
+                f"Primary D4 analysis protocol strictly freezes random_seed to "
+                f"{PRIMARY_D4_RANDOM_SEED} (got {random_seed}). "
+                f"Seed sensitivity analyses are not permitted under Gate D4.0/D4.0.1."
+            )
+
         start_time = time.time()
         arm_config = self.get_arm_config(arm_id)
 
@@ -393,10 +415,12 @@ class NHISD4Runner:
         val_pred_base = (val_prob_base >= 0.5).astype(int)
 
         val_eval_base = evaluate_predictions(
-            y_true=y_train.iloc[0:0] if False else y_val.to_numpy(),
+            y_true=y_val.to_numpy(),
             y_pred=val_pred_base,
             y_prob=val_prob_base,
             o_group=o_val.to_numpy(),
+            expected_group_count=arm_config.get("expected_group_count"),
+            expected_groups=arm_config.get("expected_groups"),
         )
 
         # 9. Train & Evaluate FairBias Model (Transformed X)
@@ -421,6 +445,8 @@ class NHISD4Runner:
             y_pred=val_pred_fb,
             y_prob=val_prob_fb,
             o_group=o_val.to_numpy(),
+            expected_group_count=arm_config.get("expected_group_count"),
+            expected_groups=arm_config.get("expected_groups"),
         )
 
         # 10. Paired Before-vs-After Comparison
@@ -448,6 +474,15 @@ class NHISD4Runner:
         }
         write_json_atomic(target_out_dir / "arm_config.json", arm_config_payload)
 
+        # Compute explicit trace and transform step counts
+        trace_steps = mitigation_engine.step_traces
+        total_trace_steps = len(trace_steps)
+        accepted_transform_steps = sum(
+            1 for s in trace_steps if s.accepted_transformation is not None
+        )
+        unaccepted_or_terminal_trace_steps = total_trace_steps - accepted_transform_steps
+        greedy_iterations_attempted = iter_idx
+
         # 2. train_fairbias_trace.json
         write_json_atomic(target_out_dir / "train_fairbias_trace.json", trace.to_dict())
 
@@ -469,7 +504,11 @@ class NHISD4Runner:
             "final_changed_dict": changed_dict,
             "dropped_features": dropped_features,
             "surviving_features": surviving_features,
-            "accepted_steps_count": len(mitigation_engine.step_traces),
+            "total_trace_steps": total_trace_steps,
+            "accepted_transform_steps": accepted_transform_steps,
+            "unaccepted_or_terminal_trace_steps": unaccepted_or_terminal_trace_steps,
+            "greedy_iterations_attempted": greedy_iterations_attempted,
+            "accepted_steps_count": accepted_transform_steps,
         }
         write_json_atomic(target_out_dir / "train_dphi_before_after.json", dphi_record)
 
@@ -560,13 +599,25 @@ class NHISD4Runner:
             "numerical_feature_count": len(num_attrs),
             "train_cohort_n_valid": len(X_train),
             "validation_cohort_n_valid": len(X_val),
+            "group_coverage": {
+                "validation": val_eval_fb["group_coverage"],
+                "train": compute_group_coverage(
+                    o_train,
+                    expected_group_count=arm_config.get("expected_group_count"),
+                    expected_groups=arm_config.get("expected_groups"),
+                ),
+            },
             "test_evaluated": False,
             "authorized_partitions": ["train", "validation"],
             "termination_semantics": {
                 "exit_reason": exit_reason,
                 "termination_reason": termination_reason,
                 "converged": bool(converged),
-                "terminal_iteration": len(mitigation_engine.step_traces),
+                "greedy_iterations_attempted": greedy_iterations_attempted,
+                "total_trace_steps": total_trace_steps,
+                "accepted_transform_steps": accepted_transform_steps,
+                "unaccepted_or_terminal_trace_steps": unaccepted_or_terminal_trace_steps,
+                "terminal_iteration": accepted_transform_steps,
                 "initial_epsilon_threshold": float(epsilon_threshold),
                 "initial_max_dphi": float(initial_max_dphi),
                 "final_max_dphi": float(final_max_dphi),

@@ -19,7 +19,11 @@ _SRC_DIR = str(_REPO_ROOT / "src")
 if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
 
-from nhis_fairbias.d4_runner import FROZEN_D4_ARMS, NHISD4Runner
+from nhis_fairbias.d4_runner import (
+    FROZEN_D4_ARMS,
+    NHISD4Runner,
+    PRIMARY_D4_RANDOM_SEED,
+)
 
 
 def parse_args(args: Sequence[str] | None = None) -> argparse.Namespace:
@@ -40,8 +44,8 @@ def parse_args(args: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--seed",
         type=int,
-        default=0,
-        help="Algorithm and classifier random seed (default: 0).",
+        default=PRIMARY_D4_RANDOM_SEED,
+        help=f"Algorithm and classifier random seed (strictly frozen to {PRIMARY_D4_RANDOM_SEED}; non-zero is rejected).",
     )
     return parser.parse_args(args)
 
@@ -49,9 +53,16 @@ def parse_args(args: Sequence[str] | None = None) -> argparse.Namespace:
 def main(args: Sequence[str] | None = None) -> int:
     opts = parse_args(args)
 
+    if opts.seed != PRIMARY_D4_RANDOM_SEED:
+        sys.stderr.write(
+            f"ERROR: Primary D4 analysis protocol strictly freezes random_seed to "
+            f"{PRIMARY_D4_RANDOM_SEED} (got {opts.seed}). Seed sensitivity analysis is not permitted.\n"
+        )
+        return 1
+
     print(f"=== NHIS Gate D4.0 FairBias Preflight ===")
     print(f"Arm: {opts.arm}")
-    print(f"Seed: {opts.seed}")
+    print(f"Seed: {opts.seed} (frozen primary protocol)")
     print(f"Test Partition Embargo: ACTIVE (TRAIN + VALIDATION only)")
 
     runner = NHISD4Runner(allow_test_evaluation=False)

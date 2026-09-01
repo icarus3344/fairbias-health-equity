@@ -43,10 +43,12 @@ from fairbias.config import (
 from nhis_fairbias.d4_runner import (
     FROZEN_D4_ARMS,
     NHISD4Runner,
+    PRIMARY_D4_RANDOM_SEED,
 )
 from nhis_fairbias.evaluation import (
     compute_evaluation_comparison,
     compute_fairness_gaps,
+    compute_group_coverage,
     compute_group_metrics,
     compute_multicategory_pairwise_differences,
     compute_utility_metrics,
@@ -406,37 +408,38 @@ def test_group_metrics_and_undefined_denominators() -> None:
 
 
 # ------------------------------------------------------------------------------
-# Test 11: Multicategory helper: 7 protected groups -> 21 unordered pairs exactly
+# Test 11: Multicategory helper: generic label and K*(K-1)/2 coverage
 # ------------------------------------------------------------------------------
 def test_multicategory_helper_7_groups_21_pairs() -> None:
-    """Proof that multicategory pairwise helper emits exactly 21 unordered pairs for 7 groups."""
-    # 7 categories (e.g. HISPALLP_A categories 1..7)
-    mock_group_rows = []
-    for g in range(1, 8):
-        mock_group_rows.append({
-            "group": g,
-            "n": 100,
-            "selection_rate": 0.1 * g,
-            "tpr": 0.05 * g,
-            "fpr": 0.02 * g,
-            "ppv": 0.12 * g,
-        })
+    """Proof that multicategory pairwise helper uses generic label and computes K*(K-1)/2 pairs."""
+    for k, expected_pairs in [(7, 21), (6, 15), (3, 3)]:
+        mock_group_rows = []
+        for g in range(1, k + 1):
+            mock_group_rows.append({
+                "group": g,
+                "n": 100,
+                "selection_rate": 0.05 * g,
+                "tpr": 0.04 * g,
+                "fpr": 0.01 * g,
+                "ppv": 0.10 * g,
+            })
 
-    multi_res = compute_multicategory_pairwise_differences(mock_group_rows)
-    assert multi_res["formulation_label"] == "empirical_multicategory_extension_21_pairs"
-    assert multi_res["num_groups"] == 7
-    assert multi_res["num_pairs"] == 21
-    assert multi_res["expected_pairs_for_k"] == 21
-    assert len(multi_res["pairs"]) == 21
+        multi_res = compute_multicategory_pairwise_differences(mock_group_rows)
+        assert multi_res["formulation_label"] == "empirical_multicategory_pairwise_extension"
+        assert "21" not in multi_res["formulation_label"]
+        assert multi_res["num_groups"] == k
+        assert multi_res["num_pairs"] == expected_pairs
+        assert multi_res["expected_pairs_for_k"] == expected_pairs
+        assert len(multi_res["pairs"]) == expected_pairs
 
-    # Verify all 21 pairs are distinct unordered combinations
-    seen_pairs = set()
-    for p in multi_res["pairs"]:
-        pair_tuple = tuple(sorted(p["pair"]))
-        assert pair_tuple not in seen_pairs
-        seen_pairs.add(pair_tuple)
+        # Verify all pairs are distinct unordered combinations
+        seen_pairs = set()
+        for p in multi_res["pairs"]:
+            pair_tuple = tuple(sorted(p["pair"]))
+            assert pair_tuple not in seen_pairs
+            seen_pairs.add(pair_tuple)
 
-    assert len(seen_pairs) == 21
+        assert len(seen_pairs) == expected_pairs
 
 
 # ------------------------------------------------------------------------------
@@ -527,3 +530,116 @@ def test_trace_schema_conformance() -> None:
     )
     payload = trace.to_dict()
     jsonschema.validate(instance=payload, schema=schema)
+
+
+# ------------------------------------------------------------------------------
+# Test 15: Primary D4 random seed frozen to 0 and non-zero rejected fail-closed
+# ------------------------------------------------------------------------------
+def test_primary_d4_random_seed_frozen_and_non_zero_rejected() -> None:
+    """Proof that PRIMARY_D4_RANDOM_SEED is 0 and non-zero seeds raise ValueError."""
+    assert PRIMARY_D4_RANDOM_SEED == 0
+
+    runner = NHISD4Runner()
+    for bad_seed in [1, 42, -1, 100]:
+        with pytest.raises(ValueError, match="Primary D4 analysis protocol strictly freezes random_seed to 0"):
+            runner.run_preflight(arm_id="ARM_D3_001", random_seed=bad_seed)
+
+
+# ------------------------------------------------------------------------------
+# Test 16: Distinguish trace steps from accepted transforms
+# ------------------------------------------------------------------------------
+def test_distinguish_trace_steps_from_accepted_transforms() -> None:
+    """Proof that unaccepted/terminal traces are not counted as accepted transforms."""
+    from fairbias.transform_trace import FairBiasTransformStep
+
+    step_accepted = FairBiasTransformStep(
+        iteration=1,
+        selected_feature="feat_cat",
+        feature_semantic_type="categorical",
+        d_phi_before=0.005,
+        epsilon=0.0005,
+        proposed_transformation={"-1": 1},
+        accepted_transformation={"-1": 1},
+        numerical_exponent=None,
+        categorical_merge_mapping={"-1": "1"},
+        d_phi_after=0.0002,
+        dropped=False,
+        stopped_reason=None,
+    )
+    step_terminal = FairBiasTransformStep(
+        iteration=2,
+        selected_feature="feat_num",
+        feature_semantic_type="numerical",
+        d_phi_before=0.003,
+        epsilon=0.0005,
+        proposed_transformation={"power": 2.0},
+        accepted_transformation=None,  # Not accepted / terminal search failure
+        numerical_exponent=2.0,
+        categorical_merge_mapping=None,
+        d_phi_after=0.003,
+        dropped=False,
+        stopped_reason="no_improvement",
+    )
+
+    trace_steps = [step_accepted, step_terminal]
+    total_trace_steps = len(trace_steps)
+    accepted_transform_steps = sum(
+        1 for s in trace_steps if s.accepted_transformation is not None
+    )
+    unaccepted_or_terminal_trace_steps = total_trace_steps - accepted_transform_steps
+
+    assert total_trace_steps == 2
+    assert accepted_transform_steps == 1
+    assert unaccepted_or_terminal_trace_steps == 1
+
+
+# ------------------------------------------------------------------------------
+# Test 17: HISP group coverage contract (complete vs incomplete coverage)
+# ------------------------------------------------------------------------------
+def test_hisp_group_coverage_contract() -> None:
+    """Proof that HISP primary arm coverage requires 7 categories and 21 pairs, flagging incomplete partitions."""
+    arm_hisp = FROZEN_D4_ARMS["ARM_D3_002"]
+    assert arm_hisp["expected_group_count"] == 7
+    assert arm_hisp["expected_pair_count"] == 21
+
+    # Case A: Complete coverage (all 7 categories present)
+    o_complete = pd.Series([1, 2, 3, 4, 5, 6, 7] * 10)
+    cov_comp = compute_group_coverage(
+        o_complete,
+        expected_group_count=arm_hisp["expected_group_count"],
+        expected_groups=arm_hisp["expected_groups"],
+    )
+    assert cov_comp["group_coverage_complete"] is True
+    assert cov_comp["observed_group_count"] == 7
+    assert cov_comp["expected_pair_count"] == 21
+    assert cov_comp["observed_pair_count"] == 21
+    assert cov_comp["diagnostics"] is None
+
+    # Case B: Incomplete coverage (e.g. only 5 categories represented)
+    o_incomplete = pd.Series([1, 2, 3, 4, 5] * 10)
+    cov_incomp = compute_group_coverage(
+        o_incomplete,
+        expected_group_count=arm_hisp["expected_group_count"],
+        expected_groups=arm_hisp["expected_groups"],
+    )
+    assert cov_incomp["group_coverage_complete"] is False
+    assert cov_incomp["observed_group_count"] == 5
+    assert cov_incomp["observed_pair_count"] == 10  # 5*4/2 = 10
+    assert cov_incomp["expected_pair_count"] == 21
+    assert "Incomplete group coverage" in cov_incomp["diagnostics"]
+
+    # Full evaluate_predictions integration with incomplete coverage
+    y_true = np.array([0, 1] * 25)
+    y_pred = np.array([0, 0] * 25)
+    y_prob = np.array([0.2, 0.4] * 25)
+    eval_res = evaluate_predictions(
+        y_true=y_true,
+        y_pred=y_pred,
+        y_prob=y_prob,
+        o_group=o_incomplete,
+        expected_group_count=arm_hisp["expected_group_count"],
+        expected_groups=arm_hisp["expected_groups"],
+    )
+    assert eval_res["group_coverage"]["group_coverage_complete"] is False
+    assert eval_res["multicategory_pairwise"]["coverage_complete"] is False
+    assert "Incomplete group coverage" in eval_res["multicategory_pairwise"]["diagnostics"]

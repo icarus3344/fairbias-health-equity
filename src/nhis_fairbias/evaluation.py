@@ -373,7 +373,7 @@ def compute_multicategory_pairwise_differences(
     }
 
     return {
-        "formulation_label": "empirical_multicategory_extension_21_pairs",
+        "formulation_label": "empirical_multicategory_pairwise_extension",
         "num_groups": k,
         "num_pairs": len(pair_records),
         "expected_pairs_for_k": expected_pairs,
@@ -382,27 +382,88 @@ def compute_multicategory_pairwise_differences(
     }
 
 
+def compute_group_coverage(
+    o_group: Union[Sequence[Any], np.ndarray, pd.Series],
+    expected_group_count: Optional[int] = None,
+    expected_groups: Optional[Sequence[Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Compute observed group coverage metrics for an evaluated partition.
+
+    At minimum records:
+    - expected_group_count
+    - observed_group_count
+    - observed_groups
+    - group_coverage_complete
+    - expected_pair_count
+    - observed_pair_count
+    - diagnostics (when incomplete)
+    """
+    observed_unique = sorted(list(pd.Series(o_group).dropna().unique()), key=lambda x: str(x))
+    k_obs = len(observed_unique)
+    obs_pairs = k_obs * (k_obs - 1) // 2
+
+    k_exp = int(expected_group_count) if expected_group_count is not None else k_obs
+    exp_pairs = k_exp * (k_exp - 1) // 2
+
+    is_complete = (k_obs == k_exp)
+    if expected_groups is not None:
+        is_complete = is_complete and (set(observed_unique) == set(expected_groups))
+
+    diag: Optional[str] = None
+    if not is_complete:
+        diag = (
+            f"Incomplete group coverage: observed {k_obs} of {k_exp} expected groups "
+            f"({obs_pairs} of {exp_pairs} expected unordered pairs)."
+        )
+
+    return {
+        "expected_group_count": k_exp,
+        "observed_group_count": k_obs,
+        "observed_groups": [int(g) if isinstance(g, (int, np.integer)) else str(g) for g in observed_unique],
+        "group_coverage_complete": bool(is_complete),
+        "expected_pair_count": exp_pairs,
+        "observed_pair_count": obs_pairs,
+        "diagnostics": diag,
+    }
+
+
 def evaluate_predictions(
     y_true: Union[Sequence[int], np.ndarray, pd.Series],
     y_pred: Union[Sequence[int], np.ndarray, pd.Series],
     y_prob: Union[Sequence[float], np.ndarray, pd.Series],
     o_group: Union[Sequence[Any], np.ndarray, pd.Series],
+    expected_group_count: Optional[int] = None,
+    expected_groups: Optional[Sequence[Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Combined evaluation returning utility metrics, group-level metrics, and fairness gaps.
+    Combined evaluation returning utility metrics, group-level metrics, fairness gaps,
+    and group coverage. Emits multicategory pairwise differences when K > 2.
     """
     utility = compute_utility_metrics(y_true, y_pred, y_prob)
     group_rows = compute_group_metrics(y_true, y_pred, o_group)
     fairness_gaps = compute_fairness_gaps(group_rows)
+    coverage = compute_group_coverage(
+        o_group=o_group,
+        expected_group_count=expected_group_count,
+        expected_groups=expected_groups,
+    )
 
     result: Dict[str, Any] = {
         "utility": utility,
         "fairness_gaps": fairness_gaps,
         "group_metrics": group_rows,
+        "group_coverage": coverage,
     }
 
     if len(group_rows) > 2:
-        result["multicategory_pairwise"] = compute_multicategory_pairwise_differences(group_rows)
+        multi_diffs = compute_multicategory_pairwise_differences(group_rows)
+        if not coverage["group_coverage_complete"]:
+            multi_diffs["coverage_complete"] = False
+            multi_diffs["diagnostics"] = coverage["diagnostics"]
+        else:
+            multi_diffs["coverage_complete"] = True
+        result["multicategory_pairwise"] = multi_diffs
 
     return result
 
