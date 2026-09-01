@@ -136,6 +136,16 @@ FROZEN_D4_ARMS: Dict[str, Dict[str, Any]] = {
 }
 
 
+FROZEN_SPLIT_MANIFEST_PATH: pathlib.Path = _REPO_ROOT / "artifacts" / "nhis" / "d3" / "pooled_split_manifest.csv"
+FROZEN_SPLIT_MANIFEST_SHA256: str = "6874a56f5484186dffdd5faeb7871c3bef85042ccfdf8d1e375fdde75a3ee9f5"
+
+FROZEN_FEATURES_PARQUET_PATH: pathlib.Path = _REPO_ROOT / "data" / "processed" / "nhis" / "nhis_2022_2024_features.parquet"
+FROZEN_FEATURES_PARQUET_SHA256: str = "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383"
+
+FROZEN_D3_MANIFEST_PATH: pathlib.Path = _REPO_ROOT / "artifacts" / "nhis" / "d3" / "d3_manifest.json"
+FROZEN_POOLED_SPLIT_AUDIT_PATH: pathlib.Path = _REPO_ROOT / "artifacts" / "nhis" / "d3" / "pooled_split_audit.json"
+
+
 def get_git_commit(repo_root: Optional[pathlib.Path] = None) -> str:
     """Retrieve current git HEAD commit hash."""
     root = repo_root or _REPO_ROOT
@@ -161,24 +171,147 @@ class NHISD4Runner:
         features_parquet_path: Optional[Union[str, pathlib.Path]] = None,
         split_manifest_path: Optional[Union[str, pathlib.Path]] = None,
         d3_manifest_path: Optional[Union[str, pathlib.Path]] = None,
+        pooled_split_audit_path: Optional[Union[str, pathlib.Path]] = None,
         study_config_path: Optional[Union[str, pathlib.Path]] = None,
         feature_config_path: Optional[Union[str, pathlib.Path]] = None,
         allow_test_evaluation: bool = False,
+        enforce_frozen_inputs: bool = True,
     ):
         self.allow_test_evaluation = bool(allow_test_evaluation)
+        self.enforce_frozen_inputs = bool(enforce_frozen_inputs)
+
+        resolved_split_path = (
+            pathlib.Path(split_manifest_path).resolve()
+            if split_manifest_path is not None
+            else FROZEN_SPLIT_MANIFEST_PATH.resolve()
+        )
+        self.split_manifest_path = resolved_split_path
+
+        resolved_features_path = (
+            pathlib.Path(features_parquet_path).resolve()
+            if features_parquet_path is not None
+            else FROZEN_FEATURES_PARQUET_PATH.resolve()
+        )
+
+        d3_path = (
+            pathlib.Path(d3_manifest_path).resolve()
+            if d3_manifest_path is not None
+            else FROZEN_D3_MANIFEST_PATH.resolve()
+        )
+        self.d3_manifest_path = d3_path
+
+        audit_path = (
+            pathlib.Path(pooled_split_audit_path).resolve()
+            if pooled_split_audit_path is not None
+            else FROZEN_POOLED_SPLIT_AUDIT_PATH.resolve()
+        )
+        self.pooled_split_audit_path = audit_path
 
         self.adapter = adapter or NHISPooledAdapter(
-            features_parquet_path=features_parquet_path,
-            split_manifest_path=split_manifest_path,
+            features_parquet_path=resolved_features_path,
+            split_manifest_path=resolved_split_path,
             study_config_path=study_config_path,
             feature_config_path=feature_config_path,
         )
 
-        d3_path = d3_manifest_path or (_REPO_ROOT / "artifacts" / "nhis" / "d3" / "d3_manifest.json")
-        self.d3_manifest_path = pathlib.Path(d3_path).resolve()
+    def verify_frozen_input_contract(self) -> Dict[str, Any]:
+        """Validate frozen D3 inputs and fail closed if invariant contract is violated."""
+        if not self.enforce_frozen_inputs:
+            return {
+                "enforced": False,
+                "split_manifest_source": str(self.split_manifest_path),
+                "split_manifest_sha256": "BYPASS",
+                "expected_split_manifest_sha256": FROZEN_SPLIT_MANIFEST_SHA256,
+                "split_hash_match": None,
+                "features_parquet_source": str(self.adapter.features_parquet_path),
+                "features_parquet_sha256": "BYPASS",
+                "expected_features_parquet_sha256": FROZEN_FEATURES_PARQUET_SHA256,
+                "features_hash_match": None,
+                "d3_gate_status": "BYPASS",
+                "pooled_split_audit_status": "BYPASS",
+                "d0_outcome_totals_match": None,
+                "status": "BYPASS",
+            }
 
-        split_path = split_manifest_path or (_REPO_ROOT / "artifacts" / "nhis" / "d3" / "pooled_split_manifest.csv")
-        self.split_manifest_path = pathlib.Path(split_path).resolve()
+        # 1. Split manifest existence and hash
+        if not self.split_manifest_path.is_file():
+            raise FileNotFoundError(
+                f"Frozen split manifest not found at: {self.split_manifest_path}"
+            )
+        split_sha = compute_sha256(self.split_manifest_path)
+        if split_sha != FROZEN_SPLIT_MANIFEST_SHA256:
+            raise ValueError(
+                f"Frozen split manifest SHA-256 mismatch!\n"
+                f"Expected: {FROZEN_SPLIT_MANIFEST_SHA256}\n"
+                f"Observed: {split_sha}\n"
+                f"Path: {self.split_manifest_path}"
+            )
+
+        # 2. Features parquet existence and hash
+        feat_path = pathlib.Path(self.adapter.features_parquet_path).resolve()
+        if not feat_path.is_file():
+            raise FileNotFoundError(
+                f"Frozen features parquet not found at: {feat_path}"
+            )
+        feat_sha = compute_sha256(feat_path)
+        if feat_sha != FROZEN_FEATURES_PARQUET_SHA256:
+            raise ValueError(
+                f"Frozen features parquet SHA-256 mismatch!\n"
+                f"Expected: {FROZEN_FEATURES_PARQUET_SHA256}\n"
+                f"Observed: {feat_sha}\n"
+                f"Path: {feat_path}"
+            )
+
+        # 3. D3 manifest existence and status
+        if not self.d3_manifest_path.is_file():
+            raise FileNotFoundError(
+                f"D3 manifest not found at: {self.d3_manifest_path}"
+            )
+        try:
+            d3_data = json.loads(self.d3_manifest_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise ValueError(f"Could not parse D3 manifest {self.d3_manifest_path}: {exc}") from exc
+        d3_status = d3_data.get("status")
+        if d3_status != "PASS":
+            raise ValueError(
+                f"D3 manifest status is {d3_status!r} (expected 'PASS') at {self.d3_manifest_path}"
+            )
+
+        # 4. Pooled split audit existence and status
+        if not self.pooled_split_audit_path.is_file():
+            raise FileNotFoundError(
+                f"Pooled split audit not found at: {self.pooled_split_audit_path}"
+            )
+        try:
+            audit_data = json.loads(self.pooled_split_audit_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise ValueError(f"Could not parse pooled split audit {self.pooled_split_audit_path}: {exc}") from exc
+        audit_status = audit_data.get("status")
+        if audit_status != "PASS":
+            raise ValueError(
+                f"Pooled split audit status is {audit_status!r} (expected 'PASS') at {self.pooled_split_audit_path}"
+            )
+        d0_match = audit_data.get("d0_outcome_totals_match")
+        if d0_match is not True:
+            raise ValueError(
+                f"Pooled split audit d0_outcome_totals_match is {d0_match!r} (expected True) at {self.pooled_split_audit_path}"
+            )
+
+        return {
+            "enforced": True,
+            "split_manifest_source": str(self.split_manifest_path),
+            "split_manifest_sha256": split_sha,
+            "expected_split_manifest_sha256": FROZEN_SPLIT_MANIFEST_SHA256,
+            "split_hash_match": True,
+            "features_parquet_source": str(feat_path),
+            "features_parquet_sha256": feat_sha,
+            "expected_features_parquet_sha256": FROZEN_FEATURES_PARQUET_SHA256,
+            "features_hash_match": True,
+            "d3_gate_status": d3_status,
+            "pooled_split_audit_status": audit_status,
+            "d0_outcome_totals_match": True,
+            "status": "PASS",
+        }
 
     def get_arm_config(self, arm_id: str) -> Dict[str, Any]:
         """Retrieve frozen arm specification."""
@@ -216,6 +349,9 @@ class NHISD4Runner:
 
         start_time = time.time()
         arm_config = self.get_arm_config(arm_id)
+
+        # Enforce frozen input contract fail-closed before substantive work
+        frozen_contract = self.verify_frozen_input_contract()
 
         # Rejection of sample weights in paper mode
         if sample_weight is not None:
@@ -574,6 +710,7 @@ class NHISD4Runner:
             "run_id": run_id,
             "timestamp": utc_timestamp(),
             "git_commit": get_git_commit(_REPO_ROOT),
+            "frozen_input_contract": frozen_contract,
             "input_provenance": {
                 "d3_manifest_sha256": d3_manifest_sha,
                 "features_parquet_sha256": features_pq_sha,
@@ -637,6 +774,7 @@ class NHISD4Runner:
             "output_dir": str(target_out_dir),
             "manifest_path": str(manifest_path),
             "manifest": manifest_payload,
+            "frozen_input_contract": frozen_contract,
             "arm_config": arm_config_payload,
             "dphi_record": dphi_record,
             "val_eval_baseline": val_eval_base,

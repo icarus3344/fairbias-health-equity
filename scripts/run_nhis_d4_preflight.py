@@ -63,9 +63,10 @@ def main(args: Sequence[str] | None = None) -> int:
     print(f"=== NHIS Gate D4.0 FairBias Preflight ===")
     print(f"Arm: {opts.arm}")
     print(f"Seed: {opts.seed} (frozen primary protocol)")
+    print(f"Frozen Input Contract: ENFORCED")
     print(f"Test Partition Embargo: ACTIVE (TRAIN + VALIDATION only)")
 
-    runner = NHISD4Runner(allow_test_evaluation=False)
+    runner = NHISD4Runner(allow_test_evaluation=False, enforce_frozen_inputs=True)
     results = runner.run_preflight(
         arm_id=opts.arm,
         output_dir=opts.output_dir,

@@ -42,6 +42,10 @@ from fairbias.config import (
 )
 from nhis_fairbias.d4_runner import (
     FROZEN_D4_ARMS,
+    FROZEN_FEATURES_PARQUET_PATH,
+    FROZEN_FEATURES_PARQUET_SHA256,
+    FROZEN_SPLIT_MANIFEST_PATH,
+    FROZEN_SPLIT_MANIFEST_SHA256,
     NHISD4Runner,
     PRIMARY_D4_RANDOM_SEED,
 )
@@ -79,9 +83,41 @@ def test_d4_runner_does_not_call_train_test_split(tmp_path: pathlib.Path) -> Non
 # Test 2: Frozen cohort assignment comes from NHISPooledAdapter
 # ------------------------------------------------------------------------------
 def test_frozen_cohort_assignment_from_pooled_adapter() -> None:
-    """Proof that cohort assignment comes strictly from NHISPooledAdapter without re-splitting."""
-    adapter = NHISPooledAdapter()
-    cohorts = adapter.get_pooled_cohort(
+    """Proof that production D4 cohort assignment comes from the frozen CSV itself."""
+    from nhis_fairbias.download import compute_sha256
+
+    # 1. Load frozen split manifest
+    csv_path = _REPO_ROOT / "artifacts" / "nhis" / "d3" / "pooled_split_manifest.csv"
+    assert csv_path.is_file()
+    df_frozen = pd.read_csv(csv_path)
+
+    # 2. Construct production NHISD4Runner()
+    runner = NHISD4Runner()
+
+    # 3. Assert runner adapter's split manifest matches frozen file on required columns
+    adapter_split = runner.adapter.split_manifest
+    assert adapter_split is not None
+    for col in ["record_id", "survey_year", "meddl12m_state", "split_role"]:
+        assert col in adapter_split.columns
+        pd.testing.assert_series_equal(
+            adapter_split[col],
+            df_frozen[col],
+            check_names=True,
+        )
+
+    # 4. Assert exact row counts: total 89802, train 57473, validation 14368, test 17961
+    assert len(adapter_split) == 89802
+    role_counts = adapter_split["split_role"].value_counts().to_dict()
+    assert role_counts.get("train") == 57473
+    assert role_counts.get("val") == 14368
+    assert role_counts.get("test") == 17961
+
+    # 5. Assert SHA is the frozen SHA
+    assert compute_sha256(csv_path) == FROZEN_SPLIT_MANIFEST_SHA256
+    assert compute_sha256(runner.split_manifest_path) == FROZEN_SPLIT_MANIFEST_SHA256
+
+    # Substantive cohort extraction matches expected partitions
+    cohorts = runner.adapter.get_pooled_cohort(
         outcome="MEDDL12M_A",
         protected_attribute="SEX_A",
         feature_set="primary_core",
@@ -91,21 +127,10 @@ def test_frozen_cohort_assignment_from_pooled_adapter() -> None:
     X_tr, y_tr, o_tr, _, meta_tr = cohorts["train"]
     X_va, y_va, o_va, _, meta_va = cohorts["val"]
     X_te, y_te, o_te, _, meta_te = cohorts["test"]
-
-    # All records have valid outcomes and protected attributes
-    assert y_tr.notna().all() and o_tr.notna().all()
-    assert y_va.notna().all() and o_va.notna().all()
-    assert y_te.notna().all() and o_te.notna().all()
-
-    # Split role integrity
-    assert (meta_tr["split_role"] == "train").all()
-    assert (meta_va["split_role"] == "val").all()
-    assert (meta_te["split_role"] == "test").all()
-
-    # Exactly 21 active features for PRIMARY_CORE full_feature
+    assert len(X_tr) == 57010
+    assert len(X_va) == 14249
+    assert len(X_te) == 17818
     assert len(X_tr.columns) == 21
-    assert len(X_va.columns) == 21
-    assert len(X_te.columns) == 21
 
 
 # ------------------------------------------------------------------------------
@@ -202,11 +227,11 @@ def test_validation_mutation_does_not_alter_learned_fairbias(tmp_path: pathlib.P
         "expected_predictors": 3,
     }
 
-    runner_A = NHISD4Runner(adapter=mock_adapter_A)
+    runner_A = NHISD4Runner(adapter=mock_adapter_A, enforce_frozen_inputs=False)
     runner_A.get_arm_config = lambda arm_id: copy.deepcopy(custom_arm)
     res_A = runner_A.run_preflight(arm_id="ARM_SYNTHETIC", output_dir=tmp_path / "run_A")
 
-    runner_B = NHISD4Runner(adapter=mock_adapter_B)
+    runner_B = NHISD4Runner(adapter=mock_adapter_B, enforce_frozen_inputs=False)
     runner_B.get_arm_config = lambda arm_id: copy.deepcopy(custom_arm)
     res_B = runner_B.run_preflight(arm_id="ARM_SYNTHETIC", output_dir=tmp_path / "run_B")
 
@@ -270,7 +295,6 @@ def test_manifest_asserts_test_not_evaluated(tmp_path: pathlib.Path) -> None:
     out_dir.mkdir(parents=True)
 
     # Synthetic mock run to verify manifest contents
-    runner = NHISD4Runner()
     manifest_path = out_dir / "d4_preflight_manifest.json"
 
     # Run lightweight synthetic preflight
@@ -303,7 +327,7 @@ def test_manifest_asserts_test_not_evaluated(tmp_path: pathlib.Path) -> None:
         "expected_predictors": 2,
     }
 
-    runner.adapter = mock_adapter
+    runner = NHISD4Runner(adapter=mock_adapter, enforce_frozen_inputs=False)
     runner.get_arm_config = lambda arm_id: copy.deepcopy(mock_arm)
     res = runner.run_preflight(arm_id="ARM_SYNTH", output_dir=out_dir)
 
@@ -643,3 +667,58 @@ def test_hisp_group_coverage_contract() -> None:
     assert eval_res["group_coverage"]["group_coverage_complete"] is False
     assert eval_res["multicategory_pairwise"]["coverage_complete"] is False
     assert "Incomplete group coverage" in eval_res["multicategory_pairwise"]["diagnostics"]
+
+
+# ------------------------------------------------------------------------------
+# Test 18: Critical regression test — generation of pooled splits must not occur
+# ------------------------------------------------------------------------------
+def test_production_runner_never_calls_generate_pooled_splits() -> None:
+    """Proof that production NHISD4Runner loads existing split CSV and never regenerates."""
+    with patch(
+        "nhis_fairbias.pooled.generate_pooled_splits",
+        side_effect=AssertionError("generate_pooled_splits was unexpectedly called!"),
+    ):
+        runner = NHISD4Runner()
+        assert runner.split_manifest_path.is_file()
+        assert runner.adapter.split_manifest is not None
+        assert len(runner.adapter.split_manifest) == 89802
+
+
+# ------------------------------------------------------------------------------
+# Test 19: Negative input integrity tests (fail closed before substantive work)
+# ------------------------------------------------------------------------------
+def test_negative_input_integrity_fail_closed(tmp_path: pathlib.Path) -> None:
+    """Proof that runner fails closed on wrong split hash, features hash, or D3 audit status."""
+    # 1. Modified/wrong split manifest hash
+    bad_split = tmp_path / "bad_split.csv"
+    df_split = pd.read_csv(FROZEN_SPLIT_MANIFEST_PATH)
+    val0 = df_split.loc[0, "split_role"]
+    df_split.loc[0, "split_role"] = "val" if val0 == "train" else "train"
+    df_split.to_csv(bad_split, index=False)
+    runner_bad_split = NHISD4Runner(split_manifest_path=bad_split)
+    with pytest.raises(ValueError, match="Frozen split manifest SHA-256 mismatch"):
+        runner_bad_split.run_preflight(arm_id="ARM_D3_001")
+
+    # 2. Modified/wrong feature parquet hash
+    bad_feat = tmp_path / "bad_feat.parquet"
+    real_df = pd.read_parquet(FROZEN_FEATURES_PARQUET_PATH)
+    # Mutate one value in place to preserve 89802 row count and schema but alter hash
+    real_df.loc[0, "AGEP_A"] = real_df.loc[0, "AGEP_A"] + 1
+    real_df.to_parquet(bad_feat)
+    runner_bad_feat = NHISD4Runner(features_parquet_path=bad_feat)
+    with pytest.raises(ValueError, match="Frozen features parquet SHA-256 mismatch"):
+        runner_bad_feat.run_preflight(arm_id="ARM_D3_001")
+
+    # 3. D3 manifest status not PASS
+    bad_d3 = tmp_path / "d3_manifest.json"
+    bad_d3.write_text(json.dumps({"status": "FAIL"}), encoding="utf-8")
+    runner_bad_d3 = NHISD4Runner(d3_manifest_path=bad_d3)
+    with pytest.raises(ValueError, match="D3 manifest status is 'FAIL'"):
+        runner_bad_d3.run_preflight(arm_id="ARM_D3_001")
+
+    # 4. Pooled split audit status not PASS
+    bad_audit = tmp_path / "pooled_split_audit.json"
+    bad_audit.write_text(json.dumps({"status": "FAIL", "d0_outcome_totals_match": False}), encoding="utf-8")
+    runner_bad_audit = NHISD4Runner(pooled_split_audit_path=bad_audit)
+    with pytest.raises(ValueError, match="Pooled split audit status is 'FAIL'"):
+        runner_bad_audit.run_preflight(arm_id="ARM_D3_001")

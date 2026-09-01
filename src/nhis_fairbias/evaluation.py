@@ -329,7 +329,7 @@ def compute_multicategory_pairwise_differences(
     - FPR
     - PPV where defined
 
-    Labeled explicitly as 'empirical_multicategory_extension_21_pairs'.
+    Labeled explicitly as 'empirical_multicategory_pairwise_extension'.
     """
     group_map = {g["group"]: g for g in group_metrics}
     groups = sorted(list(group_map.keys()), key=lambda x: str(x))
