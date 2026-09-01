@@ -123,6 +123,7 @@ def compute_pairwise_divergences(
     num_attrs: List[str],
     num_method: str = "num-a",
     cat_method: str = "cat-a",
+    sample_weight: Optional[pd.Series | np.ndarray] = None,
 ) -> pd.DataFrame:
     """
     Compute per-feature divergence ``g_m`` (Eq. 2) between every pair of
@@ -144,11 +145,30 @@ def compute_pairwise_divergences(
     etc.) are exactly the two statistics the pre-declared weighted
     extension replaces (see ``SURVEY_WEIGHTED_EXTENSION_DECLARATION``).
     """
+    w_arr: Optional[np.ndarray] = None
+    if sample_weight is not None:
+        if isinstance(sample_weight, pd.Series):
+            w_arr = np.asarray(sample_weight.to_numpy(), dtype=float)
+        else:
+            w_arr = np.asarray(sample_weight, dtype=float)
+        if w_arr.ndim != 1 or len(w_arr) != len(X):
+            raise ValueError(
+                f"sample_weight length ({len(w_arr)}) must match X length ({len(X)})"
+            )
+        if not np.all(np.isfinite(w_arr)):
+            raise ValueError("sample_weight contains NaN or non-finite values")
+        if np.any(w_arr <= 0):
+            raise ValueError("sample_weight values must be strictly positive (w > 0)")
+
     o_col = "_prot_"
-    df = pd.concat(
-        [X.reset_index(drop=True), o_series.reset_index(drop=True).rename(o_col)],
-        axis=1,
-    )
+    w_col = "_weight_"
+    dfs_to_concat = [
+        X.reset_index(drop=True),
+        o_series.reset_index(drop=True).rename(o_col),
+    ]
+    if w_arr is not None:
+        dfs_to_concat.append(pd.Series(w_arr, name=w_col))
+    df = pd.concat(dfs_to_concat, axis=1)
     groups = sorted(df[o_col].dropna().unique())
 
     columns: Dict[str, pd.Series] = {}
@@ -166,35 +186,80 @@ def compute_pairwise_divergences(
             min_val, max_val = float(vals.min()), float(vals.max())
             if max_val > min_val:
                 vals = (vals - min_val) / (max_val - min_val)
-            p_vals = vals[mask_p].dropna()
-            n_vals = vals[mask_n].dropna()
-            if num_method == "num-a":
-                if len(p_vals) == 0 or len(n_vals) == 0:
-                    num_diff[col] = 0.0
+
+            if w_arr is None:
+                p_vals = vals[mask_p].dropna()
+                n_vals = vals[mask_n].dropna()
+                if num_method == "num-a":
+                    if len(p_vals) == 0 or len(n_vals) == 0:
+                        num_diff[col] = 0.0
+                    else:
+                        num_diff[col] = float(abs(p_vals.mean() - n_vals.mean()))
                 else:
-                    num_diff[col] = float(abs(p_vals.mean() - n_vals.mean()))
+                    raise ValueError(f"Unsupported num divergence method: {num_method}")
             else:
-                raise ValueError(f"Unsupported num divergence method: {num_method}")
+                p_valid = mask_p & vals.notna()
+                n_valid = mask_n & vals.notna()
+                p_vals = vals[p_valid]
+                p_w = sub.loc[p_valid, w_col]
+                n_vals = vals[n_valid]
+                n_w = sub.loc[n_valid, w_col]
+                if num_method == "num-a":
+                    if len(p_vals) == 0 or len(n_vals) == 0 or p_w.sum() <= 0 or n_w.sum() <= 0:
+                        num_diff[col] = 0.0
+                    else:
+                        p_mean = float((p_w * p_vals).sum() / p_w.sum())
+                        n_mean = float((n_w * n_vals).sum() / n_w.sum())
+                        num_diff[col] = float(abs(p_mean - n_mean))
+                else:
+                    raise ValueError(f"Unsupported num divergence method: {num_method}")
 
         cat_diff: Dict[str, float] = {}
         for col in cate_attrs:
             if col not in sub.columns:
                 continue
-            p_counts = sub.loc[mask_p, col].value_counts()
-            n_counts = sub.loc[mask_n, col].value_counts()
-            if len(p_counts) == 0 or len(n_counts) == 0:
-                cat_diff[col] = 0.0
-                continue
-            union_index = pd.Index(list(p_counts.index) + list(n_counts.index)).unique()
-            p_counts = p_counts.reindex(union_index, fill_value=0)
-            n_counts = n_counts.reindex(union_index, fill_value=0)
-            if cat_method == "cat-a":
-                k = max(1, len(union_index))
-                cat_diff[col] = float(
-                    (1.0 / k) * (p_counts / p_counts.sum() - n_counts / n_counts.sum()).abs().sum()
-                )
+
+            if w_arr is None:
+                p_counts = sub.loc[mask_p, col].value_counts()
+                n_counts = sub.loc[mask_n, col].value_counts()
+                if len(p_counts) == 0 or len(n_counts) == 0:
+                    cat_diff[col] = 0.0
+                    continue
+                union_index = pd.Index(list(p_counts.index) + list(n_counts.index)).unique()
+                p_counts = p_counts.reindex(union_index, fill_value=0)
+                n_counts = n_counts.reindex(union_index, fill_value=0)
+                if cat_method == "cat-a":
+                    k = max(1, len(union_index))
+                    cat_diff[col] = float(
+                        (1.0 / k) * (p_counts / p_counts.sum() - n_counts / n_counts.sum()).abs().sum()
+                    )
+                else:
+                    raise ValueError(f"Unsupported cat divergence method: {cat_method}")
             else:
-                raise ValueError(f"Unsupported cat divergence method: {cat_method}")
+                p_valid = mask_p & sub[col].notna()
+                n_valid = mask_n & sub[col].notna()
+                if not p_valid.any() or not n_valid.any():
+                    cat_diff[col] = 0.0
+                    continue
+                p_sub = sub.loc[p_valid]
+                n_sub = sub.loc[n_valid]
+                p_counts = p_sub.groupby(col, observed=False)[w_col].sum()
+                n_counts = n_sub.groupby(col, observed=False)[w_col].sum()
+                union_index = pd.Index(list(p_counts.index) + list(n_counts.index)).unique()
+                p_counts = p_counts.reindex(union_index, fill_value=0.0)
+                n_counts = n_counts.reindex(union_index, fill_value=0.0)
+                p_sum = float(p_counts.sum())
+                n_sum = float(n_counts.sum())
+                if p_sum <= 0 or n_sum <= 0:
+                    cat_diff[col] = 0.0
+                    continue
+                if cat_method == "cat-a":
+                    k = max(1, len(union_index))
+                    cat_diff[col] = float(
+                        (1.0 / k) * (p_counts / p_sum - n_counts / n_sum).abs().sum()
+                    )
+                else:
+                    raise ValueError(f"Unsupported cat divergence method: {cat_method}")
 
         columns[f"{p}_{n}"] = pd.concat([
             pd.Series(num_diff, dtype="float64"),
@@ -347,6 +412,7 @@ def compute_bias_concentration(
     num_method: str = "num-a",
     cat_method: str = "cat-a",
     mds_fixed_components: Optional[int] = None,
+    sample_weight: Optional[pd.Series | np.ndarray] = None,
 ) -> Dict[str, float]:
     """
     Compute d_phi (Eq. 6: Euclidean distance to the origin after metric MDS)
@@ -367,6 +433,7 @@ def compute_bias_concentration(
     df_s = compute_pairwise_divergences(
         X, o_series, cate_attrs, num_attrs,
         num_method=num_method, cat_method=cat_method,
+        sample_weight=sample_weight,
     )
     dist, nodes = compute_shapley_distance_matrix(df_s, features, h_order=h_order)
 
@@ -425,6 +492,7 @@ def compute_dphi_matrix(
     num_method: str = "num-a",
     cat_method: str = "cat-a",
     mds_fixed_components: Optional[int] = None,
+    sample_weight: Optional[pd.Series | np.ndarray] = None,
 ) -> Dict[str, Dict[str, float]]:
     """Compute d_phi for every protected attribute column in O."""
     results: Dict[str, Dict[str, float]] = {}
@@ -446,5 +514,6 @@ def compute_dphi_matrix(
             num_method=num_method,
             cat_method=cat_method,
             mds_fixed_components=mds_fixed_components,
+            sample_weight=sample_weight,
         )
     return results

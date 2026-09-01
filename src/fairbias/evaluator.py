@@ -263,6 +263,7 @@ class FairEvaluator:
         O: pd.DataFrame,
         cate_attrs: Optional[List[str]] = None,
         num_attrs: Optional[List[str]] = None,
+        sample_weight: Optional[pd.Series | np.ndarray] = None,
     ) -> Dict[str, Dict[str, float]]:
         """
         Compute the paper-level bias concentration d_phi for each feature.
@@ -289,6 +290,7 @@ class FairEvaluator:
             num_method=cfg.eval_divergence_num,
             cat_method=cfg.eval_divergence_cat,
             mds_fixed_components=cfg.mds_fixed_components,
+            sample_weight=sample_weight,
         )
 
     def compute_threshold(

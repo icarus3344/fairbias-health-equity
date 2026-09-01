@@ -1,8 +1,20 @@
-"""NHIS FairBias application-study data foundation.
+"""NHIS FairBias application-study data foundation and temporal interface."""
 
-Gate D0 deliberately stops at source validation, harmonization, and audit.
-No model, mitigation, or fairness-analysis code belongs in this package.
-"""
+from .adapter import DISABILITY_COMPONENTS, NHISStudyAdapter
+from .preprocessing import (
+    NHISLeakageError,
+    NHISPreprocessingError,
+    NHISPreprocessor,
+    construct_empwrkft_series,
+)
 
-__all__ = ["__version__"]
-__version__ = "0.1.0"
+__all__ = [
+    "__version__",
+    "NHISStudyAdapter",
+    "NHISPreprocessor",
+    "construct_empwrkft_series",
+    "DISABILITY_COMPONENTS",
+    "NHISLeakageError",
+    "NHISPreprocessingError",
+]
+__version__ = "0.2.0"
