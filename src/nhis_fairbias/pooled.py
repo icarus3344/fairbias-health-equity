@@ -62,6 +62,36 @@ EXPECTED_VAL_ROWS = 14368
 EXPECTED_TEST_ROWS = 17961
 
 
+def _extract_meddl12m_state(df: pd.DataFrame) -> pd.Series:
+    """Extract 3-state primary outcome classification: '0', '1', or 'missing_or_non_substantive'."""
+    if "meddl12m" in df.columns:
+        med_col = df["meddl12m"]
+    elif "MEDDL12M_A" in df.columns:
+        med_raw = pd.to_numeric(df["MEDDL12M_A"], errors="coerce")
+        med_col = pd.Series(
+            np.where(med_raw == 1, 1, np.where(med_raw == 2, 0, np.nan)),
+            index=df.index,
+        )
+    else:
+        raise ValueError("Cannot extract primary outcome: neither 'meddl12m' nor 'MEDDL12M_A' found.")
+
+    def map_val(v: Any) -> str:
+        if pd.isna(v):
+            return "missing_or_non_substantive"
+        try:
+            iv = int(v)
+            if iv == 1:
+                return "1"
+            elif iv == 0:
+                return "0"
+            else:
+                return "missing_or_non_substantive"
+        except Exception:
+            return "missing_or_non_substantive"
+
+    return med_col.apply(map_val)
+
+
 def generate_pooled_splits(
     df: pd.DataFrame,
     seed: int = DEFAULT_POOLED_SEED,
@@ -70,7 +100,15 @@ def generate_pooled_splits(
     test_ratio: float = 0.20,
 ) -> pd.DataFrame:
     """
-    Generate deterministic, mutually exclusive 64/16/20 split on pooled NHIS observations.
+    Generate deterministic, mutually exclusive stratified 64/16/20 split on pooled NHIS observations.
+
+    Stratification is performed on:
+        survey_year x primary_outcome_state (harmonized meddl12m: 0, 1, missing_or_non_substantive)
+    yielding 9 strata. Within each stratum, rows are deterministically allocated to:
+        n_train = int(round(n_stratum * 0.64))
+        n_val = int(round(n_stratum * 0.16))
+        n_test = n_stratum - n_train - n_val
+    yielding global totals of exactly 57,473 train, 14,368 val, and 17,961 test.
 
     Parameters
     ----------
@@ -85,7 +123,7 @@ def generate_pooled_splits(
     -------
     pd.DataFrame
         Manifest dataframe with columns:
-        ['orig_row_idx', 'record_id', 'survey_year', 'study_role', 'split_role']
+        ['orig_row_idx', 'record_id', 'survey_year', 'meddl12m_state', 'study_role', 'split_role']
     """
     n_total = len(df)
     if n_total != EXPECTED_TOTAL_ROWS:
@@ -93,24 +131,42 @@ def generate_pooled_splits(
             f"Expected {EXPECTED_TOTAL_ROWS} observations in pooled NHIS data, got {n_total}"
         )
 
-    # Establish deterministic baseline index ordering
     df_sorted = df.reset_index(drop=True)
+    med_states = _extract_meddl12m_state(df_sorted)
+    years = df_sorted["survey_year"].astype(int)
+
+    # 9 strata: survey_year x meddl12m_state
+    strata_labels = years.astype(str) + "__" + med_states.astype(str)
+    unique_strata = sorted(strata_labels.unique())
+
+    train_idx: set[int] = set()
+    val_idx: set[int] = set()
+    test_idx: set[int] = set()
+
     rng = np.random.default_rng(seed=seed)
-    permuted_indices = rng.permutation(n_total)
 
-    n_train = int(round(n_total * train_ratio))
-    n_val = int(round(n_total * val_ratio))
-    n_test = n_total - n_train - n_val
+    for st in unique_strata:
+        st_rows = np.where(strata_labels == st)[0]
+        n_st = len(st_rows)
+        perm = rng.permutation(st_rows)
 
-    if (n_train, n_val, n_test) != (EXPECTED_TRAIN_ROWS, EXPECTED_VAL_ROWS, EXPECTED_TEST_ROWS):
+        n_tr = int(round(n_st * train_ratio))
+        n_va = int(round(n_st * val_ratio))
+        n_te = n_st - n_tr - n_va
+
+        train_idx.update(perm[:n_tr])
+        val_idx.update(perm[n_tr : n_tr + n_va])
+        test_idx.update(perm[n_tr + n_va :])
+
+    if (len(train_idx), len(val_idx), len(test_idx)) != (
+        EXPECTED_TRAIN_ROWS,
+        EXPECTED_VAL_ROWS,
+        EXPECTED_TEST_ROWS,
+    ):
         raise ValueError(
-            f"Split count calculation mismatch: ({n_train}, {n_val}, {n_test}) != "
-            f"({EXPECTED_TRAIN_ROWS}, {EXPECTED_VAL_ROWS}, EXPECTED_TEST_ROWS)"
+            f"Stratified split count mismatch: ({len(train_idx)}, {len(val_idx)}, {len(test_idx)}) != "
+            f"({EXPECTED_TRAIN_ROWS}, {EXPECTED_VAL_ROWS}, {EXPECTED_TEST_ROWS})"
         )
-
-    train_idx = set(permuted_indices[:n_train])
-    val_idx = set(permuted_indices[n_train : n_train + n_val])
-    test_idx = set(permuted_indices[n_train + n_val :])
 
     # Assign split roles
     split_roles = []
@@ -131,6 +187,7 @@ def generate_pooled_splits(
         "orig_row_idx": np.arange(n_total, dtype=int),
         "record_id": record_ids,
         "survey_year": df_sorted["survey_year"].astype(int).to_numpy(),
+        "meddl12m_state": med_states.to_numpy(),
         "study_role": df_sorted["study_role"].astype(str).to_numpy(),
         "split_role": split_roles,
     })
@@ -139,7 +196,7 @@ def generate_pooled_splits(
 
 
 def audit_pooled_splits(manifest_df: pd.DataFrame) -> Dict[str, Any]:
-    """Audit split manifest for mutual exclusivity, completeness, and year independence."""
+    """Audit split manifest for mutual exclusivity, completeness, and stratum balance."""
     total_rows = len(manifest_df)
     counts = manifest_df["split_role"].value_counts().to_dict()
 
@@ -166,7 +223,48 @@ def audit_pooled_splits(manifest_df: pd.DataFrame) -> Dict[str, Any]:
         if set(y_counts.keys()) != {2022, 2023, 2024}:
             all_years_present = False
 
-    status = "PASS" if (is_exhaustive and has_exact_counts and all_years_present) else "FAIL"
+    # Stratum audit: survey_year x meddl12m_state
+    stratum_audit: Dict[str, Dict[str, Any]] = {}
+    stratum_balance_valid = True
+
+    if "meddl12m_state" in manifest_df.columns:
+        manifest_df = manifest_df.copy()
+        manifest_df["_stratum"] = (
+            manifest_df["survey_year"].astype(str)
+            + "__"
+            + manifest_df["meddl12m_state"].astype(str)
+        )
+        for st, grp in manifest_df.groupby("_stratum"):
+            st_n = len(grp)
+            st_tr = int((grp["split_role"] == "train").sum())
+            st_va = int((grp["split_role"] == "val").sum())
+            st_te = int((grp["split_role"] == "test").sum())
+
+            tr_frac = round(st_tr / st_n, 6)
+            va_frac = round(st_va / st_n, 6)
+            te_frac = round(st_te / st_n, 6)
+
+            if abs(tr_frac - 0.64) > 0.02 or abs(va_frac - 0.16) > 0.02 or abs(te_frac - 0.20) > 0.02:
+                stratum_balance_valid = False
+
+            parts = st.split("__")
+            stratum_audit[st] = {
+                "survey_year": int(parts[0]),
+                "meddl12m_state": parts[1],
+                "total_rows": st_n,
+                "train_count": st_tr,
+                "val_count": st_va,
+                "test_count": st_te,
+                "train_fraction": tr_frac,
+                "val_fraction": va_frac,
+                "test_fraction": te_frac,
+            }
+
+    status = (
+        "PASS"
+        if (is_exhaustive and has_exact_counts and all_years_present and stratum_balance_valid)
+        else "FAIL"
+    )
 
     return {
         "status": status,
@@ -183,9 +281,11 @@ def audit_pooled_splits(manifest_df: pd.DataFrame) -> Dict[str, Any]:
             "test": round(test_cnt / total_rows, 6),
         },
         "year_breakdown_by_split": year_breakdown,
+        "stratum_audit": stratum_audit,
         "mutually_exclusive_and_exhaustive": is_exhaustive,
         "has_exact_counts": has_exact_counts,
         "all_years_present_in_all_splits": all_years_present,
+        "stratum_balance_valid": stratum_balance_valid,
     }
 
 

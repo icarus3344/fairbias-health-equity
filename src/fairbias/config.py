@@ -174,8 +174,23 @@ class FairBiasConfig:
     #       attribute instead.
     failed_attribute_mode: str = "stop"
 
+    power_sequence_policy: str = "sorted_grid"  # "official_stream" or "sorted_grid"
+    power_revisit_policy: str = "restart"       # "restart" or "monotone_cursor"
+
     verbose: bool = False
     output_dir: str = "runs"
+
+    @property
+    def is_engineering(self) -> bool:
+        return self.algorithm_mode == ALGORITHM_MODE_ENGINEERING
+
+    @property
+    def is_official_code_variant(self) -> bool:
+        return self.algorithm_mode == ALGORITHM_MODE_OFFICIAL
+
+    @property
+    def is_paper_reference(self) -> bool:
+        return self.algorithm_mode == ALGORITHM_MODE_PAPER_FAITHFUL
 
     def __post_init__(self) -> None:
         if self.algorithm_mode not in ALGORITHM_MODES:
@@ -188,28 +203,35 @@ class FairBiasConfig:
                 "mds_fixed_components must be a positive integer or None, "
                 f"got {self.mds_fixed_components!r}"
             )
+        if self.power_sequence_policy not in ("official_stream", "sorted_grid"):
+            raise ValueError(
+                f"power_sequence_policy must be 'official_stream' or 'sorted_grid', "
+                f"got {self.power_sequence_policy!r}"
+            )
+        if self.power_revisit_policy not in ("restart", "monotone_cursor"):
+            raise ValueError(
+                f"power_revisit_policy must be 'restart' or 'monotone_cursor', "
+                f"got {self.power_revisit_policy!r}"
+            )
 
     def resolved(self) -> "FairBiasConfig":
         """Return the EFFECTIVE configuration with the mode concretized.
 
-        ``official_code_derived_monotone_cursor_unweighted``
-        (official-code-derived variant with a termination-safety
-        extension) resolves to:
-          - ``mds_fixed_components = 2`` (official fixed embedding dim,
-            inherited from the official code — not the paper text's
-            elbow-plot selection);
-          - ``transform_poly_exponents`` = the official interleaved stream
-            (order preserved; a custom non-official grid is rejected);
-          - accuracy enhancement and the "next" failed-attribute mode are
-            rejected (both are named engineering extensions and are
-            incompatible with the official-code-derived mode).
-
-        ``engineering_bounded`` resolves to itself unchanged.
+        ``engineering_bounded`` resolves to sorted_grid and restart.
+        ``official_code_derived_monotone_cursor_unweighted`` resolves to
+        official_stream and monotone_cursor with fixed 2D MDS.
+        ``tang2024_paper_faithful`` resolves to official_stream and restart
+        (author candidate restart on revisit) with paper-described stress
+        elbow MDS selection.
         """
-        if self.algorithm_mode == ALGORITHM_MODE_ENGINEERING:
-            return self
+        if self.is_engineering:
+            return dataclasses.replace(
+                self,
+                power_sequence_policy="sorted_grid",
+                power_revisit_policy="restart",
+            )
 
-        if self.algorithm_mode == ALGORITHM_MODE_PAPER_FAITHFUL:
+        if self.is_paper_reference:
             cfg = self
             if cfg.use_accuracy_enhancement:
                 raise ValueError(
@@ -228,10 +250,23 @@ class FairBiasConfig:
                 default_grid = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
                 if tuple(sorted(current_grid)) == tuple(sorted(default_grid)):
                     cfg = dataclasses.replace(cfg, transform_poly_exponents=stream)
-            # In paper-faithful mode, mds_fixed_components retains its configured value
-            # (None for paper-described stress elbow plot selection, or int if explicitly specified).
-            return cfg
+                else:
+                    raise ValueError(
+                        "algorithm_mode='tang2024_paper_faithful' must use the author "
+                        "interleaved power stream [3, 1/3, 5, 1/5, ..., 1999, 1/1999]; "
+                        "got a custom grid."
+                    )
+            # In paper reference mode:
+            # - power sequence is official_stream (author interleaved stream [3, 1/3, 5, 1/5, ...])
+            # - power revisit is restart (author revisit behavior: restarts search from head)
+            # - mds_fixed_components retains configured value (None for stress elbow selection)
+            return dataclasses.replace(
+                cfg,
+                power_sequence_policy="official_stream",
+                power_revisit_policy="restart",
+            )
 
+        # Official code derived variant (with monotone cursor termination-safety extension)
         cfg = self
         if cfg.use_accuracy_enhancement:
             raise ValueError(
@@ -266,8 +301,6 @@ class FairBiasConfig:
         if current_grid != stream:
             default_grid = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
             if tuple(sorted(current_grid)) == tuple(sorted(default_grid)):
-                # Default six-value grid: silently concretize to the
-                # official stream.
                 cfg = dataclasses.replace(
                     cfg, transform_poly_exponents=stream
                 )
@@ -279,7 +312,12 @@ class FairBiasConfig:
                     "custom grid. Use the engineering_bounded mode for "
                     "custom grids."
                 )
-        return cfg
+
+        return dataclasses.replace(
+            cfg,
+            power_sequence_policy="official_stream",
+            power_revisit_policy="monotone_cursor",
+        )
 
     @classmethod
     def compas_default(cls, **overrides: Any) -> FairBiasConfig:

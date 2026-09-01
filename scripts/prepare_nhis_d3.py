@@ -77,6 +77,11 @@ def parse_args(args: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_POOLED_SEED,
         help="Random seed for pooled 64/16/20 split (default 2024).",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing artifacts if they differ.",
+    )
     return parser.parse_args(args)
 
 
@@ -119,7 +124,7 @@ def main(args: Sequence[str] | None = None) -> int:
     # ------------------------------------------------------------------
     split_manifest_df = generate_pooled_splits(df_raw, seed=parsed.seed)
     split_csv_path = output_dir / "pooled_split_manifest.csv"
-    write_csv_atomic(split_manifest_df, split_csv_path)
+    write_csv_atomic(split_manifest_df, split_csv_path, force=parsed.force)
     print("Generated pooled_split_manifest.csv")
 
     # ------------------------------------------------------------------
@@ -146,17 +151,21 @@ def main(args: Sequence[str] | None = None) -> int:
     # ------------------------------------------------------------------
     paper_fidelity_data = {
         "schema_version": "nhis-fairbias-d3-1.0",
-        "reference_citation": "Tang, Lu & Li (2024). FairBias: Auditing and Mitigating Fairness Disparities through Group Representation Discrepancy.",
+        "reference_citation": "Tang, Lu & Li (2024). Metric-Independent Mitigation of Unpredefined Bias in Machine Classification.",
         "algorithm_mode": ALGORITHM_MODE_PAPER_FAITHFUL,
         "fidelity_analysis": {
             "mds_embedding_dimensionality": {
                 "paper_text": "We search for the optimal dimension d using the elbow method on the stress curve.",
                 "official_author_code": "Hardcodes n_components = 2 without stress curve evaluation (module_BM.py line 147).",
-                "gate_d3_resolution": (
-                    "By default tang2024_paper_faithful preserves paper-described stress elbow plot selection "
-                    "(mds_fixed_components=None). Allows running with mds_fixed_components=2 when explicitly comparing to official code."
+                "repo_operationalization": (
+                    "Stress-elbow detection is automated via mds_max_components (default 10) and mds_slope_threshold (default 0.05). "
+                    "In tang2024_paper_faithful mode, mds_fixed_components defaults to None (stress elbow selection)."
                 ),
-                "ambiguity_status": "DOCUMENTED_RESOLVED",
+                "gate_d3_resolution": (
+                    "Preserves paper stress-elbow selection by default, distinguishing paper conceptual rule from "
+                    "repository automated operational parameters."
+                ),
+                "provenance_status": "PAPER_CONCEPT_REPO_OPERATIONALIZED",
             },
             "numerical_power_transformation": {
                 "paper_text": (
@@ -164,13 +173,16 @@ def main(args: Sequence[str] | None = None) -> int:
                     "(3, 5, 7, ...) or odd reciprocal (1/3, 1/5, 1/7, ...) powers, searching until d_phi < epsilon."
                 ),
                 "official_author_code": (
-                    "Searches an interleaved stream: np.array([[i, 1/i] for i in range(3, 2000, 2)]).reshape(-1)."
+                    "Searches an interleaved stream: np.array([[i, 1/i] for i in range(3, 2000, 2)]).reshape(-1), "
+                    "restarting from head on attribute revisit."
                 ),
                 "gate_d3_resolution": (
                     "Preserves exact interleaved power sequence [3, 1/3, 5, 1/5, 7, 1/7, ...]. "
-                    "Applies a monotone per-attribute cursor to consume each tried power permanently and guarantee loop termination."
+                    "In tang2024_paper_faithful mode, power revisit policy restarts from head (matching author code); "
+                    "infinite loops are prevented via fail-closed state-cycle detection (no mutation of candidate trajectory). "
+                    "The monotone per-attribute cursor is isolated to official_code_derived_monotone_cursor_unweighted."
                 ),
-                "ambiguity_status": "DOCUMENTED_RESOLVED",
+                "provenance_status": "DOCUMENTED_RESOLVED",
             },
             "categorical_frequency_merging": {
                 "paper_text": (
@@ -184,7 +196,33 @@ def main(args: Sequence[str] | None = None) -> int:
                     "Preserves empirical category-frequency difference merging. Merging down to a single category "
                     "is treated as a terminal feature drop if accepted by the information-loss gate."
                 ),
-                "ambiguity_status": "DOCUMENTED_RESOLVED",
+                "provenance_status": "DOCUMENTED_RESOLVED",
+            },
+            "nmi_information_loss_gate": {
+                "paper_text": "Algorithm 1 in the main text defines greedy bias mitigation without an explicit NMI information-loss gate.",
+                "official_author_code": (
+                    "module_BM.py (lines 271, 293-308) implements an NMI information-loss gate "
+                    "(phi_iter = (nmi_org - nmi_temp) / nmi_org > phi_threshold) rejecting transforms with excessive target information loss."
+                ),
+                "gate_d3_resolution": (
+                    "In tang2024_paper_faithful mode, phi_threshold defaults to 100.0 (matching author code default), "
+                    "with provenance explicitly tracked."
+                ),
+                "provenance_status": "OFFICIAL_CODE_ONLY_NOT_IN_MAIN_TEXT",
+            },
+            "multicategory_protected_attributes": {
+                "paper_text": "Evaluated binary protected attributes (Sex, Race) in COMPAS and Credit Card experiments.",
+                "official_author_code": (
+                    "module_BM.py (line 82) computes combinations(unique_groups, 2), calculating pairwise disparity across all category pairs."
+                ),
+                "nhis_application": (
+                    "HISPALLP_A (7 categories) evaluates all 21 unordered category pairs using the author code pairwise formulation. "
+                    "HISPALLP_A is NOT artificially binarized."
+                ),
+                "gate_d3_resolution": (
+                    "Full 7-category evaluation preserves author pairwise formulation as a direct multiclass generalization."
+                ),
+                "provenance_status": "PAIRWISE_FORMULATION_GENERALIZED_TO_MULTICLASS_EMPIRICAL_EXTENSION",
             },
             "survey_weights_policy": {
                 "paper_text": "Tang et al. (2024) is strictly an unweighted algorithm.",
@@ -192,14 +230,20 @@ def main(args: Sequence[str] | None = None) -> int:
                     "No survey weights (WTFA_A) are used in divergence, MDS, epsilon, or transform selection. "
                     "Passing sample_weight in tang2024_paper_faithful mode raises ValueError immediately."
                 ),
-                "ambiguity_status": "DOCUMENTED_RESOLVED",
+                "provenance_status": "DOCUMENTED_RESOLVED",
             },
             "accuracy_enhancement_policy": {
                 "paper_text": "Not part of the core greedy bias mitigation loop described in the main paper.",
                 "gate_d3_resolution": (
                     "Strictly rejected in tang2024_paper_faithful mode (use_accuracy_enhancement must be False)."
                 ),
-                "ambiguity_status": "DOCUMENTED_RESOLVED",
+                "provenance_status": "DOCUMENTED_RESOLVED",
+            },
+            "temporal_robustness_semantics": {
+                "temporal_regime": "2022 train / 2023 validation / 2024 out-of-time temporal test (temporal robustness test).",
+                "pooled_regime": "2022-2024 pooled and split 64/16/20; 2024 participates in pooled primary regime.",
+                "claim_boundary": "2024 is NOT a globally untouched external frozen test across all regimes.",
+                "provenance_status": "DOCUMENTED_RESOLVED",
             },
         },
         "status": "PASS",
@@ -297,7 +341,7 @@ def main(args: Sequence[str] | None = None) -> int:
     ]
     arms_df = pd.DataFrame(arm_rows)
     arms_csv_path = output_dir / "experiment_arms.csv"
-    write_csv_atomic(arms_df, arms_csv_path)
+    write_csv_atomic(arms_df, arms_csv_path, force=parsed.force)
     print("Generated experiment_arms.csv")
 
     # ------------------------------------------------------------------
@@ -400,8 +444,12 @@ def main(args: Sequence[str] | None = None) -> int:
     }
     output_files_meta = {}
     for fname, fpath in artifacts_to_checksum.items():
+        try:
+            rel_path = str(fpath.relative_to(repo_root))
+        except ValueError:
+            rel_path = str(fpath)
         output_files_meta[fname] = {
-            "path": str(fpath.relative_to(repo_root)),
+            "path": rel_path,
             "sha256": compute_sha256(fpath),
             "size_bytes": fpath.stat().st_size,
         }
@@ -445,6 +493,11 @@ def main(args: Sequence[str] | None = None) -> int:
             "train_only_fitting": True,
             "validation_test_leakage_prevention": True,
             "survey_weights_in_tang_baseline": "FORBIDDEN",
+            "temporal_robustness_semantics": (
+                "In the temporal regime, 2024 is the out-of-time temporal test partition. "
+                "In the primary pooled regime, 2022-2024 are pooled and partitioned 64/16/20; "
+                "2024 is not claimed to be a globally untouched external test across regimes."
+            ),
         },
         "output_artifacts": output_files_meta,
     }

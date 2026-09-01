@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import copy
 from itertools import combinations
+import json
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -64,7 +65,9 @@ class FairBiasMitigation:
         phi_threshold: float = 100.0,
         poly_exponents: Tuple[float, ...] = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0),
         failed_attribute_mode: str = "stop",
-        preserve_exponent_order: bool = False,
+        preserve_exponent_order: Optional[bool] = None,
+        power_sequence_policy: str = "sorted_grid",
+        power_revisit_policy: str = "restart",
     ):
         self.evaluator = evaluator
         self.transformer = transformer
@@ -73,38 +76,34 @@ class FairBiasMitigation:
         self.num_attrs = num_attrs
         self.max_search_candidates = max_search_candidates
         self.phi_threshold = float(phi_threshold)
-        # Round 4.1: the power stream is searched IN THE ORDER GIVEN when
-        # ``preserve_exponent_order`` is True (official-code-derived mode:
-        # the official implementation searches the interleaved stream
-        # [3, 1/3, 5, 1/5, ...] in that order, which differs from an
-        # ascending sort).  The engineering mode keeps the legacy
-        # ascending sort.
-        self.preserve_exponent_order = bool(preserve_exponent_order)
-        if preserve_exponent_order:
+
+        # Disentangle sequence policy from revisit policy (REPAIR 2)
+        if preserve_exponent_order is not None:
+            if preserve_exponent_order:
+                power_sequence_policy = "official_stream"
+                power_revisit_policy = "monotone_cursor"
+            else:
+                power_sequence_policy = "sorted_grid"
+                power_revisit_policy = "restart"
+
+        self.power_sequence_policy = power_sequence_policy
+        self.power_revisit_policy = power_revisit_policy
+        self.preserve_exponent_order = (power_sequence_policy == "official_stream")
+
+        if power_sequence_policy == "official_stream":
             self.poly_exponents = tuple(float(p) for p in poly_exponents)
         else:
             self.poly_exponents = tuple(sorted(float(p) for p in poly_exponents))
 
-        # Round 4.1 REPAIR (Codex P0): the official-code-derived mode
-        # persists a MONOTONE per-attribute cursor into the power stream.
-        # Every stream position searched for a numeric attribute (skipped,
-        # rejected, or accepted) is consumed exactly once and can never be
-        # searched again for that attribute.  Without the cursor the
-        # numerical search restarted from the head of the stream on every
-        # revisit (skipping only the currently applied power), which
-        # allowed a revisit cycle 3 -> 1/3 -> 3 -> ... under the
-        # budget-free loop -- the loop then had NO termination guarantee.
-        # With the cursor, repeated revisits of one attribute advance
-        # strictly forward through the finite stream, so the total number
-        # of accepted transforms is bounded and the loop terminates
-        # (epsilon ball, stream exhaustion per attribute, or bounded
-        # categorical merge chains).  NOTE: this cursor is the DELIBERATE
-        # termination-safety DEVIATION from the official implementation,
-        # which restarts its power search from the head of the stream on
-        # every revisit; see config.py's mode contract.  The engineering
-        # mode keeps the legacy restart-from-head behaviour (bounded there
-        # by max_iterations) and leaves this dict empty.
-        self._exponent_stream_cursors: Dict[str, int] = {}
+        # Monotone per-attribute cursor is ONLY active when power_revisit_policy == "monotone_cursor"
+        if power_revisit_policy == "monotone_cursor":
+            self._exponent_stream_cursors: Dict[str, int] = {}
+        else:
+            self._exponent_stream_cursors = {}
+
+        # Fail-closed cycle detection tracking visited transform states
+        self.visited_states: set[str] = set()
+        self.visited_states.add(json.dumps({}, sort_keys=True))
 
         if failed_attribute_mode not in ("stop", "next"):
             raise ValueError(
@@ -112,18 +111,6 @@ class FairBiasMitigation:
                 f"attribute failure stops the run) or 'next' (named "
                 f"engineering extension), got {failed_attribute_mode!r}"
             )
-        # "stop" (default): the greedy loop keeps operating on the CURRENT
-        # highest-d_phi attribute; if its candidate search (numeric power
-        # stream/grid or categorical merge chain) cannot reach the epsilon
-        # ball the run is recorded as non-convergent
-        # (``self.non_convergence``) and terminates.  NOTE: in engineering
-        # mode this records "configured grid exhausted" — the paper's
-        # power search has no stated finite bound (main text lists 3, 5, 7
-        # and 1/3, 1/5, 1/7 as "e.g." examples), so this is NOT a
-        # paper-level algorithmic non-convergence claim.
-        # "next": explicitly named ENGINEERING extension -- the failure is
-        # recorded keyed by (protected attribute, feature) and the
-        # next-ranked attribute is tried instead.
         self.failed_attribute_mode = failed_attribute_mode
         self.failed_attribute_keys: set = set()
         self.non_convergence: Optional[Dict[str, Any]] = None
@@ -385,12 +372,12 @@ class FairBiasMitigation:
         current_power = float(existing.get("power", 1.0)) if isinstance(existing, dict) else 1.0
 
         start_index = 0
-        if self.preserve_exponent_order:
+        if self.power_revisit_policy == "monotone_cursor":
             start_index = self._exponent_stream_cursors.get(attr, 0)
 
         for index in range(start_index, len(self.poly_exponents)):
             power = self.poly_exponents[index]
-            if self.preserve_exponent_order:
+            if self.power_revisit_policy == "monotone_cursor":
                 # Consume this stream position permanently: the cursor
                 # only ever moves forward for this attribute.
                 self._exponent_stream_cursors[attr] = index + 1
@@ -502,6 +489,53 @@ class FairBiasMitigation:
             if accepted is not None:
                 candidate_df, temp_changed = accepted
                 change = temp_changed.get(selected_attribute)
+
+                # State-cycle detection check (fail-closed for author stream restart search)
+                canonical_state = json.dumps(temp_changed, sort_keys=True)
+                if (
+                    self.power_sequence_policy == "official_stream"
+                    and self.power_revisit_policy == "restart"
+                    and canonical_state in self.visited_states
+                ):
+                    self.non_convergence = {
+                        "label_O": selected_label_O,
+                        "attribute": selected_attribute,
+                        "d_phi": float(eps),
+                        "search_scope": "state_cycle_detected",
+                        "reason": (
+                            f"state cycle detected for attribute {selected_attribute!r}: "
+                            f"proposed transform reproduces previously visited state {canonical_state}; "
+                            "stopping fail-closed without mutating candidate search trajectory."
+                        ),
+                    }
+                    sem_type = (
+                        "categorical"
+                        if (
+                            selected_attribute in self.cate_attrs
+                            or not pd.api.types.is_numeric_dtype(X[selected_attribute])
+                        )
+                        else "numerical"
+                    )
+                    self.step_traces.append(
+                        FairBiasTransformStep(
+                            iteration=int(iteration),
+                            selected_feature=str(selected_attribute),
+                            feature_semantic_type=sem_type,
+                            d_phi_before=float(eps),
+                            epsilon=float(epsilon_threshold),
+                            proposed_transformation=change,
+                            accepted_transformation=None,
+                            numerical_exponent=None,
+                            categorical_merge_mapping=None,
+                            d_phi_after=float(eps),
+                            dropped=False,
+                            stopped_reason=str(self.non_convergence["reason"]),
+                        )
+                    )
+                    return self._no_op(X, changed_dict)
+
+                self.visited_states.add(canonical_state)
+
                 is_dropped = (change == "dropped")
                 num_exp = (
                     float(change["power"])
@@ -544,34 +578,27 @@ class FairBiasMitigation:
             if self.failed_attribute_mode == "stop":
                 # Failure semantics: report the search exhaustion on the
                 # current highest attribute and stop the mitigation loop.
-                if self.preserve_exponent_order:
-                    # Official-code-derived mode: record the REAL search
-                    # scope — the numeric power stream under the monotone
-                    # cursor, or the categorical merge chain.  The scope
-                    # is decided by the attribute's role, NOT by the mode
-                    # alone (Round 4.1 REPAIR-2: a categorical failure
-                    # used to be mis-recorded as power-stream exhaustion).
-                    is_categorical_search = (
-                        selected_attribute in self.cate_attrs
-                        or not pd.api.types.is_numeric_dtype(
-                            X[selected_attribute]
-                        )
+                is_categorical_search = (
+                    selected_attribute in self.cate_attrs
+                    or not pd.api.types.is_numeric_dtype(
+                        X[selected_attribute]
                     )
-                    if is_categorical_search:
-                        self.non_convergence = {
-                            "label_O": selected_label_O,
-                            "attribute": selected_attribute,
-                            "d_phi": float(eps),
-                            "search_scope": "categorical_merge_chain",
-                            "reason": (
-                                "categorical merge chain exhausted for this "
-                                "attribute (bounded merges plus the rejected "
-                                "terminal drop could not reach the epsilon "
-                                "ball); the official-code-derived loop has "
-                                "no iteration budget"
-                            ),
-                        }
-                    else:
+                )
+                if is_categorical_search:
+                    self.non_convergence = {
+                        "label_O": selected_label_O,
+                        "attribute": selected_attribute,
+                        "d_phi": float(eps),
+                        "search_scope": "categorical_merge_chain",
+                        "reason": (
+                            "categorical merge chain exhausted for this "
+                            "attribute (bounded merges plus the rejected "
+                            "terminal drop could not reach the epsilon "
+                            "ball); the loop has no iteration budget"
+                        ),
+                    }
+                elif self.power_sequence_policy == "official_stream":
+                    if self.power_revisit_policy == "monotone_cursor":
                         self.non_convergence = {
                             "label_O": selected_label_O,
                             "attribute": selected_attribute,
@@ -588,6 +615,18 @@ class FairBiasMitigation:
                                 "stream cursor (no position is retried); the "
                                 "official-code-derived loop has no "
                                 "iteration budget"
+                            ),
+                        }
+                    else:
+                        self.non_convergence = {
+                            "label_O": selected_label_O,
+                            "attribute": selected_attribute,
+                            "d_phi": float(eps),
+                            "search_scope": "official_power_stream",
+                            "reason": (
+                                "author power stream exhausted for this "
+                                "attribute under head restart search; the "
+                                "paper reference loop has no iteration budget"
                             ),
                         }
                 else:

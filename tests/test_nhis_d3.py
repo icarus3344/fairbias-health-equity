@@ -18,9 +18,13 @@ Tests:
 from __future__ import annotations
 
 import json
+import os
 import pathlib
+import subprocess
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -31,12 +35,15 @@ if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
 
 from fairbias.config import (
+    ALGORITHM_MODE_ENGINEERING,
+    ALGORITHM_MODE_OFFICIAL,
     ALGORITHM_MODE_PAPER_FAITHFUL,
     FairBiasConfig,
     official_power_stream,
 )
 from fairbias.evaluator import FairEvaluator
 from fairbias.mitigation import FairBiasMitigation
+from fairbias.pipeline import run_fairbias_pipeline
 from fairbias.transform import FairTransform
 from nhis_fairbias.adapter import DISABILITY_COMPONENTS
 from nhis_fairbias.download import compute_sha256
@@ -322,7 +329,215 @@ class TestNHISGateD3(unittest.TestCase):
         self.assertEqual(trace_step.d_phi_before, 0.05)
 
     # ------------------------------------------------------------------
-    # 11. Artifact Integrity and Manifest Verification
+    # 11. Stratified Split Balance Across 9 Strata
+    # ------------------------------------------------------------------
+
+    def test_pooled_split_strata_balance(self) -> None:
+        """Verify all 9 strata (survey_year x meddl12m_state) are present and balanced."""
+        manifest = self.adapter.split_manifest
+        self.assertIn("meddl12m_state", manifest.columns)
+
+        audit_res = audit_pooled_splits(manifest)
+        self.assertEqual(audit_res["status"], "PASS")
+        self.assertTrue(audit_res["stratum_balance_valid"])
+
+        stratum_audit = audit_res["stratum_audit"]
+        expected_strata = {
+            "2022__0", "2022__1", "2022__missing_or_non_substantive",
+            "2023__0", "2023__1", "2023__missing_or_non_substantive",
+            "2024__0", "2024__1", "2024__missing_or_non_substantive",
+        }
+        self.assertEqual(set(stratum_audit.keys()), expected_strata)
+
+        for st_name, st_info in stratum_audit.items():
+            tr_frac = st_info["train_fraction"]
+            va_frac = st_info["val_fraction"]
+            te_frac = st_info["test_fraction"]
+            self.assertAlmostEqual(tr_frac, 0.64, delta=0.02, msg=f"Train balance failed for {st_name}")
+            self.assertAlmostEqual(va_frac, 0.16, delta=0.02, msg=f"Val balance failed for {st_name}")
+            self.assertAlmostEqual(te_frac, 0.20, delta=0.02, msg=f"Test balance failed for {st_name}")
+
+    # ------------------------------------------------------------------
+    # 12. Single Master Split Reused Across Protected Attributes
+    # ------------------------------------------------------------------
+
+    def test_same_master_split_reused_across_protected_attributes(self) -> None:
+        """Master split assignment is immutable and reused across all protected attributes."""
+        manifest = self.adapter.split_manifest
+        self.assertEqual(len(manifest), EXPECTED_TOTAL_ROWS)
+
+        c_sex = self.adapter.get_pooled_cohort(outcome="MEDDL12M_A", protected_attribute="SEX_A")
+        c_hisp = self.adapter.get_pooled_cohort(outcome="MEDDL12M_A", protected_attribute="HISPALLP_A")
+        c_disab = self.adapter.get_pooled_cohort(outcome="MEDDL12M_A", protected_attribute="DISAB3_A")
+
+        # Every partition in each cohort must be a strict subset of the master partition assignment
+        for role in ("train", "val", "test"):
+            master_role_indices = set(manifest[manifest["split_role"] == role]["orig_row_idx"])
+            self.assertTrue(set(c_sex[role][0].index).issubset(master_role_indices))
+            self.assertTrue(set(c_hisp[role][0].index).issubset(master_role_indices))
+            self.assertTrue(set(c_disab[role][0].index).issubset(master_role_indices))
+
+        # Intersection of eligible rows across attributes shares identical split roles
+        common_train = set(c_sex["train"][0].index) & set(c_hisp["train"][0].index) & set(c_disab["train"][0].index)
+        self.assertGreater(len(common_train), 50000)
+
+    # ------------------------------------------------------------------
+    # 13. Paper Faithful Mode Routing, Predicates & Power Policies
+    # ------------------------------------------------------------------
+
+    def test_paper_faithful_config_and_policies(self) -> None:
+        """tang2024_paper_faithful resolves to author stream, restart revisit, and paper predicates."""
+        cfg = FairBiasConfig.compas_default(mode="paper")
+        self.assertEqual(cfg.algorithm_mode, ALGORITHM_MODE_PAPER_FAITHFUL)
+        self.assertTrue(cfg.is_paper_reference)
+        self.assertFalse(cfg.is_official_code_variant)
+        self.assertFalse(cfg.is_engineering)
+
+        resolved = cfg.resolved()
+        self.assertEqual(resolved.power_sequence_policy, "official_stream")
+        self.assertEqual(resolved.power_revisit_policy, "restart")
+        self.assertEqual(resolved.transform_poly_exponents, official_power_stream())
+        self.assertIsNone(resolved.mds_fixed_components)
+
+    def test_monotone_cursor_remains_behaviorally_separate(self) -> None:
+        """official_code_derived mode retains monotone cursor and fixed dim=2."""
+        cfg = FairBiasConfig.compas_default(mode="official")
+        self.assertEqual(cfg.algorithm_mode, ALGORITHM_MODE_OFFICIAL)
+        self.assertTrue(cfg.is_official_code_variant)
+        self.assertFalse(cfg.is_paper_reference)
+        self.assertFalse(cfg.is_engineering)
+
+        resolved = cfg.resolved()
+        self.assertEqual(resolved.power_sequence_policy, "official_stream")
+        self.assertEqual(resolved.power_revisit_policy, "monotone_cursor")
+        self.assertEqual(resolved.mds_fixed_components, 2)
+
+    def test_engineering_mode_remains_unchanged(self) -> None:
+        """engineering_bounded mode retains sorted_grid, restart, and engineering predicates."""
+        cfg = FairBiasConfig.compas_default(mode="engineering")
+        self.assertEqual(cfg.algorithm_mode, ALGORITHM_MODE_ENGINEERING)
+        self.assertTrue(cfg.is_engineering)
+        self.assertFalse(cfg.is_paper_reference)
+        self.assertFalse(cfg.is_official_code_variant)
+
+        resolved = cfg.resolved()
+        self.assertEqual(resolved.power_sequence_policy, "sorted_grid")
+        self.assertEqual(resolved.power_revisit_policy, "restart")
+
+    # ------------------------------------------------------------------
+    # 14. Paper Faithful Pipeline Execution & Manifest Labeling
+    # ------------------------------------------------------------------
+
+    def test_paper_faithful_no_iteration_budget_and_no_pareto(self) -> None:
+        """Paper-faithful execution has no 5-iteration budget, no validation Pareto, and clean manifest."""
+        with tempfile.TemporaryDirectory() as tmp_out:
+            cfg = FairBiasConfig.compas_default(mode="paper", output_dir=tmp_out)
+            res = run_fairbias_pipeline(cfg)
+
+            # Paper mode ignores iteration_budget
+            self.assertNotEqual(res.termination["termination_reason"], "iteration_budget_exhausted")
+
+            # Validation Pareto is bypassed
+            self.assertIsNone(res.pareto_engineering_metrics)
+            self.assertIsNone(res.pareto_engineering_changed_dict)
+            self.assertIn("N/A", res.best_selection_reason)
+
+            # Greedy terminal metrics is the sole reported state
+            self.assertIsNotNone(res.greedy_terminal_metrics)
+
+            # Manifest labels itself accurately
+            with open(res.output_file, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+
+            self.assertEqual(payload["algorithm_mode"], "tang2024_paper_faithful")
+            self.assertEqual(payload["final_states"], ["tang2024_paper_faithful"])
+            self.assertIn("final_results_tang2024_paper_faithful", payload)
+            self.assertNotIn("final_results_pareto_engineering", payload)
+            self.assertNotIn("final_results_configured_greedy_terminal", payload)
+            self.assertIn("tang2024_paper_faithful", payload["algorithm_mode_definition"])
+            self.assertNotIn("engineering_bounded", payload["algorithm_mode_definition"])
+
+    # ------------------------------------------------------------------
+    # 15. Fail-Closed State Cycle Detection
+    # ------------------------------------------------------------------
+
+    def test_fail_closed_state_cycle_detection(self) -> None:
+        """Fail-closed cycle detector stops when candidate reproduces visited state."""
+        cfg = FairBiasConfig.compas_default(mode="paper")
+        evaluator = FairEvaluator(config=cfg)
+        transformer = FairTransform()
+        mitigator = FairBiasMitigation(
+            evaluator=evaluator,
+            transformer=transformer,
+            label_O=["prot"],
+            cate_attrs=[],
+            num_attrs=["num"],
+            power_sequence_policy="official_stream",
+            power_revisit_policy="restart",
+        )
+        mitigator.visited_states.add(json.dumps({"num": {"power": 3.0}}, sort_keys=True))
+
+        syn_df = pd.DataFrame({"num": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]})
+        syn_y = pd.Series([0, 1, 0, 1, 0, 1])
+        syn_o = pd.DataFrame({"prot": [0, 0, 0, 1, 1, 1]})
+
+        current_eps = {"prot": {"num": 0.05}}
+        epsilon_thresh = 0.01
+
+        cand_transform = {"num": {"power": 3.0}}
+        with patch.object(mitigator, "_search_numerical", return_value=(syn_df, cand_transform)):
+            cand_df, temp_changed, sel_o, sel_attr = mitigator.mitigate_step(
+                X=syn_df,
+                Y=syn_y,
+                O=syn_o,
+                nmi_org={"num": 0.5},
+                changed_dict={},
+                current_epsilon=current_eps,
+                epsilon_threshold=epsilon_thresh,
+                iteration=1,
+            )
+        self.assertIsNotNone(mitigator.non_convergence)
+        self.assertEqual(mitigator.non_convergence["search_scope"], "state_cycle_detected")
+        self.assertIn("state cycle detected", mitigator.non_convergence["reason"])
+
+    # ------------------------------------------------------------------
+    # 16. Clean-Checkout Reproducibility
+    # ------------------------------------------------------------------
+
+    def test_clean_checkout_reproducibility(self) -> None:
+        """Artifact generation runs cleanly from scratch in a fresh isolated directory."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            cmd = [
+                sys.executable,
+                str(self.repo_root / "scripts" / "prepare_nhis_d3.py"),
+                "--output-dir", tmp_dir,
+                "--force",
+            ]
+            env = dict(os.environ, PYTHONPATH=str(self.repo_root / "src"))
+            res = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            self.assertEqual(res.returncode, 0, f"prepare_nhis_d3 failed: {res.stderr}")
+
+            required = [
+                "d3_manifest.json",
+                "pooled_split_manifest.csv",
+                "pooled_split_audit.json",
+                "paper_fidelity_manifest.json",
+                "paper_algorithm_contract.json",
+                "pooled_preprocessing_fit.json",
+                "experiment_arms.csv",
+                "fairbias_transform_trace_schema.json",
+                "numerical_transform_audit_schema.json",
+            ]
+            tmp_path = pathlib.Path(tmp_dir)
+            for r in required:
+                self.assertTrue((tmp_path / r).is_file(), f"Missing {r} in clean checkout")
+
+            with (tmp_path / "d3_manifest.json").open("r", encoding="utf-8") as f:
+                d3_man = json.load(f)
+            self.assertEqual(d3_man["status"], "PASS")
+
+    # ------------------------------------------------------------------
+    # 17. Artifact Integrity and Manifest Verification
     # ------------------------------------------------------------------
 
     def test_all_9_artifacts_exist_and_pass(self) -> None:
@@ -338,6 +553,17 @@ class TestNHISGateD3(unittest.TestCase):
             "fairbias_transform_trace_schema.json",
             "numerical_transform_audit_schema.json",
         )
+        # If pre-existing artifacts are not present, generate them on the fly
+        if not (self.d3_dir / "d3_manifest.json").is_file():
+            cmd = [
+                sys.executable,
+                str(self.repo_root / "scripts" / "prepare_nhis_d3.py"),
+                "--output-dir", str(self.d3_dir),
+                "--force",
+            ]
+            env = dict(os.environ, PYTHONPATH=str(self.repo_root / "src"))
+            subprocess.run(cmd, capture_output=True, text=True, env=env, check=True)
+
         for fname in required_artifacts:
             fpath = self.d3_dir / fname
             self.assertTrue(fpath.is_file(), f"Missing required D3 artifact: {fname}")
@@ -362,6 +588,7 @@ class TestNHISGateD3(unittest.TestCase):
         self.assertTrue(split_audit["mutually_exclusive_and_exhaustive"])
         self.assertTrue(split_audit["has_exact_counts"])
         self.assertTrue(split_audit["all_years_present_in_all_splits"])
+        self.assertTrue(split_audit["stratum_balance_valid"])
 
         # Check experiment_arms.csv
         arms_df = pd.read_csv(self.d3_dir / "experiment_arms.csv")
