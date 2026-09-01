@@ -59,10 +59,12 @@ from typing import Any, Optional, Sequence
 ALGORITHM_MODE_OFFICIAL = "official_code_derived_monotone_cursor_unweighted"
 ALGORITHM_MODE_ENGINEERING = "engineering_bounded"
 ALGORITHM_MODE_PAPER_FAITHFUL = "tang2024_paper_faithful"
+ALGORITHM_MODE_SURVEY_WEIGHTED = "survey_weighted_geometry"
 ALGORITHM_MODES = (
     ALGORITHM_MODE_OFFICIAL,
     ALGORITHM_MODE_ENGINEERING,
     ALGORITHM_MODE_PAPER_FAITHFUL,
+    ALGORITHM_MODE_SURVEY_WEIGHTED,
 )
 
 # The official implementation fixes the MDS embedding dimension at 2.
@@ -192,6 +194,10 @@ class FairBiasConfig:
     def is_paper_reference(self) -> bool:
         return self.algorithm_mode == ALGORITHM_MODE_PAPER_FAITHFUL
 
+    @property
+    def is_survey_weighted(self) -> bool:
+        return self.algorithm_mode == ALGORITHM_MODE_SURVEY_WEIGHTED
+
     def __post_init__(self) -> None:
         if self.algorithm_mode not in ALGORITHM_MODES:
             raise ValueError(
@@ -260,6 +266,37 @@ class FairBiasConfig:
             # - power sequence is official_stream (author interleaved stream [3, 1/3, 5, 1/5, ...])
             # - power revisit is restart (author revisit behavior: restarts search from head)
             # - mds_fixed_components retains configured value (None for stress elbow selection)
+            return dataclasses.replace(
+                cfg,
+                power_sequence_policy="official_stream",
+                power_revisit_policy="restart",
+            )
+
+        if self.is_survey_weighted:
+            cfg = self
+            if cfg.use_accuracy_enhancement:
+                raise ValueError(
+                    "use_accuracy_enhancement is not part of survey_weighted_geometry baseline "
+                    "and cannot be combined with algorithm_mode='survey_weighted_geometry'"
+                )
+            if cfg.failed_attribute_mode != "stop":
+                raise ValueError(
+                    "failed_attribute_mode='next' is a named ENGINEERING "
+                    "extension and cannot be combined with algorithm_mode="
+                    "'survey_weighted_geometry'"
+                )
+            stream = official_power_stream()
+            current_grid = tuple(float(p) for p in cfg.transform_poly_exponents)
+            if current_grid != stream:
+                default_grid = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
+                if tuple(sorted(current_grid)) == tuple(sorted(default_grid)):
+                    cfg = dataclasses.replace(cfg, transform_poly_exponents=stream)
+                else:
+                    raise ValueError(
+                        "algorithm_mode='survey_weighted_geometry' must use the author "
+                        "interleaved power stream [3, 1/3, 5, 1/5, ..., 1999, 1/1999]; "
+                        "got a custom grid."
+                    )
             return dataclasses.replace(
                 cfg,
                 power_sequence_policy="official_stream",

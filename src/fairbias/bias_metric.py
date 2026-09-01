@@ -124,6 +124,7 @@ def compute_pairwise_divergences(
     num_method: str = "num-a",
     cat_method: str = "cat-a",
     sample_weight: Optional[pd.Series | np.ndarray] = None,
+    allow_zero_weights: bool = False,
 ) -> pd.DataFrame:
     """
     Compute per-feature divergence ``g_m`` (Eq. 2) between every pair of
@@ -145,9 +146,15 @@ def compute_pairwise_divergences(
     etc.) are exactly the two statistics the pre-declared weighted
     extension replaces (see ``SURVEY_WEIGHTED_EXTENSION_DECLARATION``).
     """
+    if isinstance(o_series, pd.Series):
+        if not o_series.index.equals(X.index):
+            raise ValueError("Index alignment mismatch: o_series index must match X index")
+
     w_arr: Optional[np.ndarray] = None
     if sample_weight is not None:
         if isinstance(sample_weight, pd.Series):
+            if not sample_weight.index.equals(X.index):
+                raise ValueError("Index alignment mismatch: sample_weight index must match X index")
             w_arr = np.asarray(sample_weight.to_numpy(), dtype=float)
         else:
             w_arr = np.asarray(sample_weight, dtype=float)
@@ -157,18 +164,21 @@ def compute_pairwise_divergences(
             )
         if not np.all(np.isfinite(w_arr)):
             raise ValueError("sample_weight contains NaN or non-finite values")
-        if np.any(w_arr <= 0):
-            raise ValueError("sample_weight values must be strictly positive (w > 0)")
+        if not allow_zero_weights:
+            if np.any(w_arr <= 0):
+                raise ValueError("sample_weight values must be strictly positive (w > 0)")
+        else:
+            if np.any(w_arr < 0):
+                raise ValueError("sample_weight values must be non-negative (w >= 0)")
+            if np.all(w_arr == 0) or np.sum(w_arr) <= 0:
+                raise ValueError("sample_weight cannot be all-zero; total weight must be strictly positive")
 
     o_col = "_prot_"
     w_col = "_weight_"
-    dfs_to_concat = [
-        X.reset_index(drop=True),
-        o_series.reset_index(drop=True).rename(o_col),
-    ]
+    df = X.copy()
+    df[o_col] = o_series.values
     if w_arr is not None:
-        dfs_to_concat.append(pd.Series(w_arr, name=w_col))
-    df = pd.concat(dfs_to_concat, axis=1)
+        df[w_col] = w_arr
     groups = sorted(df[o_col].dropna().unique())
 
     columns: Dict[str, pd.Series] = {}
@@ -177,6 +187,18 @@ def compute_pairwise_divergences(
         sub = df[mask].copy()
         mask_p = sub[o_col] == p
         mask_n = sub[o_col] == n
+
+        if w_arr is not None:
+            w_p_tot = float(sub.loc[mask_p, w_col].sum())
+            w_n_tot = float(sub.loc[mask_n, w_col].sum())
+            if w_p_tot <= 0:
+                raise ValueError(
+                    f"Protected group {p} has non-positive total weight ({w_p_tot}); strictly positive total weight required"
+                )
+            if w_n_tot <= 0:
+                raise ValueError(
+                    f"Protected group {n} has non-positive total weight ({w_n_tot}); strictly positive total weight required"
+                )
 
         num_diff: Dict[str, float] = {}
         for col in num_attrs:
@@ -413,6 +435,7 @@ def compute_bias_concentration(
     cat_method: str = "cat-a",
     mds_fixed_components: Optional[int] = None,
     sample_weight: Optional[pd.Series | np.ndarray] = None,
+    allow_zero_weights: bool = False,
 ) -> Dict[str, float]:
     """
     Compute d_phi (Eq. 6: Euclidean distance to the origin after metric MDS)
@@ -434,6 +457,7 @@ def compute_bias_concentration(
         X, o_series, cate_attrs, num_attrs,
         num_method=num_method, cat_method=cat_method,
         sample_weight=sample_weight,
+        allow_zero_weights=allow_zero_weights,
     )
     dist, nodes = compute_shapley_distance_matrix(df_s, features, h_order=h_order)
 
@@ -493,17 +517,24 @@ def compute_dphi_matrix(
     cat_method: str = "cat-a",
     mds_fixed_components: Optional[int] = None,
     sample_weight: Optional[pd.Series | np.ndarray] = None,
+    allow_zero_weights: bool = False,
 ) -> Dict[str, Dict[str, float]]:
     """Compute d_phi for every protected attribute column in O."""
+    if isinstance(O, (pd.DataFrame, pd.Series)) and isinstance(X, (pd.DataFrame, pd.Series)):
+        if not O.index.equals(X.index):
+            raise ValueError("Index alignment mismatch: O index must match X index")
+    if sample_weight is not None and isinstance(sample_weight, pd.Series):
+        if not sample_weight.index.equals(X.index):
+            raise ValueError("Index alignment mismatch: sample_weight index must match X index")
+
     results: Dict[str, Dict[str, float]] = {}
-    X_reset = X.reset_index(drop=True)
     for p_col in O.columns:
-        o_series = pd.Series(np.asarray(O[p_col])).reset_index(drop=True)
+        o_series = O[p_col]
         if o_series.nunique() < 2:
-            results[p_col] = {col: 0.0 for col in X_reset.columns}
+            results[p_col] = {col: 0.0 for col in X.columns}
             continue
         results[p_col] = compute_bias_concentration(
-            X_reset,
+            X,
             o_series,
             cate_attrs,
             num_attrs,
@@ -515,5 +546,6 @@ def compute_dphi_matrix(
             cat_method=cat_method,
             mds_fixed_components=mds_fixed_components,
             sample_weight=sample_weight,
+            allow_zero_weights=allow_zero_weights,
         )
     return results

@@ -311,15 +311,17 @@ def test_6_audit_only_mode_does_not_access_or_score_test() -> None:
 # Test 7: Audit-only creates no TEST metrics artifacts
 # ------------------------------------------------------------------------------
 def test_7_audit_only_creates_no_test_metrics_artifacts(tmp_path: pathlib.Path) -> None:
+    test_rel_dir = _REPO_ROOT / "runs" / "nhis_d4_test_release"
+    before_files = set(test_rel_dir.glob("**/*test_metrics*.json")) if test_rel_dir.is_dir() else set()
     harness = NHISD4TestReleaseHarness()
     res = harness.run_audit()
     assert res["status"] == "PASS"
 
-    # Verify no test output files exist in runs/nhis_d4_test_release
-    test_rel_dir = _REPO_ROOT / "runs" / "nhis_d4_test_release"
+    # Verify no test output files were created by this audit
     if test_rel_dir.is_dir():
         # Any file inside must not be from this audit
-        assert not list(test_rel_dir.glob("**/*test_metrics*.json"))
+        after_files = set(test_rel_dir.glob("**/*test_metrics*.json"))
+        assert after_files == before_files
 
 
 # ------------------------------------------------------------------------------

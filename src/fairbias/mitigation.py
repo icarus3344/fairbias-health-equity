@@ -68,6 +68,7 @@ class FairBiasMitigation:
         preserve_exponent_order: Optional[bool] = None,
         power_sequence_policy: str = "sorted_grid",
         power_revisit_policy: str = "restart",
+        sample_weight: Optional[pd.Series | np.ndarray] = None,
     ):
         self.evaluator = evaluator
         self.transformer = transformer
@@ -76,6 +77,7 @@ class FairBiasMitigation:
         self.num_attrs = num_attrs
         self.max_search_candidates = max_search_candidates
         self.phi_threshold = float(phi_threshold)
+        self.sample_weight = sample_weight
 
         # Disentangle sequence policy from revisit policy (REPAIR 2)
         if preserve_exponent_order is not None:
@@ -138,9 +140,9 @@ class FairBiasMitigation:
         df_feature: pd.Series,
         df_prot: pd.Series,
         zorder: int = 0,
+        sample_weight: Optional[pd.Series | np.ndarray] = None,
     ) -> Optional[Dict[Any, Any]]:
-        """
-        Compute category rebinning pair using exact sample proportion differences.
+        """Compute the R1 category rebin mapping for categorical feature mitigation.
 
         Paper semantics: the two categories with the largest positive and
         smallest negative frequency gap between the protected groups are
@@ -148,10 +150,36 @@ class FairBiasMitigation:
 
         Uses df.sum() (total sample count in group) as denominator rather than len(df) (category count).
         """
+        weight_to_use = self.sample_weight if sample_weight is None else sample_weight
+
+        if isinstance(df_prot, pd.Series) and isinstance(df_feature, pd.Series):
+            if not df_prot.index.equals(df_feature.index):
+                raise ValueError("Index alignment mismatch: df_prot index must match df_feature index")
+
+        w_vals: Optional[np.ndarray] = None
+        if weight_to_use is not None:
+            if isinstance(weight_to_use, pd.Series):
+                if not weight_to_use.index.equals(df_feature.index):
+                    raise ValueError("Index alignment mismatch: sample_weight index must match df_feature index")
+                w_vals = np.asarray(weight_to_use.values, dtype=float)
+            else:
+                w_vals = np.asarray(weight_to_use, dtype=float)
+            if len(w_vals) != len(df_feature):
+                raise ValueError(f"sample_weight length ({len(w_vals)}) must match feature length ({len(df_feature)})")
+            if not np.all(np.isfinite(w_vals)):
+                raise ValueError("sample_weight contains NaN or non-finite values")
+            if np.any(w_vals < 0):
+                raise ValueError("sample_weight values must be non-negative (w >= 0)")
+            if np.all(w_vals == 0) or np.sum(w_vals) <= 0:
+                raise ValueError("sample_weight cannot be all-zero; total weight must be strictly positive")
+
         df_combo = pd.DataFrame({
-            "feat": df_feature.reset_index(drop=True),
-            "prot": df_prot.reset_index(drop=True),
+            "feat": df_feature.values,
+            "prot": df_prot.values,
         })
+        if w_vals is not None:
+            df_combo["weight"] = w_vals
+
         unique_groups = list(df_combo["prot"].dropna().unique())
         if len(unique_groups) < 2:
             return None
@@ -159,17 +187,26 @@ class FairBiasMitigation:
         diff_candidates: List[Dict[str, Any]] = []
 
         for g1, g2 in combinations(unique_groups, 2):
-            s_0 = df_combo[df_combo["prot"] == g1]["feat"].value_counts()
-            s_1 = df_combo[df_combo["prot"] == g2]["feat"].value_counts()
-
-            if len(s_0) == 0 or len(s_1) == 0:
-                continue
-
-            # Mathematically correct proportion denominator: total sample count in group
-            total_0 = float(s_0.sum())
-            total_1 = float(s_1.sum())
-            if total_0 <= 0 or total_1 <= 0:
-                continue
+            if w_vals is not None:
+                sub_0 = df_combo[df_combo["prot"] == g1]
+                sub_1 = df_combo[df_combo["prot"] == g2]
+                s_0 = sub_0.groupby("feat", observed=False)["weight"].sum()
+                s_1 = sub_1.groupby("feat", observed=False)["weight"].sum()
+                total_0 = float(s_0.sum())
+                total_1 = float(s_1.sum())
+                if total_0 <= 0:
+                    raise ValueError(f"Protected group {g1} has non-positive total weight ({total_0}); strictly positive total weight required")
+                if total_1 <= 0:
+                    raise ValueError(f"Protected group {g2} has non-positive total weight ({total_1}); strictly positive total weight required")
+            else:
+                s_0 = df_combo[df_combo["prot"] == g1]["feat"].value_counts()
+                s_1 = df_combo[df_combo["prot"] == g2]["feat"].value_counts()
+                if len(s_0) == 0 or len(s_1) == 0:
+                    continue
+                total_0 = float(s_0.sum())
+                total_1 = float(s_1.sum())
+                if total_0 <= 0 or total_1 <= 0:
+                    continue
 
             prop_0 = s_0 / total_0
             prop_1 = s_1 / total_1
@@ -228,7 +265,7 @@ class FairBiasMitigation:
         if attr not in candidate_df.columns:
             return 0.0
         eps_new = self.evaluator.calculate_epsilon(
-            candidate_df, O, self.cate_attrs, self.num_attrs
+            candidate_df, O, self.cate_attrs, self.num_attrs, sample_weight=self.sample_weight
         )
         return eps_new.get(label_O, {}).get(attr)
 
@@ -308,7 +345,7 @@ class FairBiasMitigation:
             if s_work.nunique() <= 1:
                 break
 
-            rebin = self.compute_r1_rebin(s_work, O[label_O], zorder=0)
+            rebin = self.compute_r1_rebin(s_work, O[label_O], zorder=0, sample_weight=self.sample_weight)
             if not rebin:
                 break
 

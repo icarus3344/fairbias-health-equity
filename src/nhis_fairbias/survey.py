@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from .schema import canonical_code_series
@@ -130,3 +131,58 @@ def weighted_category_proportion(
         category = codes.eq(int(code)).fillna(False)
     numerator = numeric_weights.loc[eligible & category].sum(min_count=1)
     return float(numerator / denominator)
+
+
+def validate_survey_weights(
+    weights: pd.Series | np.ndarray,
+    expected_length: int | None = None,
+    expected_index: pd.Index | None = None,
+) -> np.ndarray:
+    """Validate survey weights for the survey-weighted FairBias geometry extension.
+
+    Requirements:
+    - Finite (no NaN, inf, or -inf)
+    - Non-negative (w >= 0; individual 0s permitted if group sum > 0)
+    - Strictly positive total sum (not all-zero)
+    - Exact length match if expected_length provided
+    - Exact index alignment if weights is a Series and expected_index provided
+    """
+    if isinstance(weights, pd.Series):
+        if expected_index is not None and not weights.index.equals(expected_index):
+            raise ValueError(
+                "Index alignment mismatch: survey weights index does not match target index"
+            )
+        w_arr = np.asarray(weights.values, dtype=float)
+    else:
+        w_arr = np.asarray(weights, dtype=float)
+
+    if w_arr.ndim != 1:
+        raise ValueError(f"survey weights must be 1-dimensional, got ndim={w_arr.ndim}")
+    if expected_length is not None and len(w_arr) != int(expected_length):
+        raise ValueError(
+            f"survey weights length ({len(w_arr)}) does not match expected length ({expected_length})"
+        )
+    if not np.all(np.isfinite(w_arr)):
+        raise ValueError("survey weights contain NaN, Inf, or non-finite values")
+    if np.any(w_arr < 0):
+        raise ValueError("survey weights must be non-negative (w >= 0)")
+    if np.all(w_arr == 0) or float(np.sum(w_arr)) <= 0:
+        raise ValueError("survey weights cannot be all-zero; total weight must be strictly positive")
+    return w_arr
+
+
+def get_survey_weighted_geometry_provenance(
+    survey_weight_variable: str = "WTFA_A",
+) -> dict[str, Any]:
+    """Standardized provenance metadata dictionary for survey-weighted geometry extension (Gate D5)."""
+    return {
+        "base_algorithm": "tang2024_paper_faithful",
+        "extension": "survey_weighted_geometry",
+        "release_protocol": "survey_weighted_geometry_extension",
+        "survey_weight_variable": str(survey_weight_variable),
+        "classifier_weighted": False,
+        "evaluation_weighted": False,
+        "complex_survey_inference": False,
+        "PSTRAT_used_for_variance": False,
+        "PPSU_used_for_variance": False,
+    }
