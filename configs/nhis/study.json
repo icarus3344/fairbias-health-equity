@@ -51,11 +51,20 @@
   },
   "outputs": {
     "harmonized_parquet": "data/processed/nhis/nhis_2022_2024_core.parquet",
+    "features_parquet": "data/processed/nhis/nhis_2022_2024_features.parquet",
     "artifact_root": "artifacts/nhis/data",
     "manifest": "artifacts/nhis/data/data_manifest.json",
     "schema_audit": "artifacts/nhis/data/schema_audit.csv",
     "outcome_audit": "artifacts/nhis/data/outcome_audit.csv",
     "protected_attribute_audit": "artifacts/nhis/data/protected_attribute_audit.csv",
-    "weight_audit": "artifacts/nhis/data/weight_audit.csv"
+    "weight_audit": "artifacts/nhis/data/weight_audit.csv",
+    "features_artifact_root": "artifacts/nhis/features",
+    "feature_manifest": "artifacts/nhis/features/feature_manifest.json",
+    "feature_registry_audit": "artifacts/nhis/features/feature_registry_audit.csv",
+    "feature_availability_audit": "artifacts/nhis/features/feature_availability_audit.csv",
+    "feature_code_domain_audit": "artifacts/nhis/features/feature_code_domain_audit.csv",
+    "feature_missingness_audit": "artifacts/nhis/features/feature_missingness_audit.csv",
+    "feature_distribution_audit": "artifacts/nhis/features/feature_distribution_audit.csv",
+    "leakage_guard_audit": "artifacts/nhis/features/leakage_guard_audit.csv"
   }
 }

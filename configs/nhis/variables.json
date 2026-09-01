@@ -108,7 +108,18 @@
       ],
       "preserve_official_raw_coding": true,
       "preserve_seven_substantive_categories": true,
-      "do_not_merge_categories": true
+      "do_not_merge_categories": true,
+      "code_labels": {
+        "1": "Hispanic",
+        "2": "White only, non-Hispanic",
+        "3": "Black/African American only, non-Hispanic",
+        "4": "Asian only, non-Hispanic",
+        "5": "American Indian or Alaska Native only, non-Hispanic",
+        "6": "American Indian or Alaska Native and any other group",
+        "7": "Other single and multiple races",
+        "8": "Refused",
+        "9": "Don't know"
+      }
     },
     "DISAB3_A": {
       "role": "protected_binary",

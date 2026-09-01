@@ -1,0 +1,1261 @@
+{
+  "schema_version": "nhis-fairbias-d1-1.0",
+  "feature_lists": {
+    "primary_core_features": [
+      "agep_a",
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ],
+    "primary_categorical_features": [
+      "educp_a",
+      "region",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ],
+    "primary_numerical_features": [
+      "agep_a",
+      "pcnt18uptc",
+      "pcntlt18tc"
+    ],
+    "primary_ordinal_features": [
+      "educp_a",
+      "ratcat_a",
+      "phstat_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a"
+    ],
+    "primary_binary_features": [
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a"
+    ],
+    "primary_nominal_features": [
+      "region",
+      "usualpl_a"
+    ],
+    "expanded_utilization_features": [
+      "lastdr_a",
+      "emerg12mtc_a",
+      "hospongt_a"
+    ],
+    "expanded_categorical_features": [
+      "lastdr_a",
+      "hospongt_a"
+    ],
+    "expanded_numerical_features": [
+      "emerg12mtc_a"
+    ],
+    "expanded_ordinal_features": [
+      "lastdr_a"
+    ],
+    "expanded_binary_features": [
+      "hospongt_a"
+    ],
+    "protected_attributes": [
+      "SEX_A",
+      "HISPALLP_A",
+      "DISAB3_A"
+    ],
+    "outcomes": [
+      "MEDDL12M_A",
+      "MEDNG12M_A"
+    ],
+    "forbidden_outcome_proximal": [
+      "MEDDL12M_A",
+      "MEDNG12M_A",
+      "PAYBLL12M_A",
+      "PAYNOBLLNW_A",
+      "PAYWORRY_A",
+      "DENDL12M_A",
+      "DENNG12M_A",
+      "RXSK12M_A",
+      "RXLS12M_A",
+      "RXDL12M_A",
+      "RXDG12M_A"
+    ]
+  },
+  "primary_core": {
+    "AGEP_A": {
+      "official_name": "AGEP_A",
+      "harmonized_name": "agep_a",
+      "domain": "Demographics",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "continuous",
+      "official_description": "Age of Sample Adult (top-coded at 85)",
+      "substantive_codes": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85
+      ],
+      "missing_codes": [
+        97,
+        98,
+        99
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Household Composition / Demographics",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Demographic baseline variable; correlated with disability risk but retained as key clinical/epidemiological covariate.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (AGEP_A)"
+    },
+    "EDUCP_A": {
+      "official_name": "EDUCP_A",
+      "harmonized_name": "educp_a",
+      "domain": "Demographics / Socioeconomic",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Highest level of school completed",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "missing_codes": [
+        97,
+        98,
+        99
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Household Composition / Demographics",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Socioeconomic indicator; educational attainment.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (EDUCP_A)"
+    },
+    "REGION": {
+      "official_name": "REGION",
+      "harmonized_name": "region",
+      "domain": "Demographics",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_nominal",
+      "official_description": "Household region (1=Northeast, 2=Midwest, 3=South, 4=West)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Household Composition / Demographics",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Geographic location indicator.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (REGION)"
+    },
+    "PCNT18UPTC": {
+      "official_name": "PCNT18UPTC",
+      "harmonized_name": "pcnt18uptc",
+      "domain": "Demographics / Household",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "count",
+      "official_description": "Number of adults age 18 and older in household (top-coded at 3)",
+      "substantive_codes": [
+        1,
+        2,
+        3
+      ],
+      "missing_codes": [],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Household Composition / Demographics",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Household size/composition measure.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (PCNT18UPTC)"
+    },
+    "PCNTLT18TC": {
+      "official_name": "PCNTLT18TC",
+      "harmonized_name": "pcntlt18tc",
+      "domain": "Demographics / Household",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "count",
+      "official_description": "Number of children under age 18 in household (top-coded at 3)",
+      "substantive_codes": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "missing_codes": [],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Household Composition / Demographics",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Household composition measure.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (PCNTLT18TC)"
+    },
+    "RATCAT_A": {
+      "official_name": "RATCAT_A",
+      "harmonized_name": "ratcat_a",
+      "domain": "Socioeconomic status",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Ratio of family income to poverty threshold (categorized, 14 levels)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "missing_codes": [
+        98
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Income / Poverty",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Primary economic indicator; uses official CDC imputed income categories without missingness.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (RATCAT_A)"
+    },
+    "EMPWRKLSW1_A": {
+      "official_name": "EMPWRKLSW1_A",
+      "harmonized_name": "empwrklsw1_a",
+      "domain": "Socioeconomic status",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Worked at a job or business last week (1=Yes, 2=No)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Employment",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Employment baseline measure.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (EMPWRKLSW1_A)"
+    },
+    "EMPWRKFT1_A": {
+      "official_name": "EMPWRKFT1_A",
+      "harmonized_name": "empwrkft1_a",
+      "domain": "Socioeconomic status",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Full-time or part-time work status (1=Full-time, 2=Part-time; in-universe if working)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Employment",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Work intensity measure; respondents not working last week are structurally inapplicable (NA in derived feature).",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (EMPWRKFT1_A)"
+    },
+    "NOTCOV_A": {
+      "official_name": "NOTCOV_A",
+      "harmonized_name": "notcov_a",
+      "domain": "Health insurance status",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Health insurance coverage status at time of interview (1=Not covered / uninsured, 2=Covered / insured)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Insurance",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Primary health coverage indicator; distinct from healthcare delay outcomes.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (NOTCOV_A)"
+    },
+    "PHSTAT_A": {
+      "official_name": "PHSTAT_A",
+      "harmonized_name": "phstat_a",
+      "domain": "General health",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "General health status (1=Excellent, 2=Very good, 3=Good, 4=Fair, 5=Poor)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Health Status",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Self-rated overall health status.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (PHSTAT_A)"
+    },
+    "HYPEV_A": {
+      "official_name": "HYPEV_A",
+      "harmonized_name": "hypev_a",
+      "domain": "Chronic conditions",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Ever told had hypertension / high blood pressure (1=Yes, 2=No)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Selected Conditions",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Clinical chronic condition indicator.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (HYPEV_A)"
+    },
+    "CHLEV_A": {
+      "official_name": "CHLEV_A",
+      "harmonized_name": "chlev_a",
+      "domain": "Chronic conditions",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Ever told had high cholesterol (1=Yes, 2=No)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Selected Conditions",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Clinical chronic condition indicator.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (CHLEV_A)"
+    },
+    "DIBEV_A": {
+      "official_name": "DIBEV_A",
+      "harmonized_name": "dibev_a",
+      "domain": "Chronic conditions",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Ever told had diabetes (1=Yes, 2=No)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Selected Conditions",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Clinical chronic condition indicator.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (DIBEV_A)"
+    },
+    "ASEV_A": {
+      "official_name": "ASEV_A",
+      "harmonized_name": "asev_a",
+      "domain": "Chronic conditions",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Ever told had asthma (1=Yes, 2=No)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Selected Conditions",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Clinical chronic condition indicator. Investigated as correct official NHIS variable name for candidate asthma (replacing invalid candidate name ASTEV_A).",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (ASEV_A)"
+    },
+    "VISIONDF_A": {
+      "official_name": "VISIONDF_A",
+      "harmonized_name": "visiondf_a",
+      "domain": "Functional limitations",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Difficulty seeing even when wearing glasses (1=No, 2=Some, 3=A lot, 4=Cannot do at all)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Functioning / Disability",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Constituent item of Washington Group disability questions. Composite DISAB3_A is reserved as protected attribute; individual functional difficulties are clinical predictors in PRIMARY_CORE.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (VISIONDF_A)"
+    },
+    "HEARINGDF_A": {
+      "official_name": "HEARINGDF_A",
+      "harmonized_name": "hearingdf_a",
+      "domain": "Functional limitations",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Difficulty hearing even when using hearing aid (1=No, 2=Some, 3=A lot, 4=Cannot do at all)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Functioning / Disability",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Constituent item of Washington Group disability questions. Composite DISAB3_A is reserved as protected attribute; individual functional difficulties are clinical predictors in PRIMARY_CORE.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (HEARINGDF_A)"
+    },
+    "DIFF_A": {
+      "official_name": "DIFF_A",
+      "harmonized_name": "diff_a",
+      "domain": "Functional limitations",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Difficulty walking or climbing steps (1=No, 2=Some, 3=A lot, 4=Cannot do at all)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Functioning / Disability",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Constituent item of Washington Group disability questions. Composite DISAB3_A is reserved as protected attribute; individual functional difficulties are clinical predictors in PRIMARY_CORE.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (DIFF_A)"
+    },
+    "COMDIFF_A": {
+      "official_name": "COMDIFF_A",
+      "harmonized_name": "comdiff_a",
+      "domain": "Functional limitations",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Difficulty communicating / understanding or being understood (1=No, 2=Some, 3=A lot, 4=Cannot do at all)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Functioning / Disability",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Constituent item of Washington Group disability questions. Composite DISAB3_A is reserved as protected attribute; individual functional difficulties are clinical predictors in PRIMARY_CORE.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (COMDIFF_A)"
+    },
+    "UPPSLFCR_A": {
+      "official_name": "UPPSLFCR_A",
+      "harmonized_name": "uppslfcr_a",
+      "domain": "Functional limitations",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Difficulty with self-care (washing all over or dressing) (1=No, 2=Some, 3=A lot, 4=Cannot do at all)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Functioning / Disability",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Constituent item of Washington Group disability questions. Composite DISAB3_A is reserved as protected attribute; individual functional difficulties are clinical predictors in PRIMARY_CORE.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (UPPSLFCR_A)"
+    },
+    "COGMEMDFF_A": {
+      "official_name": "COGMEMDFF_A",
+      "harmonized_name": "cogmemdff_a",
+      "domain": "Functional limitations",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Difficulty remembering or concentrating (1=No, 2=Some, 3=A lot, 4=Cannot do at all)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Functioning / Disability",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Constituent item of Washington Group disability questions. Composite DISAB3_A is reserved as protected attribute; individual functional difficulties are clinical predictors in PRIMARY_CORE.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (COGMEMDFF_A)"
+    },
+    "USUALPL_A": {
+      "official_name": "USUALPL_A",
+      "harmonized_name": "usualpl_a",
+      "domain": "General access-to-care structure",
+      "feature_tier": "primary_core",
+      "role": "predictor",
+      "semantic_type": "categorical_nominal",
+      "official_description": "Place usually go when sick or need advice about health (1=Yes, 2=No, 3=Yes, more than 1 place)",
+      "substantive_codes": [
+        1,
+        2,
+        3
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": true,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Structural healthcare access indicator.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (USUALPL_A)"
+    }
+  },
+  "expanded_utilization": {
+    "LASTDR_A": {
+      "official_name": "LASTDR_A",
+      "harmonized_name": "lastdr_a",
+      "domain": "Healthcare utilization",
+      "feature_tier": "expanded_utilization",
+      "role": "predictor",
+      "semantic_type": "ordinal",
+      "official_description": "Time since last saw a doctor or health care professional (0=Never, 1=<1yr, 2=1-<2yr, 3=2-<3yr, 4=3-<5yr, 5=5-<10yr, 6=10+yr)",
+      "substantive_codes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": false,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Concurrent/recent utilization variable (past 12-month window); suitable only for expanded cross-sectional sensitivity analysis, not prospective risk prediction.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (LASTDR_A)"
+    },
+    "EMERG12MTC_A": {
+      "official_name": "EMERG12MTC_A",
+      "harmonized_name": "emerg12mtc_a",
+      "domain": "Healthcare utilization",
+      "feature_tier": "expanded_utilization",
+      "role": "predictor",
+      "semantic_type": "count",
+      "official_description": "Number of emergency room visits in past 12 months (top-coded at 4)",
+      "substantive_codes": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": false,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Concurrent utilization variable (past 12-month window); suitable only for expanded cross-sectional sensitivity analysis.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (EMERG12MTC_A)"
+    },
+    "HOSPONGT_A": {
+      "official_name": "HOSPONGT_A",
+      "harmonized_name": "hospongt_a",
+      "domain": "Healthcare utilization",
+      "feature_tier": "expanded_utilization",
+      "role": "predictor",
+      "semantic_type": "categorical_binary",
+      "official_description": "Overnight stay in a hospital in past 12 months (1=Yes, 2=No)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": false,
+      "include_expanded": true,
+      "exclusion_reason": null,
+      "protected_proxy_note": "Concurrent utilization variable (past 12-month window); suitable only for expanded cross-sectional sensitivity analysis.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (HOSPONGT_A)"
+    }
+  },
+  "rejected_candidates": {
+    "ASTEV_A": {
+      "official_name": "ASTEV_A",
+      "harmonized_name": null,
+      "domain": "Chronic conditions",
+      "feature_tier": "rejected_candidate",
+      "role": "excluded",
+      "semantic_type": "categorical_binary",
+      "official_description": "Candidate variable name for asthma (invalid; official NHIS variable is ASEV_A)",
+      "substantive_codes": [],
+      "missing_codes": [],
+      "year_available": [],
+      "source_module": "Sample Adult",
+      "source_section": "Selected Conditions",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Variable name ASTEV_A does not exist in any NHIS year (2022, 2023, 2024). The official CDC/NCHS variable for ever having asthma is ASEV_A, which is included in PRIMARY_CORE.",
+      "protected_proxy_note": null,
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook"
+    },
+    "URGNT12MTC_A": {
+      "official_name": "URGNT12MTC_A",
+      "harmonized_name": null,
+      "domain": "Healthcare utilization",
+      "feature_tier": "rejected_candidate",
+      "role": "excluded",
+      "semantic_type": "count",
+      "official_description": "Number of urgent care clinic visits in past 12 months (2022-2023 only)",
+      "substantive_codes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Present in 2022 and 2023, but absent in 2024 (where CDC changed the item to URGCC12MTC_A). Excluded from EXPANDED_UTILIZATION due to cross-year availability failure.",
+      "protected_proxy_note": null,
+      "documentation_source": "CDC/NCHS NHIS 2022-2023 Adult Codebooks; 2024 Adult Codebook"
+    },
+    "URGCC12MTC_A": {
+      "official_name": "URGCC12MTC_A",
+      "harmonized_name": null,
+      "domain": "Healthcare utilization",
+      "feature_tier": "rejected_candidate",
+      "role": "excluded",
+      "semantic_type": "count",
+      "official_description": "Number of urgent care / walk-in clinic visits in past 12 months (2024 only)",
+      "substantive_codes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Present only in 2024; absent in 2022 and 2023. Excluded due to lack of cross-year availability.",
+      "protected_proxy_note": null,
+      "documentation_source": "CDC/NCHS NHIS 2024 Adult Codebook"
+    }
+  },
+  "forbidden_outcome_proximal": {
+    "MEDDL12M_A": {
+      "official_name": "MEDDL12M_A",
+      "official_description": "Delayed medical care due to cost in past 12 months",
+      "reason": "Primary study outcome; target variable."
+    },
+    "MEDNG12M_A": {
+      "official_name": "MEDNG12M_A",
+      "official_description": "Needed medical care but did not get it due to cost in past 12 months",
+      "reason": "Sensitivity study outcome; target variable."
+    },
+    "PAYBLL12M_A": {
+      "official_name": "PAYBLL12M_A",
+      "official_description": "Problems paying medical bills in past 12 months",
+      "reason": "Cost-related healthcare barrier; direct proxy for medical care delay/forgone care."
+    },
+    "PAYNOBLLNW_A": {
+      "official_name": "PAYNOBLLNW_A",
+      "official_description": "Currently have medical bills unable to pay at all",
+      "reason": "Cost-related healthcare barrier; direct outcome proxy."
+    },
+    "PAYWORRY_A": {
+      "official_name": "PAYWORRY_A",
+      "official_description": "Worry about paying medical bills if sick or injured",
+      "reason": "Cost-related financial strain measure; outcome-proximal barrier."
+    },
+    "DENDL12M_A": {
+      "official_name": "DENDL12M_A",
+      "official_description": "Delayed dental care due to cost in past 12 months",
+      "reason": "Cost-related care delay proxy; closely related cost barrier."
+    },
+    "DENNG12M_A": {
+      "official_name": "DENNG12M_A",
+      "official_description": "Needed dental care but did not get it due to cost in past 12 months",
+      "reason": "Cost-related forgone care proxy; closely related cost barrier."
+    },
+    "RXSK12M_A": {
+      "official_name": "RXSK12M_A",
+      "official_description": "Skipped medication doses to save money in past 12 months",
+      "reason": "Cost-related medication barrier; direct outcome proxy."
+    },
+    "RXLS12M_A": {
+      "official_name": "RXLS12M_A",
+      "official_description": "Took less medication to save money in past 12 months",
+      "reason": "Cost-related medication barrier; direct outcome proxy."
+    },
+    "RXDL12M_A": {
+      "official_name": "RXDL12M_A",
+      "official_description": "Delayed filling prescription to save money in past 12 months",
+      "reason": "Cost-related medication barrier; direct outcome proxy."
+    },
+    "RXDG12M_A": {
+      "official_name": "RXDG12M_A",
+      "official_description": "Did not get prescription medication due to cost in past 12 months",
+      "reason": "Cost-related medication barrier; direct outcome proxy."
+    }
+  },
+  "protected_attributes": {
+    "SEX_A": {
+      "official_name": "SEX_A",
+      "harmonized_name": "sex_a",
+      "domain": "Protected demographic",
+      "feature_tier": "protected_attribute",
+      "role": "protected_attribute",
+      "semantic_type": "categorical_binary",
+      "official_description": "Sex of Sample Adult (1=Male, 2=Female)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        9
+      ],
+      "code_labels": {
+        "1": "Male",
+        "2": "Female"
+      },
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Household Composition / Demographics",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Protected attribute; preserved for subgroup/fairness auditing, excluded from ordinary predictor matrix X.",
+      "protected_proxy_note": "Primary protected dimension.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (SEX_A)"
+    },
+    "HISPALLP_A": {
+      "official_name": "HISPALLP_A",
+      "harmonized_name": "hispallp_a",
+      "domain": "Protected demographic",
+      "feature_tier": "protected_attribute",
+      "role": "protected_attribute",
+      "semantic_type": "categorical_nominal",
+      "official_description": "Single and multiple race groups with Hispanic origin (7 official substantive categories)",
+      "substantive_codes": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "missing_codes": [
+        8,
+        9
+      ],
+      "code_labels": {
+        "1": "Hispanic",
+        "2": "White only, non-Hispanic",
+        "3": "Black/African American only, non-Hispanic",
+        "4": "Asian only, non-Hispanic",
+        "5": "American Indian or Alaska Native only, non-Hispanic",
+        "6": "American Indian or Alaska Native and any other group",
+        "7": "Other single and multiple races",
+        "8": "Refused",
+        "9": "Don't know"
+      },
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Household Composition / Demographics",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Protected attribute; preserved for subgroup/fairness auditing, excluded from ordinary predictor matrix X.",
+      "protected_proxy_note": "Primary protected dimension; official code 7 label is strictly Other single and multiple races.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (HISPALLP_A)"
+    },
+    "DISAB3_A": {
+      "official_name": "DISAB3_A",
+      "harmonized_name": "disab3_a",
+      "domain": "Protected demographic / health",
+      "feature_tier": "protected_attribute",
+      "role": "protected_attribute",
+      "semantic_type": "categorical_binary",
+      "official_description": "Disability status based on Washington Group Short Set composite (1=With disability, 2=Without disability)",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "code_labels": {
+        "1": "With disability",
+        "2": "Without disability"
+      },
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Adult Functioning / Disability",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Protected attribute; preserved for subgroup/fairness auditing, excluded from ordinary predictor matrix X.",
+      "protected_proxy_note": "Primary protected dimension; composite disability indicator.",
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (DISAB3_A)"
+    }
+  },
+  "outcomes": {
+    "MEDDL12M_A": {
+      "official_name": "MEDDL12M_A",
+      "harmonized_name": "meddly12m",
+      "domain": "Access to care / Outcome",
+      "feature_tier": "outcome",
+      "role": "primary_outcome",
+      "semantic_type": "categorical_binary",
+      "official_description": "Delayed medical care due to cost in past 12 months",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Primary study outcome; target variable, excluded from predictor matrices.",
+      "protected_proxy_note": null,
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (MEDDL12M_A)"
+    },
+    "MEDNG12M_A": {
+      "official_name": "MEDNG12M_A",
+      "harmonized_name": "medng12m",
+      "domain": "Access to care / Outcome",
+      "feature_tier": "outcome",
+      "role": "sensitivity_outcome",
+      "semantic_type": "categorical_binary",
+      "official_description": "Needed medical care but did not get it due to cost in past 12 months",
+      "substantive_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "year_available": [
+        2022,
+        2023,
+        2024
+      ],
+      "source_module": "Sample Adult",
+      "source_section": "Health Care Access and Utilization",
+      "include_primary": false,
+      "include_expanded": false,
+      "exclusion_reason": "Sensitivity study outcome; target variable, excluded from predictor matrices.",
+      "protected_proxy_note": null,
+      "documentation_source": "CDC/NCHS NHIS 2022-2024 Adult Codebook (MEDNG12M_A)"
+    }
+  }
+}

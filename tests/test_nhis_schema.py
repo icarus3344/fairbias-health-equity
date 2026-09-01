@@ -46,6 +46,10 @@ class TestNHISSchema(unittest.TestCase):
         self.assertEqual(tuple(registry["required_variables"]), REQUIRED_COLUMNS)
         self.assertEqual(registry["variables"]["HISPALLP_A"]["valid_codes"], [1, 2, 3, 4, 5, 6, 7])
         self.assertTrue(registry["variables"]["HISPALLP_A"]["do_not_merge_categories"])
+        self.assertEqual(
+            registry["variables"]["HISPALLP_A"]["code_labels"]["7"],
+            "Other single and multiple races",
+        )
 
     def test_required_columns_fail_closed(self) -> None:
         with self.assertRaises(NHISSchemaError):
