@@ -58,7 +58,12 @@ from typing import Any, Optional, Sequence
 # ---------------------------------------------------------------------
 ALGORITHM_MODE_OFFICIAL = "official_code_derived_monotone_cursor_unweighted"
 ALGORITHM_MODE_ENGINEERING = "engineering_bounded"
-ALGORITHM_MODES = (ALGORITHM_MODE_OFFICIAL, ALGORITHM_MODE_ENGINEERING)
+ALGORITHM_MODE_PAPER_FAITHFUL = "tang2024_paper_faithful"
+ALGORITHM_MODES = (
+    ALGORITHM_MODE_OFFICIAL,
+    ALGORITHM_MODE_ENGINEERING,
+    ALGORITHM_MODE_PAPER_FAITHFUL,
+)
 
 # The official implementation fixes the MDS embedding dimension at 2.
 OFFICIAL_FIXED_MDS_DIM = 2
@@ -204,6 +209,29 @@ class FairBiasConfig:
         if self.algorithm_mode == ALGORITHM_MODE_ENGINEERING:
             return self
 
+        if self.algorithm_mode == ALGORITHM_MODE_PAPER_FAITHFUL:
+            cfg = self
+            if cfg.use_accuracy_enhancement:
+                raise ValueError(
+                    "use_accuracy_enhancement is not part of Tang et al. (2024) paper-faithful baseline "
+                    "and cannot be combined with algorithm_mode='tang2024_paper_faithful'"
+                )
+            if cfg.failed_attribute_mode != "stop":
+                raise ValueError(
+                    "failed_attribute_mode='next' is a named ENGINEERING "
+                    "extension and cannot be combined with algorithm_mode="
+                    "'tang2024_paper_faithful'"
+                )
+            stream = official_power_stream()
+            current_grid = tuple(float(p) for p in cfg.transform_poly_exponents)
+            if current_grid != stream:
+                default_grid = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
+                if tuple(sorted(current_grid)) == tuple(sorted(default_grid)):
+                    cfg = dataclasses.replace(cfg, transform_poly_exponents=stream)
+            # In paper-faithful mode, mds_fixed_components retains its configured value
+            # (None for paper-described stress elbow plot selection, or int if explicitly specified).
+            return cfg
+
         cfg = self
         if cfg.use_accuracy_enhancement:
             raise ValueError(
@@ -282,9 +310,11 @@ class FairBiasConfig:
                 params["algorithm_mode"] = ALGORITHM_MODE_OFFICIAL
             elif mode == "engineering":
                 params["algorithm_mode"] = ALGORITHM_MODE_ENGINEERING
+            elif mode in ("paper", "paper_faithful", "tang2024_paper_faithful"):
+                params["algorithm_mode"] = ALGORITHM_MODE_PAPER_FAITHFUL
             else:
                 raise ValueError(
-                    "mode must be 'official' or 'engineering', got "
+                    "mode must be 'official', 'engineering', or 'paper', got "
                     f"{mode!r}"
                 )
         if isinstance(params.get("label_O"), (list, set)):
@@ -297,7 +327,8 @@ class FairBiasConfig:
 
         ``mode`` is accepted as a convenience alias for ``algorithm_mode``
         ("official" -> official_code_derived_monotone_cursor_unweighted,
-        "engineering" -> engineering_bounded).
+        "engineering" -> engineering_bounded,
+        "paper" -> tang2024_paper_faithful).
         """
         params = {
             "dataset_name": "credit",
@@ -320,9 +351,11 @@ class FairBiasConfig:
                 params["algorithm_mode"] = ALGORITHM_MODE_OFFICIAL
             elif mode == "engineering":
                 params["algorithm_mode"] = ALGORITHM_MODE_ENGINEERING
+            elif mode in ("paper", "paper_faithful", "tang2024_paper_faithful"):
+                params["algorithm_mode"] = ALGORITHM_MODE_PAPER_FAITHFUL
             else:
                 raise ValueError(
-                    "mode must be 'official' or 'engineering', got "
+                    "mode must be 'official', 'engineering', or 'paper', got "
                     f"{mode!r}"
                 )
         if isinstance(params.get("label_O"), (list, set)):

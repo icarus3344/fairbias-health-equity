@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from fairbias.bias_metric import compute_dphi_matrix, get_subsets  # noqa: F401 (get_subsets re-exported for API compat)
-from fairbias.config import FairBiasConfig
+from fairbias.config import ALGORITHM_MODE_PAPER_FAITHFUL, FairBiasConfig
 from fairbias.models import get_classifier
 
 
@@ -277,6 +277,11 @@ class FairEvaluator:
         cate_list = list(self.cate_attrs) if cate_attrs is None else list(cate_attrs)
         num_list = list(self.num_attrs) if num_attrs is None else list(num_attrs)
         cfg = self.config
+        if cfg.algorithm_mode == ALGORITHM_MODE_PAPER_FAITHFUL and sample_weight is not None:
+            raise ValueError(
+                "algorithm_mode='tang2024_paper_faithful' strictly forbids sample_weight. "
+                "The original Tang et al. (2024) baseline is strictly unweighted."
+            )
 
         return compute_dphi_matrix(
             X,

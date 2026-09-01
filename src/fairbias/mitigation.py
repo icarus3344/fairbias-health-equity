@@ -46,6 +46,7 @@ from fairbias.transform import (
     compose_category_mapping,
     power_transform_overflows,
 )
+from fairbias.transform_trace import FairBiasTransformStep
 
 
 class FairBiasMitigation:
@@ -126,6 +127,7 @@ class FairBiasMitigation:
         self.failed_attribute_mode = failed_attribute_mode
         self.failed_attribute_keys: set = set()
         self.non_convergence: Optional[Dict[str, Any]] = None
+        self.step_traces: List[FairBiasTransformStep] = []
 
     def find_ranked_epsilon_attributes(
         self, df_epsilon: Dict[str, Dict[str, float]]
@@ -431,6 +433,7 @@ class FairBiasMitigation:
         current_epsilon: Dict[str, Dict[str, float]],
         epsilon_threshold: float,
         X_search: Optional[pd.DataFrame] = None,
+        iteration: int = 1,
     ) -> Tuple[pd.DataFrame, Dict[str, Any], Optional[str], Optional[str]]:
         """
         Execute one bias mitigation step (paper greedy semantics).
@@ -469,6 +472,7 @@ class FairBiasMitigation:
         X_search: kept for API compatibility; rebin gaps are computed on the
             raw frame composed with the working mapping, which reproduces the
             transformed search space exactly.
+        iteration: current mitigation step index (default 1).
         """
         ranked_candidates = self.find_ranked_epsilon_attributes(current_epsilon)
         if not ranked_candidates:
@@ -497,6 +501,43 @@ class FairBiasMitigation:
 
             if accepted is not None:
                 candidate_df, temp_changed = accepted
+                change = temp_changed.get(selected_attribute)
+                is_dropped = (change == "dropped")
+                num_exp = (
+                    float(change["power"])
+                    if isinstance(change, dict) and "power" in change
+                    else None
+                )
+                cat_map = (
+                    {str(k): str(v) for k, v in change.items()}
+                    if isinstance(change, dict) and "power" not in change
+                    else None
+                )
+                sem_type = (
+                    "categorical"
+                    if (
+                        selected_attribute in self.cate_attrs
+                        or not pd.api.types.is_numeric_dtype(X[selected_attribute])
+                    )
+                    else "numerical"
+                )
+                new_dphi = self._epsilon_of(candidate_df, O, selected_label_O, selected_attribute)
+                self.step_traces.append(
+                    FairBiasTransformStep(
+                        iteration=int(iteration),
+                        selected_feature=str(selected_attribute),
+                        feature_semantic_type=sem_type,
+                        d_phi_before=float(eps),
+                        epsilon=float(epsilon_threshold),
+                        proposed_transformation=change,
+                        accepted_transformation=change,
+                        numerical_exponent=num_exp,
+                        categorical_merge_mapping=cat_map,
+                        d_phi_after=float(new_dphi) if new_dphi is not None else None,
+                        dropped=is_dropped,
+                        stopped_reason=None,
+                    )
+                )
                 return candidate_df, temp_changed, selected_label_O, selected_attribute
 
             # The transform search could not bring this attribute below epsilon
@@ -549,18 +590,43 @@ class FairBiasMitigation:
                                 "iteration budget"
                             ),
                         }
-                    break
-                self.non_convergence = {
-                    "label_O": selected_label_O,
-                    "attribute": selected_attribute,
-                    "d_phi": float(eps),
-                    "search_scope": "configured_grid",
-                    "reason": (
-                        "configured candidate grid exhausted; not a "
-                        "paper-level non-convergence claim (paper power "
-                        "search has no stated finite bound)"
-                    ),
-                }
+                else:
+                    self.non_convergence = {
+                        "label_O": selected_label_O,
+                        "attribute": selected_attribute,
+                        "d_phi": float(eps),
+                        "search_scope": "configured_grid",
+                        "reason": (
+                            "configured candidate grid exhausted; not a "
+                            "paper-level non-convergence claim (paper power "
+                            "search has no stated finite bound)"
+                        ),
+                    }
+                if self.non_convergence:
+                    sem_type = (
+                        "categorical"
+                        if (
+                            selected_attribute in self.cate_attrs
+                            or not pd.api.types.is_numeric_dtype(X[selected_attribute])
+                        )
+                        else "numerical"
+                    )
+                    self.step_traces.append(
+                        FairBiasTransformStep(
+                            iteration=int(iteration),
+                            selected_feature=str(selected_attribute),
+                            feature_semantic_type=sem_type,
+                            d_phi_before=float(eps),
+                            epsilon=float(epsilon_threshold),
+                            proposed_transformation=None,
+                            accepted_transformation=None,
+                            numerical_exponent=None,
+                            categorical_merge_mapping=None,
+                            d_phi_after=float(eps),
+                            dropped=False,
+                            stopped_reason=str(self.non_convergence.get("reason")),
+                        )
+                    )
                 break
 
             # Engineering extension ("next"): record keyed by

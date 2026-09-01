@@ -400,6 +400,7 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
                 changed_dict=changed_dict,
                 current_epsilon=current_epsilon,
                 epsilon_threshold=epsilon_threshold,
+                iteration=iter_idx,
             )
             iter_data["selected_label_O"] = sel_o
             iter_data["selected_attribute"] = sel_attr

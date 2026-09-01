@@ -74,7 +74,7 @@ class NHISLeakageError(NHISPreprocessingError):
 class PreprocessingFitRecord:
     """Immutable record of fitted preprocessing statistics."""
 
-    fit_year: int
+    fit_year: Union[int, str]
     fit_study_role: str
     row_count: int
     numerical_medians: Dict[str, float]
@@ -97,8 +97,10 @@ class PreprocessingFitRecord:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PreprocessingFitRecord:
+        raw_yr = data["fit_year"]
+        yr: Union[int, str] = int(raw_yr) if str(raw_yr).isdigit() else str(raw_yr)
         return cls(
-            fit_year=int(data["fit_year"]),
+            fit_year=yr,
             fit_study_role=str(data["fit_study_role"]),
             row_count=int(data["row_count"]),
             numerical_medians={k: float(v) for k, v in data["numerical_medians"].items()},
@@ -229,27 +231,47 @@ class NHISPreprocessor:
             raise NHISPreprocessingError("Preprocessor is not fitted. Call fit() on 2022 train first.")
         return self._fitted_record
 
-    def fit(self, df_train: pd.DataFrame) -> NHISPreprocessor:
+    def fit(self, df_train: pd.DataFrame, *, regime: str = "temporal") -> NHISPreprocessor:
         """
-        Fit numerical medians and record categories strictly on 2022 development_train partition.
+        Fit numerical medians and record categories strictly on the training partition.
 
-        Raises NHISLeakageError if called on 2023 or 2024 data.
+        Regimes:
+        - 'temporal' (Gate D2): strictly fits on 2022 development_train partition.
+          Raises NHISLeakageError if called on 2023 or 2024 data.
+        - 'pooled' (Gate D3): strictly fits on pooled train split (split_role == 'train').
+          Raises NHISLeakageError if validation or test data is present.
         """
-        # Strict temporal guard
-        if "survey_year" in df_train.columns:
-            years = set(df_train["survey_year"].unique())
-            if years != {2022}:
-                raise NHISLeakageError(
-                    f"Preprocessing can ONLY be fit on 2022 development_train partition. "
-                    f"Attempted to fit on survey years: {years}"
-                )
-        if "study_role" in df_train.columns:
-            roles = set(df_train["study_role"].unique())
-            if roles != {"development_train"}:
-                raise NHISLeakageError(
-                    f"Preprocessing can ONLY be fit on 'development_train' role. "
-                    f"Attempted to fit on study roles: {roles}"
-                )
+        if regime == "temporal":
+            # Strict temporal guard
+            if "survey_year" in df_train.columns:
+                years = set(df_train["survey_year"].unique())
+                if years != {2022}:
+                    raise NHISLeakageError(
+                        f"Preprocessing can ONLY be fit on 2022 development_train partition. "
+                        f"Attempted to fit on survey years: {years}"
+                    )
+            if "study_role" in df_train.columns:
+                roles = set(df_train["study_role"].unique())
+                if roles != {"development_train"}:
+                    raise NHISLeakageError(
+                        f"Preprocessing can ONLY be fit on 'development_train' role. "
+                        f"Attempted to fit on study roles: {roles}"
+                    )
+            fit_yr: Union[int, str] = 2022
+            fit_role = "development_train"
+        elif regime == "pooled":
+            # Strict pooled split guard
+            if "split_role" in df_train.columns:
+                split_roles = set(df_train["split_role"].unique())
+                if split_roles != {"train"}:
+                    raise NHISLeakageError(
+                        f"Pooled preprocessing can ONLY be fit on pooled 'train' split. "
+                        f"Attempted to fit on split roles: {split_roles}"
+                    )
+            fit_yr = "2022-2024_pooled"
+            fit_role = "pooled_train"
+        else:
+            raise ValueError(f"Unknown preprocessing fit regime: {regime!r}. Must be 'temporal' or 'pooled'.")
 
         # Fit numerical medians
         num_medians: Dict[str, float] = {}
@@ -309,27 +331,48 @@ class NHISPreprocessor:
             for code in (1, 2, SENTINEL_STRUCTURAL_NOT_IN_UNIVERSE, SENTINEL_EXPLICIT_MISSING)
         }
 
-        rules_manifest = {
-            "schema_version": "nhis-fairbias-d2-1.0",
-            "employment_rule": (
-                "Constructed 4-state employment intensity: 1=full-time, 2=part-time, "
-                f"{SENTINEL_STRUCTURAL_NOT_IN_UNIVERSE}=structural_not_in_universe (EMPWRKLSW1_A==2), "
-                f"{SENTINEL_EXPLICIT_MISSING}=explicit_missing (unresolved in-universe/nonresponse)."
-            ),
-            "categorical_missing_rule": (
-                f"Mapped to explicit missing sentinel {SENTINEL_CATEGORICAL_MISSING} ('explicit_missing')."
-            ),
-            "numerical_missing_rule": (
-                "Imputed with 2022 development_train median, frozen and applied to 2023 and 2024."
-            ),
-            "temporal_freeze_rule": (
-                "2024 is frozen_test, evaluation-only; no fitting, tuning, or threshold selection allowed."
-            ),
-        }
+        if regime == "temporal":
+            rules_manifest = {
+                "schema_version": "nhis-fairbias-d2-1.0",
+                "regime": "temporal",
+                "employment_rule": (
+                    "Constructed 4-state employment intensity: 1=full-time, 2=part-time, "
+                    f"{SENTINEL_STRUCTURAL_NOT_IN_UNIVERSE}=structural_not_in_universe (EMPWRKLSW1_A==2), "
+                    f"{SENTINEL_EXPLICIT_MISSING}=explicit_missing (unresolved in-universe/nonresponse)."
+                ),
+                "categorical_missing_rule": (
+                    f"Mapped to explicit missing sentinel {SENTINEL_CATEGORICAL_MISSING} ('explicit_missing')."
+                ),
+                "numerical_missing_rule": (
+                    "Imputed with 2022 development_train median, frozen and applied to 2023 and 2024."
+                ),
+                "temporal_freeze_rule": (
+                    "2024 is frozen_test, evaluation-only; no fitting, tuning, or threshold selection allowed."
+                ),
+            }
+        else:
+            rules_manifest = {
+                "schema_version": "nhis-fairbias-d3-1.0",
+                "regime": "pooled",
+                "employment_rule": (
+                    "Constructed 4-state employment intensity: 1=full-time, 2=part-time, "
+                    f"{SENTINEL_STRUCTURAL_NOT_IN_UNIVERSE}=structural_not_in_universe (EMPWRKLSW1_A==2), "
+                    f"{SENTINEL_EXPLICIT_MISSING}=explicit_missing (unresolved in-universe/nonresponse)."
+                ),
+                "categorical_missing_rule": (
+                    f"Mapped to explicit missing sentinel {SENTINEL_CATEGORICAL_MISSING} ('explicit_missing')."
+                ),
+                "numerical_missing_rule": (
+                    "Imputed with pooled train partition median, frozen and applied to validation and test partitions."
+                ),
+                "data_leakage_rule": (
+                    "Validation and test partitions are apply/evaluate only; no fitting, tuning, or threshold selection allowed."
+                ),
+            }
 
         self._fitted_record = PreprocessingFitRecord(
-            fit_year=2022,
-            fit_study_role="development_train",
+            fit_year=fit_yr,
+            fit_study_role=fit_role,
             row_count=len(df_train),
             numerical_medians=num_medians,
             numerical_stats=num_stats,
