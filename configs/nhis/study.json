@@ -1,0 +1,61 @@
+{
+  "schema_version": "nhis-fairbias-d0-1.0",
+  "dataset": "CDC/NCHS NHIS Sample Adult public-use CSV",
+  "source_host": "ftp.cdc.gov",
+  "years": {
+    "2022": {
+      "source_url": "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NHIS/2022/adult22csv.zip",
+      "local_source_file": "data/raw/nhis/2022/adult22csv.zip",
+      "local_csv_file": "data/raw/nhis/2022/adult22.csv",
+      "expected_csv_member": "adult22.csv",
+      "expected_raw_rows": 27651,
+      "expected_meddl12m_counts": {
+        "1": 1770,
+        "2": 25683,
+        "7": 3,
+        "8": 192,
+        "9": 3
+      },
+      "study_role": "development_train"
+    },
+    "2023": {
+      "source_url": "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NHIS/2023/adult23csv.zip",
+      "local_source_file": "data/raw/nhis/2023/adult23csv.zip",
+      "local_csv_file": "data/raw/nhis/2023/adult23.csv",
+      "expected_csv_member": "adult23.csv",
+      "expected_raw_rows": 29522,
+      "expected_meddl12m_counts": {
+        "1": 1931,
+        "2": 27352,
+        "7": 6,
+        "8": 222,
+        "9": 11
+      },
+      "study_role": "development_validation"
+    },
+    "2024": {
+      "source_url": "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NHIS/2024/adult24csv.zip",
+      "local_source_file": "data/raw/nhis/2024/adult24csv.zip",
+      "local_csv_file": "data/raw/nhis/2024/adult24.csv",
+      "expected_csv_member": "adult24.csv",
+      "expected_raw_rows": 32629,
+      "expected_meddl12m_counts": {
+        "1": 2564,
+        "2": 29791,
+        "7": 10,
+        "8": 255,
+        "9": 9
+      },
+      "study_role": "frozen_test"
+    }
+  },
+  "outputs": {
+    "harmonized_parquet": "data/processed/nhis/nhis_2022_2024_core.parquet",
+    "artifact_root": "artifacts/nhis/data",
+    "manifest": "artifacts/nhis/data/data_manifest.json",
+    "schema_audit": "artifacts/nhis/data/schema_audit.csv",
+    "outcome_audit": "artifacts/nhis/data/outcome_audit.csv",
+    "protected_attribute_audit": "artifacts/nhis/data/protected_attribute_audit.csv",
+    "weight_audit": "artifacts/nhis/data/weight_audit.csv"
+  }
+}

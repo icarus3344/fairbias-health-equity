@@ -1,0 +1,144 @@
+{
+  "schema_version": "nhis-fairbias-d0-1.0",
+  "required_variables": [
+    "SRVY_YR",
+    "WTFA_A",
+    "PSTRAT",
+    "PPSU",
+    "MEDDL12M_A",
+    "MEDNG12M_A",
+    "SEX_A",
+    "HISPALLP_A",
+    "DISAB3_A"
+  ],
+  "variables": {
+    "SRVY_YR": {
+      "role": "metadata",
+      "declared_type": "integer",
+      "required": true
+    },
+    "WTFA_A": {
+      "role": "survey_weight",
+      "declared_type": "numeric",
+      "required": true
+    },
+    "PSTRAT": {
+      "role": "survey_stratum",
+      "declared_type": "integer",
+      "required": true
+    },
+    "PPSU": {
+      "role": "survey_psu",
+      "declared_type": "integer",
+      "required": true
+    },
+    "MEDDL12M_A": {
+      "role": "binary_outcome",
+      "declared_type": "integer",
+      "required": true,
+      "valid_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "mapping": {
+        "1": 1,
+        "2": 0,
+        "7": null,
+        "8": null,
+        "9": null
+      }
+    },
+    "MEDNG12M_A": {
+      "role": "binary_sensitivity_outcome",
+      "declared_type": "integer",
+      "required": true,
+      "valid_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "mapping": {
+        "1": 1,
+        "2": 0,
+        "7": null,
+        "8": null,
+        "9": null
+      }
+    },
+    "SEX_A": {
+      "role": "protected_categorical",
+      "declared_type": "integer",
+      "required": true,
+      "valid_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "preserve_official_raw_coding": true
+    },
+    "HISPALLP_A": {
+      "role": "protected_categorical",
+      "declared_type": "integer",
+      "required": true,
+      "valid_codes": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "missing_codes": [
+        8,
+        9
+      ],
+      "preserve_official_raw_coding": true,
+      "preserve_seven_substantive_categories": true,
+      "do_not_merge_categories": true
+    },
+    "DISAB3_A": {
+      "role": "protected_binary",
+      "declared_type": "integer",
+      "required": true,
+      "valid_codes": [
+        1,
+        2
+      ],
+      "missing_codes": [
+        7,
+        8,
+        9
+      ],
+      "preserve_official_raw_coding": true
+    }
+  },
+  "derived_variables": {
+    "survey_year": "explicit study year from the source file contract",
+    "WTFA_DEV": "WTFA_A / 2 for 2022 and 2023; missing for 2024",
+    "study_role": {
+      "2022": "development_train",
+      "2023": "development_validation",
+      "2024": "frozen_test"
+    },
+    "meddl12m": "MEDDL12M_A: 1 -> 1, 2 -> 0, 7/8/9 -> missing",
+    "meddly12m": "MEDDL12M_A: 1 -> 1, 2 -> 0, 7/8/9 -> missing",
+    "medng12m": "MEDNG12M_A: 1 -> 1, 2 -> 0, 7/8/9 -> missing",
+    "sex_a": "SEX_A with only official substantive codes 1/2 retained",
+    "hispallp_a": "HISPALLP_A with official substantive codes 1-7 retained without merging",
+    "disab3_a": "DISAB3_A with only official substantive codes 1/2 retained"
+  }
+}
