@@ -99,57 +99,14 @@ def get_git_commit(repo_root: pathlib.Path) -> str:
         return "UNKNOWN"
 
 
-def main(args: Sequence[str] | None = None) -> int:
-    parsed = parse_args(args)
-    output_dir = pathlib.Path(parsed.output_dir).resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
-    repo_root = _REPO_ROOT
-    run_id = new_run_id()
-    commit_sha = get_git_commit(repo_root)
-
-    print(f"=== NHIS Gate D3 Preparation & Baseline Freeze ===")
-    print(f"Run ID: {run_id}")
-    print(f"Commit: {commit_sha}")
-    print(f"Target Output: {output_dir}")
-
-    # Load raw feature parquet
-    study_cfg = load_study_config(DEFAULT_STUDY_CONFIG)
-    pq_path = repo_root / study_cfg["outputs"]["features_parquet"]
-    df_raw = pd.read_parquet(pq_path)
-    if len(df_raw) != EXPECTED_TOTAL_ROWS:
-        raise ValueError(f"Expected {EXPECTED_TOTAL_ROWS} rows, got {len(df_raw)}")
-
-    # ------------------------------------------------------------------
-    # Artifact 2: pooled_split_manifest.csv
-    # ------------------------------------------------------------------
-    split_manifest_df = generate_pooled_splits(df_raw, seed=parsed.seed)
-    split_csv_path = output_dir / "pooled_split_manifest.csv"
-    write_csv_atomic(split_manifest_df, split_csv_path, force=parsed.force)
-    print("Generated pooled_split_manifest.csv")
-
-    # ------------------------------------------------------------------
-    # Artifact 3: pooled_split_audit.json
-    # ------------------------------------------------------------------
-    split_audit_data = audit_pooled_splits(split_manifest_df)
-    split_audit_data["schema_version"] = "nhis-fairbias-d3-1.0"
-    split_audit_data["random_seed"] = parsed.seed
-    split_audit_path = output_dir / "pooled_split_audit.json"
-    write_json_atomic(split_audit_path, split_audit_data)
-    print("Generated pooled_split_audit.json")
-
-    # Initialize pooled adapter with the generated split manifest
-    adapter = NHISPooledAdapter(
-        features_parquet_path=pq_path,
-        split_manifest_path=split_csv_path,
-        seed=parsed.seed,
+def build_paper_fidelity_manifest(config: FairBiasConfig | None = None) -> Dict[str, Any]:
+    """Construct paper fidelity manifest with operational parameters derived dynamically from config."""
+    paper_cfg = (
+        config.resolved()
+        if config is not None
+        else FairBiasConfig(algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL).resolved()
     )
-    preprocessor = adapter.preprocessor
-    fit_record = preprocessor.fitted_record
-
-    # ------------------------------------------------------------------
-    # Artifact 4: paper_fidelity_manifest.json
-    # ------------------------------------------------------------------
-    paper_fidelity_data = {
+    return {
         "schema_version": "nhis-fairbias-d3-1.0",
         "reference_citation": "Tang, Lu & Li (2024). Metric-Independent Mitigation of Unpredefined Bias in Machine Classification.",
         "algorithm_mode": ALGORITHM_MODE_PAPER_FAITHFUL,
@@ -158,13 +115,20 @@ def main(args: Sequence[str] | None = None) -> int:
                 "paper_text": "We search for the optimal dimension d using the elbow method on the stress curve.",
                 "official_author_code": "Hardcodes n_components = 2 without stress curve evaluation (module_BM.py line 147).",
                 "repo_operationalization": (
-                    "Stress-elbow detection is automated via mds_max_components (default 10) and mds_slope_threshold (default 0.05). "
-                    "In tang2024_paper_faithful mode, mds_fixed_components defaults to None (stress elbow selection)."
+                    f"Stress-elbow detection is automated via mds_max_components (default {paper_cfg.mds_max_components}) "
+                    f"and mds_slope_threshold (default {paper_cfg.mds_slope_threshold}). "
+                    f"In tang2024_paper_faithful mode, mds_fixed_components defaults to {paper_cfg.mds_fixed_components} "
+                    "(stress elbow selection)."
                 ),
                 "gate_d3_resolution": (
                     "Preserves paper stress-elbow selection by default, distinguishing paper conceptual rule from "
                     "repository automated operational parameters."
                 ),
+                "resolved_repo_parameters": {
+                    "mds_max_components": paper_cfg.mds_max_components,
+                    "mds_slope_threshold": paper_cfg.mds_slope_threshold,
+                    "mds_fixed_components": paper_cfg.mds_fixed_components,
+                },
                 "provenance_status": "PAPER_CONCEPT_REPO_OPERATIONALIZED",
             },
             "numerical_power_transformation": {
@@ -248,6 +212,59 @@ def main(args: Sequence[str] | None = None) -> int:
         },
         "status": "PASS",
     }
+
+
+def main(args: Sequence[str] | None = None) -> int:
+    parsed = parse_args(args)
+    output_dir = pathlib.Path(parsed.output_dir).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    repo_root = _REPO_ROOT
+    run_id = new_run_id()
+    commit_sha = get_git_commit(repo_root)
+
+    print(f"=== NHIS Gate D3 Preparation & Baseline Freeze ===")
+    print(f"Run ID: {run_id}")
+    print(f"Commit: {commit_sha}")
+    print(f"Target Output: {output_dir}")
+
+    # Load raw feature parquet
+    study_cfg = load_study_config(DEFAULT_STUDY_CONFIG)
+    pq_path = repo_root / study_cfg["outputs"]["features_parquet"]
+    df_raw = pd.read_parquet(pq_path)
+    if len(df_raw) != EXPECTED_TOTAL_ROWS:
+        raise ValueError(f"Expected {EXPECTED_TOTAL_ROWS} rows, got {len(df_raw)}")
+
+    # ------------------------------------------------------------------
+    # Artifact 2: pooled_split_manifest.csv
+    # ------------------------------------------------------------------
+    split_manifest_df = generate_pooled_splits(df_raw, seed=parsed.seed)
+    split_csv_path = output_dir / "pooled_split_manifest.csv"
+    write_csv_atomic(split_manifest_df, split_csv_path, force=parsed.force)
+    print("Generated pooled_split_manifest.csv")
+
+    # ------------------------------------------------------------------
+    # Artifact 3: pooled_split_audit.json
+    # ------------------------------------------------------------------
+    split_audit_data = audit_pooled_splits(split_manifest_df)
+    split_audit_data["schema_version"] = "nhis-fairbias-d3-1.0"
+    split_audit_data["random_seed"] = parsed.seed
+    split_audit_path = output_dir / "pooled_split_audit.json"
+    write_json_atomic(split_audit_path, split_audit_data)
+    print("Generated pooled_split_audit.json")
+
+    # Initialize pooled adapter with the generated split manifest
+    adapter = NHISPooledAdapter(
+        features_parquet_path=pq_path,
+        split_manifest_path=split_csv_path,
+        seed=parsed.seed,
+    )
+    preprocessor = adapter.preprocessor
+    fit_record = preprocessor.fitted_record
+
+    # ------------------------------------------------------------------
+    # Artifact 4: paper_fidelity_manifest.json
+    # ------------------------------------------------------------------
+    paper_fidelity_data = build_paper_fidelity_manifest()
     fidelity_path = output_dir / "paper_fidelity_manifest.json"
     write_json_atomic(fidelity_path, paper_fidelity_data)
     print("Generated paper_fidelity_manifest.json")

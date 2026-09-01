@@ -31,9 +31,13 @@ import pandas as pd
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 _SRC_DIR = str(_REPO_ROOT / "src")
+_SCRIPTS_DIR = str(_REPO_ROOT / "scripts")
 if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
 
+from prepare_nhis_d3 import build_paper_fidelity_manifest
 from fairbias.config import (
     ALGORITHM_MODE_ENGINEERING,
     ALGORITHM_MODE_OFFICIAL,
@@ -50,6 +54,7 @@ from nhis_fairbias.download import compute_sha256
 from nhis_fairbias.features import DEFAULT_FEATURE_CONFIG, load_feature_registry
 from nhis_fairbias.pooled import (
     DEFAULT_POOLED_SEED,
+    EXPECTED_D0_MEDDL12M_COUNTS,
     EXPECTED_TEST_ROWS,
     EXPECTED_TOTAL_ROWS,
     EXPECTED_TRAIN_ROWS,
@@ -589,11 +594,177 @@ class TestNHISGateD3(unittest.TestCase):
         self.assertTrue(split_audit["has_exact_counts"])
         self.assertTrue(split_audit["all_years_present_in_all_splits"])
         self.assertTrue(split_audit["stratum_balance_valid"])
+        self.assertTrue(split_audit["d0_outcome_totals_match"])
+
+        # Check paper_fidelity_manifest.json
+        with (self.d3_dir / "paper_fidelity_manifest.json").open("r", encoding="utf-8") as f:
+            paper_fid = json.load(f)
+        paper_cfg = FairBiasConfig(algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL).resolved()
+        mds_fid = paper_fid["fidelity_analysis"]["mds_embedding_dimensionality"]
+        self.assertEqual(
+            mds_fid["resolved_repo_parameters"]["mds_max_components"],
+            paper_cfg.mds_max_components,
+        )
+        self.assertEqual(
+            mds_fid["resolved_repo_parameters"]["mds_slope_threshold"],
+            paper_cfg.mds_slope_threshold,
+        )
+        self.assertEqual(
+            mds_fid["resolved_repo_parameters"]["mds_fixed_components"],
+            paper_cfg.mds_fixed_components,
+        )
 
         # Check experiment_arms.csv
         arms_df = pd.read_csv(self.d3_dir / "experiment_arms.csv")
         self.assertEqual(len(arms_df), 4)
         self.assertTrue((arms_df["status"] == "PASS").all())
+
+    # ------------------------------------------------------------------
+    # 18. Dynamic MDS Fidelity Manifest Parameters (Gate D3.2 Repair 1)
+    # ------------------------------------------------------------------
+
+    def test_mds_fidelity_manifest_derives_dynamically_from_resolved_config(self) -> None:
+        """Fidelity manifest dynamically derives MDS operational parameters from resolved FairBiasConfig."""
+        paper_cfg = FairBiasConfig(algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL).resolved()
+        manifest_data = build_paper_fidelity_manifest(paper_cfg)
+        mds_entry = manifest_data["fidelity_analysis"]["mds_embedding_dimensionality"]
+
+        # Machine-readable parameters must match the resolved config dynamically
+        resolved_params = mds_entry["resolved_repo_parameters"]
+        self.assertEqual(resolved_params["mds_max_components"], paper_cfg.mds_max_components)
+        self.assertEqual(resolved_params["mds_slope_threshold"], paper_cfg.mds_slope_threshold)
+        self.assertEqual(resolved_params["mds_fixed_components"], paper_cfg.mds_fixed_components)
+
+        # Human-readable prose must be generated from the resolved config values, not stale hardcoded literals
+        repo_op_text = mds_entry["repo_operationalization"]
+        self.assertIn(f"default {paper_cfg.mds_max_components}", repo_op_text)
+        self.assertIn(f"default {paper_cfg.mds_slope_threshold}", repo_op_text)
+        self.assertIn(f"defaults to {paper_cfg.mds_fixed_components}", repo_op_text)
+
+        # Regression check: ensure custom configuration overrides propagate automatically (no hardcoding)
+        custom_cfg = FairBiasConfig(
+            algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL,
+            mds_max_components=20,
+            mds_slope_threshold=0.02,
+        ).resolved()
+        custom_manifest = build_paper_fidelity_manifest(custom_cfg)
+        custom_mds = custom_manifest["fidelity_analysis"]["mds_embedding_dimensionality"]
+        self.assertEqual(custom_mds["resolved_repo_parameters"]["mds_max_components"], 20)
+        self.assertEqual(custom_mds["resolved_repo_parameters"]["mds_slope_threshold"], 0.02)
+        self.assertIn("default 20", custom_mds["repo_operationalization"])
+        self.assertIn("default 0.02", custom_mds["repo_operationalization"])
+
+    # ------------------------------------------------------------------
+    # 19. Exact Gate D0 Outcome Totals Invariant (Gate D3.2 Repair 2 - Test A)
+    # ------------------------------------------------------------------
+
+    def test_pooled_split_d0_exact_outcome_totals_invariant(self) -> None:
+        """Master split manifest observed totals for every survey_year x meddl12m_state equal frozen D0 counts."""
+        manifest = self.adapter.split_manifest
+        audit = audit_pooled_splits(manifest)
+
+        # Audit flags
+        self.assertTrue(audit["d0_outcome_totals_match"])
+        self.assertEqual(audit["status"], "PASS")
+        self.assertEqual(len(audit["d0_outcome_totals_mismatches"]), 0)
+
+        # Explicitly verify all 9 cells across all 3 years and 3 outcome states
+        observed = audit["d0_outcome_totals_observed"]
+        expected = audit["d0_outcome_totals_expected"]
+
+        for year in (2022, 2023, 2024):
+            year_sum_observed = 0
+            year_sum_expected = 0
+            for state in ("1", "0", "missing_or_non_substantive"):
+                exp_cnt = EXPECTED_D0_MEDDL12M_COUNTS[year][state]
+                obs_audit = observed[year][state]
+                self.assertEqual(
+                    obs_audit,
+                    exp_cnt,
+                    f"D0 count mismatch in audit for year {year}, state {state}: {obs_audit} != {exp_cnt}",
+                )
+                self.assertEqual(
+                    expected[year][state],
+                    exp_cnt,
+                    f"Expected count in audit mismatch for year {year}, state {state}",
+                )
+
+                # Also verify directly from manifest dataframe
+                obs_direct = int(
+                    ((manifest["survey_year"] == year) & (manifest["meddl12m_state"] == state)).sum()
+                )
+                self.assertEqual(
+                    obs_direct,
+                    exp_cnt,
+                    f"Direct manifest count mismatch for year {year}, state {state}: {obs_direct} != {exp_cnt}",
+                )
+
+                year_sum_observed += obs_direct
+                year_sum_expected += exp_cnt
+
+            # Verify yearly exact totals
+            if year == 2022:
+                self.assertEqual(year_sum_observed, 1770 + 25683 + 198)
+            elif year == 2023:
+                self.assertEqual(year_sum_observed, 1931 + 27352 + 239)
+            elif year == 2024:
+                self.assertEqual(year_sum_observed, 2564 + 29791 + 274)
+            self.assertEqual(year_sum_observed, year_sum_expected)
+
+        # Global sum
+        total_observed = sum(
+            sum(observed[yr].values()) for yr in (2022, 2023, 2024)
+        )
+        self.assertEqual(total_observed, EXPECTED_TOTAL_ROWS)
+
+    # ------------------------------------------------------------------
+    # 20. Negative Mutation Test for D0 Invariant (Gate D3.2 Repair 2 - Test B)
+    # ------------------------------------------------------------------
+
+    def test_pooled_split_d0_invariant_negative_mutation(self) -> None:
+        """Mutating a single row's meddl12m_state fails the D0 invariant and sets overall status to FAIL."""
+        manifest_copy = self.adapter.split_manifest.copy(deep=True)
+
+        # Pick a 2022 row with meddl12m_state == "0" and mutate it to "1"
+        target_idx = manifest_copy[
+            (manifest_copy["survey_year"] == 2022) & (manifest_copy["meddl12m_state"] == "0")
+        ].index[0]
+        manifest_copy.loc[target_idx, "meddl12m_state"] = "1"
+
+        # Verify row counts and split allocations remain unchanged
+        self.assertEqual(len(manifest_copy), EXPECTED_TOTAL_ROWS)
+        counts = manifest_copy["split_role"].value_counts().to_dict()
+        self.assertEqual(counts["train"], EXPECTED_TRAIN_ROWS)
+        self.assertEqual(counts["val"], EXPECTED_VAL_ROWS)
+        self.assertEqual(counts["test"], EXPECTED_TEST_ROWS)
+
+        # Run audit on mutated manifest
+        mutated_audit = audit_pooled_splits(manifest_copy)
+
+        # Assert invariant failure and audit FAIL
+        self.assertFalse(
+            mutated_audit["d0_outcome_totals_match"],
+            "d0_outcome_totals_match must be False under single-row state mutation",
+        )
+        self.assertEqual(
+            mutated_audit["status"],
+            "FAIL",
+            "Overall audit status must be FAIL when D0 outcome totals invariant fails",
+        )
+
+        # Check machine-readable mismatch reporting
+        mismatches = mutated_audit["d0_outcome_totals_mismatches"]
+        self.assertTrue(len(mismatches) >= 2, f"Expected at least 2 mismatched cells, got {mismatches}")
+        mismatched_keys = {(m["survey_year"], m["meddl12m_state"]) for m in mismatches if "survey_year" in m}
+        self.assertIn((2022, "0"), mismatched_keys)
+        self.assertIn((2022, "1"), mismatched_keys)
+
+        # Ensure disk artifact was NOT mutated
+        clean_manifest = pd.read_csv(self.d3_dir / "pooled_split_manifest.csv")
+        clean_obs_2022_0 = int(
+            ((clean_manifest["survey_year"] == 2022) & (clean_manifest["meddl12m_state"] == "0")).sum()
+        )
+        self.assertEqual(clean_obs_2022_0, 25683)
 
 
 if __name__ == "__main__":

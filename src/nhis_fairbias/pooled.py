@@ -61,6 +61,28 @@ EXPECTED_TRAIN_ROWS = 57473
 EXPECTED_VAL_ROWS = 14368
 EXPECTED_TEST_ROWS = 17961
 
+# Frozen Gate D0 MEDDL12M_A outcome counts per survey year and 3-state classification:
+# raw 1 -> harmonized "1" (positive)
+# raw 2 -> harmonized "0" (negative)
+# raw 7/8/9 or non-substantive/missing -> harmonized "missing_or_non_substantive"
+EXPECTED_D0_MEDDL12M_COUNTS: Dict[int, Dict[str, int]] = {
+    2022: {
+        "1": 1770,
+        "0": 25683,
+        "missing_or_non_substantive": 198,
+    },
+    2023: {
+        "1": 1931,
+        "0": 27352,
+        "missing_or_non_substantive": 239,
+    },
+    2024: {
+        "1": 2564,
+        "0": 29791,
+        "missing_or_non_substantive": 274,
+    },
+}
+
 
 def _extract_meddl12m_state(df: pd.DataFrame) -> pd.Series:
     """Extract 3-state primary outcome classification: '0', '1', or 'missing_or_non_substantive'."""
@@ -260,9 +282,53 @@ def audit_pooled_splits(manifest_df: pd.DataFrame) -> Dict[str, Any]:
                 "test_fraction": te_frac,
             }
 
+    # Exact source-data invariant: frozen Gate D0 outcome counts
+    d0_expected = copy.deepcopy(EXPECTED_D0_MEDDL12M_COUNTS)
+    d0_observed: Dict[int, Dict[str, int]] = {}
+    d0_mismatches: List[Dict[str, Any]] = []
+    d0_match = True
+
+    if "survey_year" in manifest_df.columns and "meddl12m_state" in manifest_df.columns:
+        for yr in sorted(EXPECTED_D0_MEDDL12M_COUNTS.keys()):
+            d0_observed[yr] = {}
+            for state_key in ("1", "0", "missing_or_non_substantive"):
+                exp_cnt = EXPECTED_D0_MEDDL12M_COUNTS[yr][state_key]
+                obs_cnt = int(
+                    ((manifest_df["survey_year"] == yr) & (manifest_df["meddl12m_state"].astype(str) == state_key)).sum()
+                )
+                d0_observed[yr][state_key] = obs_cnt
+                if obs_cnt != exp_cnt:
+                    d0_match = False
+                    d0_mismatches.append({
+                        "survey_year": yr,
+                        "meddl12m_state": state_key,
+                        "expected": exp_cnt,
+                        "observed": obs_cnt,
+                        "difference": obs_cnt - exp_cnt,
+                    })
+        total_d0_observed = sum(sum(v.values()) for v in d0_observed.values())
+        if total_d0_observed != total_rows:
+            d0_match = False
+            d0_mismatches.append({
+                "issue": "Extraneous survey_year or meddl12m_state present outside frozen D0 9 cells",
+                "total_d0_observed": total_d0_observed,
+                "total_rows": total_rows,
+            })
+    else:
+        d0_match = False
+        d0_mismatches.append({
+            "issue": "Missing required columns 'survey_year' or 'meddl12m_state' in manifest"
+        })
+
     status = (
         "PASS"
-        if (is_exhaustive and has_exact_counts and all_years_present and stratum_balance_valid)
+        if (
+            is_exhaustive
+            and has_exact_counts
+            and all_years_present
+            and stratum_balance_valid
+            and d0_match
+        )
         else "FAIL"
     )
 
@@ -282,6 +348,10 @@ def audit_pooled_splits(manifest_df: pd.DataFrame) -> Dict[str, Any]:
         },
         "year_breakdown_by_split": year_breakdown,
         "stratum_audit": stratum_audit,
+        "d0_outcome_totals_expected": d0_expected,
+        "d0_outcome_totals_observed": d0_observed,
+        "d0_outcome_totals_match": d0_match,
+        "d0_outcome_totals_mismatches": d0_mismatches,
         "mutually_exclusive_and_exhaustive": is_exhaustive,
         "has_exact_counts": has_exact_counts,
         "all_years_present_in_all_splits": all_years_present,

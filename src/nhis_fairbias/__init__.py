@@ -3,6 +3,7 @@
 from .adapter import DISABILITY_COMPONENTS, NHISStudyAdapter
 from .pooled import (
     DEFAULT_POOLED_SEED,
+    EXPECTED_D0_MEDDL12M_COUNTS,
     EXPECTED_TEST_ROWS,
     EXPECTED_TOTAL_ROWS,
     EXPECTED_TRAIN_ROWS,
@@ -34,5 +35,6 @@ __all__ = [
     "EXPECTED_TRAIN_ROWS",
     "EXPECTED_VAL_ROWS",
     "EXPECTED_TEST_ROWS",
+    "EXPECTED_D0_MEDDL12M_COUNTS",
 ]
 __version__ = "0.3.0"
