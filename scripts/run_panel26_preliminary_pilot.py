@@ -31,7 +31,7 @@ from meps_fairness.pilot import (  # noqa: E402
 
 
 EXPECTED_BRANCH = "research/meps-hc252-longitudinal"
-EXPECTED_HEAD = "bc43038b743e8c5e6ff7e990db012e31a3819282"
+REQUIRED_BASELINE_ANCESTOR = "bc43038b743e8c5e6ff7e990db012e31a3819282"
 EXPECTED_HC244_SHA256 = "5cf983c94fd9ed8d8377c9ad27bebd905c545327eca823a8c8412bf4e66eaa70"
 HC244_RELATIVE_PATH = pathlib.Path("data/interim/meps/h244/h244.dta")
 ARCHIVE_RELATIVE_PATH = pathlib.Path("archive/baseline_v0.3")
@@ -54,6 +54,17 @@ def _sha256_file(path: pathlib.Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _is_baseline_ancestor(repo_root: pathlib.Path, baseline: str, head: str) -> bool:
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", baseline, head],
+        cwd=repo_root,
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.returncode == 0
 
 
 def _archive_preflight(repo_root: pathlib.Path) -> dict[str, Any]:
@@ -85,8 +96,11 @@ def preflight(repo_root: pathlib.Path) -> dict[str, Any]:
     head = _git_output(repo_root, ["rev-parse", "HEAD"])
     if branch != EXPECTED_BRANCH:
         raise RuntimeError(f"Unexpected branch: {branch!r}; expected {EXPECTED_BRANCH!r}")
-    if head != EXPECTED_HEAD:
-        raise RuntimeError(f"Unexpected HEAD: {head!r}; expected {EXPECTED_HEAD!r}")
+    if not _is_baseline_ancestor(repo_root, REQUIRED_BASELINE_ANCESTOR, head):
+        raise RuntimeError(
+            "Required baseline is not an ancestor of current HEAD: "
+            f"baseline {REQUIRED_BASELINE_ANCESTOR}, HEAD {head}"
+        )
 
     data_path = repo_root / HC244_RELATIVE_PATH
     if not data_path.is_file():
@@ -101,6 +115,7 @@ def preflight(repo_root: pathlib.Path) -> dict[str, Any]:
     return {
         "branch": branch,
         "head": head,
+        "required_baseline_ancestor": REQUIRED_BASELINE_ANCESTOR,
         "hc244_path": str(HC244_RELATIVE_PATH),
         "hc244_sha256": observed_sha256,
         "hc244_expected_sha256": EXPECTED_HC244_SHA256,

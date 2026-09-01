@@ -41,6 +41,8 @@ RESULT_LABEL = "PRELIMINARY_SINGLE_PANEL_DEVELOPMENT_ONLY"
 PANEL_NUMBER = 26
 SEED = 20260828
 CAPACITY_FRACTION = 0.10
+EXPECTED_ELIGIBLE_RECORD_COUNT = 2882
+EXPECTED_POSITIVE_EVENTS = 136
 MIN_N = 100
 MIN_POS = 20
 MIN_NEG = 20
@@ -491,6 +493,23 @@ def _validate_panel26_frame(raw_df: pd.DataFrame) -> None:
         raise ValueError("Pilot input must contain only Panel 26 records")
 
 
+def _validate_panel26_stop_condition(cohort: Any) -> None:
+    observed_eligible_record_count = int(cohort.eligible_record_count)
+    observed_positive_events = int((cohort.y == 1.0).sum())
+    if observed_eligible_record_count != EXPECTED_ELIGIBLE_RECORD_COUNT:
+        raise ValueError(
+            "Panel 26 pilot stop condition failed: expected "
+            f"{EXPECTED_ELIGIBLE_RECORD_COUNT} eligible records, observed "
+            f"{observed_eligible_record_count}"
+        )
+    if observed_positive_events != EXPECTED_POSITIVE_EVENTS:
+        raise ValueError(
+            "Panel 26 pilot stop condition failed: expected "
+            f"{EXPECTED_POSITIVE_EVENTS} positive events, observed "
+            f"{observed_positive_events}"
+        )
+
+
 def run_panel26_pilot(
     raw_df: pd.DataFrame,
     seed: int = SEED,
@@ -509,6 +528,7 @@ def run_panel26_pilot(
     cohort = extract_meps_cohort(raw_df, panel_number=PANEL_NUMBER, allow_target=True)
     if cohort.panel != PANEL_NUMBER:
         raise ValueError("Extracted cohort is not Panel 26")
+    _validate_panel26_stop_condition(cohort)
     if cohort.eligible_record_count == 0:
         raise ValueError("Panel 26 pilot cohort is empty")
     if len(np.unique(cohort.y.to_numpy(dtype=float))) < 2:

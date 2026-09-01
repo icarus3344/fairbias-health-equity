@@ -5,25 +5,102 @@ from __future__ import annotations
 import pathlib
 import sys
 import inspect
+import subprocess
+import tempfile
 import unittest
 
 import numpy as np
 import pandas as pd
 
 
-SRC_ROOT = pathlib.Path(__file__).resolve().parents[1] / "src"
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from meps_fairness.pilot import (  # noqa: E402
+    EXPECTED_ELIGIBLE_RECORD_COUNT,
+    EXPECTED_POSITIVE_EVENTS,
     RESULT_LABEL,
+    _validate_panel26_stop_condition,
     fixed_threshold_subgroup_audit,
     fit_validation_calibrator_and_freeze_threshold,
     select_model_by_validation,
 )
+from scripts.run_panel26_preliminary_pilot import _is_baseline_ancestor  # noqa: E402
 
 
 class TestPanel26PreliminaryPilot(unittest.TestCase):
+    def test_baseline_ancestry_accepts_descendant_and_rejects_reverse(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            repo = pathlib.Path(temporary_directory)
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            commit_args = [
+                "git",
+                "-c",
+                "user.name=pilot-test",
+                "-c",
+                "user.email=pilot-test@example.invalid",
+                "commit",
+                "--allow-empty",
+                "-m",
+            ]
+            subprocess.run([*commit_args, "baseline"], cwd=repo, check=True, capture_output=True)
+            baseline = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            subprocess.run([*commit_args, "descendant"], cwd=repo, check=True, capture_output=True)
+            descendant = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+
+            self.assertTrue(_is_baseline_ancestor(repo, baseline, descendant))
+            self.assertFalse(_is_baseline_ancestor(repo, descendant, baseline))
+
+    def test_panel26_stop_condition_rejects_count_or_event_mismatch(self) -> None:
+        valid_y = np.array([1] * EXPECTED_POSITIVE_EVENTS + [0] * (EXPECTED_ELIGIBLE_RECORD_COUNT - EXPECTED_POSITIVE_EVENTS))
+        valid_cohort = type(
+            "CohortStub",
+            (),
+            {
+                "eligible_record_count": EXPECTED_ELIGIBLE_RECORD_COUNT,
+                "y": valid_y,
+            },
+        )()
+        _validate_panel26_stop_condition(valid_cohort)
+
+        invalid_count = type(
+            "CohortStub",
+            (),
+            {
+                "eligible_record_count": EXPECTED_ELIGIBLE_RECORD_COUNT - 1,
+                "y": valid_y,
+            },
+        )()
+        with self.assertRaisesRegex(ValueError, "eligible records"):
+            _validate_panel26_stop_condition(invalid_count)
+
+        invalid_events = type(
+            "CohortStub",
+            (),
+            {
+                "eligible_record_count": EXPECTED_ELIGIBLE_RECORD_COUNT,
+                "y": np.array([1] * (EXPECTED_POSITIVE_EVENTS - 1) + [0] * (EXPECTED_ELIGIBLE_RECORD_COUNT - EXPECTED_POSITIVE_EVENTS + 1)),
+            },
+        )()
+        with self.assertRaisesRegex(ValueError, "positive events"):
+            _validate_panel26_stop_condition(invalid_events)
+
     def test_validation_only_model_selection_and_tie_break(self) -> None:
         rows = [
             {
