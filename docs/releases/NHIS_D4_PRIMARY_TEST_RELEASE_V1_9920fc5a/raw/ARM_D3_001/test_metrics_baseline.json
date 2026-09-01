@@ -1,0 +1,94 @@
+{
+  "fairness_gaps": {
+    "defined_groups": {
+      "fpr": [
+        1,
+        2
+      ],
+      "ppv": [
+        1,
+        2
+      ],
+      "selection_rate": [
+        1,
+        2
+      ],
+      "tpr": [
+        1,
+        2
+      ]
+    },
+    "demographic_parity_gap": 9.982438003233035e-06,
+    "equal_opportunity_gap": 0.0044441979846631605,
+    "equalized_odds_max_gap": 0.0044441979846631605,
+    "fpr_gap": 0.0006058082225664048,
+    "group_ppv_values": {
+      "1": 0.25,
+      "2": 0.40540540540540543
+    }
+  },
+  "group_coverage": {
+    "diagnostics": null,
+    "expected_group_count": 2,
+    "expected_pair_count": 1,
+    "group_coverage_complete": true,
+    "observed_group_count": 2,
+    "observed_groups": [
+      1,
+      2
+    ],
+    "observed_pair_count": 1
+  },
+  "group_metrics": [
+    {
+      "fn_count": 501,
+      "fp_count": 24,
+      "fpr": 0.0030995738086013174,
+      "fpr_denominator": 7743,
+      "group": 1,
+      "n": 8252,
+      "outcome_negative_count": 7743,
+      "outcome_positive_count": 509,
+      "ppv": 0.25,
+      "ppv_denominator": 32,
+      "predicted_negative_count": 8220,
+      "predicted_positive_count": 32,
+      "prevalence": 0.06168201648085313,
+      "selection_rate": 0.003877847794474067,
+      "tn_count": 7719,
+      "tp_count": 8,
+      "tpr": 0.015717092337917484,
+      "tpr_denominator": 509,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 729,
+      "fp_count": 22,
+      "fpr": 0.0024937655860349127,
+      "fpr_denominator": 8822,
+      "group": 2,
+      "n": 9566,
+      "outcome_negative_count": 8822,
+      "outcome_positive_count": 744,
+      "ppv": 0.40540540540540543,
+      "ppv_denominator": 37,
+      "predicted_negative_count": 9529,
+      "predicted_positive_count": 37,
+      "prevalence": 0.07777545473552164,
+      "selection_rate": 0.003867865356470834,
+      "tn_count": 8800,
+      "tp_count": 15,
+      "tpr": 0.020161290322580645,
+      "tpr_denominator": 744,
+      "undefined_reasons": {}
+    }
+  ],
+  "utility": {
+    "accuracy": 0.9283870243573914,
+    "auprc": 0.2128497458037033,
+    "auroc": 0.7729592172266789,
+    "balanced_accuracy": 0.5077895032001675,
+    "f1": 0.03479576399394856,
+    "undefined_reasons": {}
+  }
+}

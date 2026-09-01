@@ -1,0 +1,59 @@
+{
+  "baseline_summary": {
+    "fairness_gaps": {
+      "demographic_parity_gap": 9.982438003233035e-06,
+      "equal_opportunity_gap": 0.0044441979846631605,
+      "equalized_odds_max_gap": 0.0044441979846631605,
+      "fpr_gap": 0.0006058082225664048
+    },
+    "utility": {
+      "accuracy": 0.9283870243573914,
+      "auprc": 0.2128497458037033,
+      "auroc": 0.7729592172266789,
+      "balanced_accuracy": 0.5077895032001675,
+      "f1": 0.03479576399394856
+    }
+  },
+  "fairbias_summary": {
+    "fairness_gaps": {
+      "demographic_parity_gap": 8.789105947516292e-05,
+      "equal_opportunity_gap": 0.0,
+      "equalized_odds_max_gap": 9.75570536750887e-05,
+      "fpr_gap": 9.75570536750887e-05
+    },
+    "utility": {
+      "accuracy": 0.9295094847906611,
+      "auprc": 0.1287942929718347,
+      "auroc": 0.6696729539416297,
+      "balanced_accuracy": 0.49990944763054634,
+      "f1": 0.0
+    }
+  },
+  "fairness_gap_deltas": {
+    "demographic_parity_gap": 7.790862147192988e-05,
+    "equal_opportunity_gap": -0.0044441979846631605,
+    "equalized_odds_max_gap": -0.004346640930988072,
+    "fpr_gap": -0.000508251168891316
+  },
+  "group_deltas": {
+    "1": {
+      "fpr": -0.0029704248999095958,
+      "ppv": -0.25,
+      "selection_rate": -0.0037566650508967523,
+      "tpr": -0.015717092337917484
+    },
+    "2": {
+      "fpr": -0.0022670596236681025,
+      "ppv": -0.40540540540540543,
+      "selection_rate": -0.0036587915534183565,
+      "tpr": -0.020161290322580645
+    }
+  },
+  "utility_deltas": {
+    "accuracy": 0.0011224604332696897,
+    "auprc": -0.0840554528318686,
+    "auroc": -0.1032862632850492,
+    "balanced_accuracy": -0.007880055569621125,
+    "f1": -0.03479576399394856
+  }
+}

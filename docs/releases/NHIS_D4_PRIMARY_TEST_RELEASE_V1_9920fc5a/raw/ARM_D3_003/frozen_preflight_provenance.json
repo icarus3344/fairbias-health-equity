@@ -1,0 +1,13 @@
+{
+  "arm_id": "ARM_D3_003",
+  "frozen_artifact_hashes": {
+    "final_changed_dict.json": "84489acf8e6f72964c74d9a9fc5719eec35d70a61e32880eca7439ddcefdde63",
+    "train_fairbias_trace.json": "5fd7cca0191be73acb34cd0b143a3a831f3f40dc8d4aba236cc09bdb559e470a",
+    "validation_comparison.json": "7300873532c4406caa7b81e58033fc9060fb98a99021bd023dd66c83607a3105",
+    "validation_metrics_baseline.json": "675cc14de795a758c65e7e599aa76586272a2ea65ede2b7954d74936f19b5fd2",
+    "validation_metrics_fairbias.json": "b20c17358b9ae9b8374b033a5eb85c60b87c871f0806835f663da49a317c486b"
+  },
+  "preflight_run_id": "20260901T152455Z-0b07868ca4",
+  "verified": true,
+  "verified_at": "2026-09-01T15:54:29Z"
+}

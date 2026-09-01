@@ -1,0 +1,11 @@
+{
+  "completed_at": "2026-09-01T15:54:30Z",
+  "execution_time_seconds": 1.005,
+  "git_commit": "9920fc5a11649b431fcb83ac4f257cac0051b44c",
+  "manifest_sha256": "53a9c4434365d6d63f4acb44a6c95911b34b43f4b1ab48a5d52cfa61ee2d3cb8",
+  "protocol_id": "NHIS_D4_PRIMARY_TEST_RELEASE_V1",
+  "release_id": "NHIS_D4_PRIMARY_TEST_RELEASE_V1_9920fc5a",
+  "required_analysis_commit": "58a1e02339bf35dedc14dd2719d72417de6f6910",
+  "started_at": "2026-09-01T15:54:29Z",
+  "status": "COMPLETE"
+}

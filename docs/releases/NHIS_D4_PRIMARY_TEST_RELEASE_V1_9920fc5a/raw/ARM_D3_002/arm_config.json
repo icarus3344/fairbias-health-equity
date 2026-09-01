@@ -1,0 +1,66 @@
+{
+  "active_feature_count": 21,
+  "algorithm_mode": "tang2024_paper_faithful",
+  "arm_id": "ARM_D3_002",
+  "categorical_count": 18,
+  "categorical_features": [
+    "educp_a",
+    "region",
+    "ratcat_a",
+    "empwrklsw1_a",
+    "empwrkft1_a",
+    "notcov_a",
+    "phstat_a",
+    "hypev_a",
+    "chlev_a",
+    "dibev_a",
+    "asev_a",
+    "visiondf_a",
+    "hearingdf_a",
+    "diff_a",
+    "comdiff_a",
+    "uppslfcr_a",
+    "cogmemdff_a",
+    "usualpl_a"
+  ],
+  "classifier": {
+    "max_iter": 1000,
+    "random_state": 0,
+    "solver": "lbfgs",
+    "type": "LR"
+  },
+  "disability_arm": "full_feature",
+  "eval_norm": "min-max",
+  "expected_group_count": 7,
+  "expected_groups": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "expected_pair_count": 21,
+  "expected_predictors": 21,
+  "feature_set": "PRIMARY_CORE",
+  "frozen_artifact_hashes": {
+    "final_changed_dict.json": "56dbab9d5a3470b668267f09ca658826e1a162d0391ed9be5dd1a56a30036c3c",
+    "train_fairbias_trace.json": "a30f73844cef273960e9258082d11cfdba1d3c9edfc8038098af2faea0eccd6d",
+    "validation_comparison.json": "c90cfb02210922c0e23d058991714aa0ccad8f365c6ae9e8b98a0500b683d9b4",
+    "validation_metrics_baseline.json": "fcb8ff739178c96e83b8ce30b9d0788cb22ea911b631f65e39d016aaceb2c056",
+    "validation_metrics_fairbias.json": "4e9efa8921fa7ecce49469f7297257e3a945faec38fd026a3b0f0b3596c587ba"
+  },
+  "numerical_count": 3,
+  "numerical_features": [
+    "agep_a",
+    "pcnt18uptc",
+    "pcntlt18tc"
+  ],
+  "outcome": "MEDDL12M_A",
+  "prediction_threshold": 0.5,
+  "preflight_run_id": "20260901T152301Z-6f49937b9f",
+  "protected_attribute": "HISPALLP_A",
+  "test_cohort_n": 17819,
+  "train_cohort_n": 57018
+}
