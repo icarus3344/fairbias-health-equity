@@ -101,11 +101,30 @@ def get_git_commit(repo_root: pathlib.Path) -> str:
 
 def build_paper_fidelity_manifest(config: FairBiasConfig | None = None) -> Dict[str, Any]:
     """Construct paper fidelity manifest with operational parameters derived dynamically from config."""
-    paper_cfg = (
-        config.resolved()
-        if config is not None
-        else FairBiasConfig(algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL).resolved()
+    if config is not None:
+        if config.algorithm_mode != ALGORITHM_MODE_PAPER_FAITHFUL:
+            raise ValueError(
+                f"build_paper_fidelity_manifest requires algorithm_mode='{ALGORITHM_MODE_PAPER_FAITHFUL}', "
+                f"got algorithm_mode={config.algorithm_mode!r}"
+            )
+        paper_cfg = config.resolved()
+    else:
+        paper_cfg = FairBiasConfig(algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL).resolved()
+
+    if paper_cfg.mds_fixed_components is None:
+        mds_fixed_desc = "resolved mds_fixed_components = None (stress-elbow dimension selection)."
+    else:
+        mds_fixed_desc = (
+            f"resolved mds_fixed_components = {paper_cfg.mds_fixed_components} "
+            f"(explicit fixed-dimension override, stress-elbow search bypassed)."
+        )
+
+    repo_operationalization = (
+        f"Stress-elbow detection is automated via resolved mds_max_components = {paper_cfg.mds_max_components} "
+        f"and resolved mds_slope_threshold = {paper_cfg.mds_slope_threshold}. "
+        f"In tang2024_paper_faithful mode, {mds_fixed_desc}"
     )
+
     return {
         "schema_version": "nhis-fairbias-d3-1.0",
         "reference_citation": "Tang, Lu & Li (2024). Metric-Independent Mitigation of Unpredefined Bias in Machine Classification.",
@@ -114,12 +133,7 @@ def build_paper_fidelity_manifest(config: FairBiasConfig | None = None) -> Dict[
             "mds_embedding_dimensionality": {
                 "paper_text": "We search for the optimal dimension d using the elbow method on the stress curve.",
                 "official_author_code": "Hardcodes n_components = 2 without stress curve evaluation (module_BM.py line 147).",
-                "repo_operationalization": (
-                    f"Stress-elbow detection is automated via mds_max_components (default {paper_cfg.mds_max_components}) "
-                    f"and mds_slope_threshold (default {paper_cfg.mds_slope_threshold}). "
-                    f"In tang2024_paper_faithful mode, mds_fixed_components defaults to {paper_cfg.mds_fixed_components} "
-                    "(stress elbow selection)."
-                ),
+                "repo_operationalization": repo_operationalization,
                 "gate_d3_resolution": (
                     "Preserves paper stress-elbow selection by default, distinguishing paper conceptual rule from "
                     "repository automated operational parameters."
@@ -214,6 +228,31 @@ def build_paper_fidelity_manifest(config: FairBiasConfig | None = None) -> Dict[
     }
 
 
+def require_pooled_split_audit_pass(split_audit_data: Mapping[str, Any]) -> None:
+    """Validate pooled split audit status and fail closed if not PASS.
+
+    Parameters
+    ----------
+    split_audit_data : Mapping[str, Any]
+        Audit dictionary returned by audit_pooled_splits.
+
+    Raises
+    ------
+    RuntimeError
+        If split_audit_data['status'] is not 'PASS', formatted with mismatch diagnostics.
+    """
+    status = split_audit_data.get("status")
+    if status != "PASS":
+        mismatches = split_audit_data.get("d0_outcome_totals_mismatches") or []
+        mismatch_msg = ""
+        if mismatches:
+            mismatch_msg = f" D0 outcome total mismatches: {mismatches}."
+        raise RuntimeError(
+            f"Pooled split audit failed with status={status!r}.{mismatch_msg} "
+            f"Cannot proceed with Gate D3 artifact generation."
+        )
+
+
 def main(args: Sequence[str] | None = None) -> int:
     parsed = parse_args(args)
     output_dir = pathlib.Path(parsed.output_dir).resolve()
@@ -251,6 +290,9 @@ def main(args: Sequence[str] | None = None) -> int:
     split_audit_path = output_dir / "pooled_split_audit.json"
     write_json_atomic(split_audit_path, split_audit_data)
     print("Generated pooled_split_audit.json")
+
+    # Fail-closed guard: propagate split audit failure before downstream artifact generation
+    require_pooled_split_audit_pass(split_audit_data)
 
     # Initialize pooled adapter with the generated split manifest
     adapter = NHISPooledAdapter(

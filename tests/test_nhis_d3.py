@@ -37,7 +37,10 @@ if _SRC_DIR not in sys.path:
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from prepare_nhis_d3 import build_paper_fidelity_manifest
+from prepare_nhis_d3 import (
+    build_paper_fidelity_manifest,
+    require_pooled_split_audit_pass,
+)
 from fairbias.config import (
     ALGORITHM_MODE_ENGINEERING,
     ALGORITHM_MODE_OFFICIAL,
@@ -637,9 +640,9 @@ class TestNHISGateD3(unittest.TestCase):
 
         # Human-readable prose must be generated from the resolved config values, not stale hardcoded literals
         repo_op_text = mds_entry["repo_operationalization"]
-        self.assertIn(f"default {paper_cfg.mds_max_components}", repo_op_text)
-        self.assertIn(f"default {paper_cfg.mds_slope_threshold}", repo_op_text)
-        self.assertIn(f"defaults to {paper_cfg.mds_fixed_components}", repo_op_text)
+        self.assertIn(f"resolved mds_max_components = {paper_cfg.mds_max_components}", repo_op_text)
+        self.assertIn(f"resolved mds_slope_threshold = {paper_cfg.mds_slope_threshold}", repo_op_text)
+        self.assertIn("resolved mds_fixed_components = None (stress-elbow dimension selection)", repo_op_text)
 
         # Regression check: ensure custom configuration overrides propagate automatically (no hardcoding)
         custom_cfg = FairBiasConfig(
@@ -651,8 +654,25 @@ class TestNHISGateD3(unittest.TestCase):
         custom_mds = custom_manifest["fidelity_analysis"]["mds_embedding_dimensionality"]
         self.assertEqual(custom_mds["resolved_repo_parameters"]["mds_max_components"], 20)
         self.assertEqual(custom_mds["resolved_repo_parameters"]["mds_slope_threshold"], 0.02)
-        self.assertIn("default 20", custom_mds["repo_operationalization"])
-        self.assertIn("default 0.02", custom_mds["repo_operationalization"])
+        self.assertIn("resolved mds_max_components = 20", custom_mds["repo_operationalization"])
+        self.assertIn("resolved mds_slope_threshold = 0.02", custom_mds["repo_operationalization"])
+
+        # P2: Check integer mds_fixed_components is described as explicit fixed-dimension override, not stress-elbow
+        fixed_cfg = FairBiasConfig(
+            algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL,
+            mds_fixed_components=4,
+        ).resolved()
+        fixed_manifest = build_paper_fidelity_manifest(fixed_cfg)
+        fixed_mds = fixed_manifest["fidelity_analysis"]["mds_embedding_dimensionality"]
+        self.assertEqual(fixed_mds["resolved_repo_parameters"]["mds_fixed_components"], 4)
+        self.assertIn("resolved mds_fixed_components = 4", fixed_mds["repo_operationalization"])
+        self.assertIn("explicit fixed-dimension override, stress-elbow search bypassed", fixed_mds["repo_operationalization"])
+        self.assertNotIn("stress-elbow dimension selection", fixed_mds["repo_operationalization"])
+
+        # P2: Explicit non-paper-faithful config raises ValueError
+        eng_cfg = FairBiasConfig(algorithm_mode=ALGORITHM_MODE_ENGINEERING)
+        with self.assertRaises(ValueError):
+            build_paper_fidelity_manifest(eng_cfg)
 
     # ------------------------------------------------------------------
     # 19. Exact Gate D0 Outcome Totals Invariant (Gate D3.2 Repair 2 - Test A)
@@ -765,6 +785,94 @@ class TestNHISGateD3(unittest.TestCase):
             ((clean_manifest["survey_year"] == 2022) & (clean_manifest["meddl12m_state"] == "0")).sum()
         )
         self.assertEqual(clean_obs_2022_0, 25683)
+
+    # ------------------------------------------------------------------
+    # 21. Fail-Closed Split Audit Guard in Gate Preparation (Gate D3.2.1 P1)
+    # ------------------------------------------------------------------
+
+    def test_require_pooled_split_audit_pass_guard_success_and_failure(self) -> None:
+        """require_pooled_split_audit_pass allows PASS audit and raises RuntimeError on FAIL."""
+        pass_audit = {
+            "status": "PASS",
+            "d0_outcome_totals_match": True,
+            "has_exact_counts": True,
+        }
+        # Must return cleanly without raising
+        require_pooled_split_audit_pass(pass_audit)
+
+        # Failure with mismatch diagnostics must raise RuntimeError
+        failed_audit = {
+            "status": "FAIL",
+            "d0_outcome_totals_match": False,
+            "d0_outcome_totals_mismatches": [
+                {
+                    "survey_year": 2022,
+                    "meddl12m_state": "0",
+                    "expected": 25683,
+                    "observed": 25682,
+                    "difference": -1,
+                },
+                {
+                    "survey_year": 2022,
+                    "meddl12m_state": "1",
+                    "expected": 1770,
+                    "observed": 1771,
+                    "difference": 1,
+                },
+            ],
+        }
+        with self.assertRaises(RuntimeError) as ctx:
+            require_pooled_split_audit_pass(failed_audit)
+
+        err_msg = str(ctx.exception)
+        self.assertIn("status='FAIL'", err_msg)
+        self.assertIn("D0 outcome total mismatches", err_msg)
+        self.assertIn("Cannot proceed with Gate D3 artifact generation", err_msg)
+
+        # Any non-PASS status (e.g. None or UNKNOWN) must fail closed
+        with self.assertRaises(RuntimeError):
+            require_pooled_split_audit_pass({"status": "UNKNOWN"})
+
+    def test_prepare_nhis_d3_fails_closed_when_split_audit_fails(self) -> None:
+        """Gate preparation production path terminates fail-closed without writing d3_manifest on audit failure."""
+        import prepare_nhis_d3
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = pathlib.Path(tmp_dir)
+
+            failed_audit_payload = {
+                "status": "FAIL",
+                "d0_outcome_totals_match": False,
+                "d0_outcome_totals_mismatches": [
+                    {"survey_year": 2022, "meddl12m_state": "0", "expected": 25683, "observed": 25682, "difference": -1}
+                ],
+            }
+
+            with patch("prepare_nhis_d3.audit_pooled_splits", return_value=failed_audit_payload):
+                with self.assertRaises(RuntimeError) as ctx:
+                    prepare_nhis_d3.main(["--output-dir", str(tmp_path), "--force"])
+
+                self.assertIn("status='FAIL'", str(ctx.exception))
+
+            # Verify audit json was written (forensic diagnostics preserved)
+            self.assertTrue((tmp_path / "pooled_split_audit.json").is_file())
+            with (tmp_path / "pooled_split_audit.json").open("r", encoding="utf-8") as f:
+                saved_audit = json.load(f)
+            self.assertEqual(saved_audit["status"], "FAIL")
+
+            # Verify fail-fast: downstream artifacts and top-level PASS manifest MUST NOT exist
+            self.assertFalse(
+                (tmp_path / "d3_manifest.json").is_file(),
+                "d3_manifest.json must NOT be generated when pooled split audit fails",
+            )
+            self.assertFalse(
+                (tmp_path / "paper_fidelity_manifest.json").is_file(),
+                "Downstream artifacts must not be generated when pooled split audit fails",
+            )
+            self.assertFalse(
+                (tmp_path / "pooled_preprocessing_fit.json").is_file(),
+                "Preprocessing fit must not execute when pooled split audit fails",
+            )
 
 
 if __name__ == "__main__":
