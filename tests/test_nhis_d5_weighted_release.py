@@ -1,6 +1,6 @@
 """Comprehensive unit and integration test suite for Gate D5.1b Release Harness.
 
-Covers all 30 mandated checks from Section 19:
+Covers all mandated checks:
 1. canonical release ID
 2. fresh release directory requirement
 3. duplicate release collision fails closed
@@ -31,6 +31,10 @@ Covers all 30 mandated checks from Section 19:
 28. threshold=0.5
 29. seed=0
 30. D4 archive/tag unchanged
+31. positive runtime scientific boundary check
+32. negative scientific drift rejects release before STARTED
+33. negative non-ancestor base rejects release before STARTED
+34. git command error fails closed
 """
 
 from __future__ import annotations
@@ -56,9 +60,11 @@ from fairbias.transform_trace import (
 from nhis_fairbias.d5_weighted_release import (
     CANONICAL_D5_RELEASE_ID,
     FROZEN_D4_PREFLIGHT_REFERENCES,
+    FROZEN_SCIENTIFIC_PATHS_SPEC,
     NHISD5WeightedReleaseManager,
     REQUIRED_PER_ARM_ARTIFACTS,
     SCIENTIFIC_EXECUTION_BASE_COMMIT,
+    verify_scientific_code_boundary,
 )
 from nhis_fairbias.d5_weighted_runner import (
     FROZEN_D5_ARMS,
@@ -277,6 +283,12 @@ def test_7_release_harness_vs_scientific_code_boundary() -> None:
     )
     assert diff_res.stdout.strip() == "", f"Unexpected scientific changes: {diff_res.stdout}"
 
+    boundary_info = verify_scientific_code_boundary()
+    assert boundary_info["scientific_base_is_ancestor"] is True
+    assert boundary_info["scientific_code_diff_clean"] is True
+    assert boundary_info["scientific_execution_base_commit"] == SCIENTIFIC_EXECUTION_BASE_COMMIT
+    assert boundary_info["scientific_paths_checked"] == list(FROZEN_SCIENTIFIC_PATHS_SPEC)
+
 
 # ------------------------------------------------------------------------------
 # 8. STARTED Written Before Arm Execution
@@ -336,6 +348,9 @@ def test_10_successful_mocked_execution_produces_complete(tmp_path: pathlib.Path
         manifest = manager.execute_release()
 
     assert manifest["status"] == "COMPLETE"
+    assert manifest["scientific_base_is_ancestor"] is True
+    assert manifest["scientific_code_diff_clean"] is True
+    assert manifest["scientific_execution_base_commit"] == SCIENTIFIC_EXECUTION_BASE_COMMIT
     state_f = manager.release_dir / "release_state.json"
     state_data = json.loads(state_f.read_text(encoding="utf-8"))
     assert state_data["status"] == "COMPLETE"
@@ -698,3 +713,137 @@ def test_30_d4_archive_and_tag_unchanged() -> None:
         check=True,
     )
     assert tag_res.stdout.strip() == "d74af83fb98a3805a7fb0767c5beeb3dbf1407e4"
+
+
+# ------------------------------------------------------------------------------
+# 31. Positive Runtime Scientific Boundary Check
+# ------------------------------------------------------------------------------
+def test_31_positive_runtime_scientific_boundary_check() -> None:
+    """Runtime scientific boundary check must PASS on current HEAD with frozen paths clean."""
+    res = verify_scientific_code_boundary()
+    assert res["scientific_base_is_ancestor"] is True
+    assert res["scientific_code_diff_clean"] is True
+    assert res["scientific_execution_base_commit"] == "bc6034e530d6e92bbfa82feadc0cf783302cb30f"
+    assert res["scientific_paths_checked"] == [
+        "src/fairbias/**",
+        "src/nhis_fairbias/d5_weighted_runner.py",
+    ]
+
+    # Verify actual repository has zero diff in frozen scientific paths
+    diff_res = subprocess.run(
+        [
+            "git",
+            "diff",
+            "--quiet",
+            "bc6034e530d6e92bbfa82feadc0cf783302cb30f..HEAD",
+            "--",
+            "src/fairbias",
+            "src/nhis_fairbias/d5_weighted_runner.py",
+        ],
+        cwd=str(_REPO_ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert diff_res.returncode == 0, "Current repository must have zero diff in frozen scientific paths"
+
+
+# ------------------------------------------------------------------------------
+# 32. Negative Scientific Drift Rejects Release Before STARTED
+# ------------------------------------------------------------------------------
+def test_32_negative_scientific_drift_rejects_release_before_started(tmp_path: pathlib.Path) -> None:
+    """Precondition and execute_release must fail closed before STARTED if scientific code has diff."""
+    manager = NHISD5WeightedReleaseManager(releases_root=tmp_path, allow_substantive_execution=True)
+
+    orig_run = subprocess.run
+
+    def mock_run_with_diff(cmd, *args, **kwargs):
+        if isinstance(cmd, (list, tuple)) and len(cmd) > 2 and cmd[1] == "diff" and "--quiet" in cmd:
+            return subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr="")
+        return orig_run(cmd, *args, **kwargs)
+
+    mock_exec = MagicMock()
+    manager.runner.execute_train_validation = mock_exec
+
+    with patch("nhis_fairbias.d5_weighted_release.subprocess.run", side_effect=mock_run_with_diff):
+        with pytest.raises(RuntimeError, match="reviewed scientific execution code has changed"):
+            manager.verify_release_preconditions()
+
+        with pytest.raises(RuntimeError, match="reviewed scientific execution code has changed"):
+            manager.execute_release()
+
+    # Fail closed BEFORE release directory creation, STARTED state, or arm execution
+    assert not manager.release_dir.exists()
+    mock_exec.assert_not_called()
+
+
+# ------------------------------------------------------------------------------
+# 33. Negative Non-Ancestor Base Rejects Release Before STARTED
+# ------------------------------------------------------------------------------
+def test_33_negative_non_ancestor_base_rejects_release_before_started(tmp_path: pathlib.Path) -> None:
+    """Precondition and execute_release must fail closed before STARTED if base is not ancestor."""
+    manager = NHISD5WeightedReleaseManager(releases_root=tmp_path, allow_substantive_execution=True)
+
+    orig_run = subprocess.run
+
+    def mock_run_non_ancestor(cmd, *args, **kwargs):
+        if isinstance(cmd, (list, tuple)) and len(cmd) > 2 and cmd[1] == "merge-base" and "--is-ancestor" in cmd:
+            return subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr="")
+        return orig_run(cmd, *args, **kwargs)
+
+    mock_exec = MagicMock()
+    manager.runner.execute_train_validation = mock_exec
+
+    with patch("nhis_fairbias.d5_weighted_release.subprocess.run", side_effect=mock_run_non_ancestor):
+        with pytest.raises(RuntimeError, match="not an ancestor of current HEAD"):
+            manager.verify_release_preconditions()
+
+        with pytest.raises(RuntimeError, match="not an ancestor of current HEAD"):
+            manager.execute_release()
+
+    # Fail closed BEFORE release directory creation, STARTED state, or arm execution
+    assert not manager.release_dir.exists()
+    mock_exec.assert_not_called()
+
+
+# ------------------------------------------------------------------------------
+# 34. Git Command Error Fails Closed
+# ------------------------------------------------------------------------------
+def test_34_git_command_error_fails_closed(tmp_path: pathlib.Path) -> None:
+    """Git execution error or missing binary must fail closed (never UNKNOWN or PASS)."""
+    # 1. Missing executable / OSError
+    with patch("nhis_fairbias.d5_weighted_release.subprocess.run", side_effect=OSError("git executable not found")):
+        with pytest.raises(RuntimeError, match="Failed to execute git"):
+            verify_scientific_code_boundary()
+
+    orig_run = subprocess.run
+
+    # 2. git merge-base fatal error (exit code != 0 and != 1)
+    def mock_run_merge_base_fatal(cmd, *args, **kwargs):
+        if isinstance(cmd, (list, tuple)) and len(cmd) > 2 and cmd[1] == "merge-base":
+            return subprocess.CompletedProcess(cmd, returncode=128, stdout="", stderr="fatal: bad object")
+        return orig_run(cmd, *args, **kwargs)
+
+    with patch("nhis_fairbias.d5_weighted_release.subprocess.run", side_effect=mock_run_merge_base_fatal):
+        with pytest.raises(RuntimeError, match="git merge-base failed"):
+            verify_scientific_code_boundary()
+
+    # 3. git diff fatal error (exit code != 0 and != 1)
+    def mock_run_diff_fatal(cmd, *args, **kwargs):
+        if isinstance(cmd, (list, tuple)) and len(cmd) > 2 and cmd[1] == "diff":
+            return subprocess.CompletedProcess(cmd, returncode=128, stdout="", stderr="fatal: bad revision")
+        return orig_run(cmd, *args, **kwargs)
+
+    with patch("nhis_fairbias.d5_weighted_release.subprocess.run", side_effect=mock_run_diff_fatal):
+        with pytest.raises(RuntimeError, match="git diff failed"):
+            verify_scientific_code_boundary()
+
+    # 4. git rev-parse failure
+    def mock_run_rev_parse_fail(cmd, *args, **kwargs):
+        if isinstance(cmd, (list, tuple)) and len(cmd) > 2 and cmd[1] == "rev-parse":
+            return subprocess.CompletedProcess(cmd, returncode=128, stdout="", stderr="fatal: not a git repo")
+        return orig_run(cmd, *args, **kwargs)
+
+    with patch("nhis_fairbias.d5_weighted_release.subprocess.run", side_effect=mock_run_rev_parse_fail):
+        with pytest.raises(RuntimeError, match="Git repository unavailable"):
+            verify_scientific_code_boundary()

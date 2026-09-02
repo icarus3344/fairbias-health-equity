@@ -81,6 +81,8 @@ def main(args: Sequence[str] | None = None) -> int:
     print(f"\nPreconditions Status: {audit_res['preconditions']['status']}")
     print(f"Release Directory Fresh: {audit_res['release_dir_fresh']}")
     print(f"Arms Configured: {audit_res['four_arms']}")
+    print(f"SCIENTIFIC BASE IS ANCESTOR: {str(audit_res['scientific_base_is_ancestor']).upper()}")
+    print(f"SCIENTIFIC CODE DIFF CLEAN: {str(audit_res['scientific_code_diff_clean']).upper()}")
 
     print("\nREAL WEIGHTED MITIGATION EXECUTED: FALSE")
     print("VALIDATION SCORED: FALSE")

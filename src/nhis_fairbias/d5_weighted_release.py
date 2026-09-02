@@ -56,6 +56,15 @@ _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 CANONICAL_D5_RELEASE_ID: str = "NHIS_D5_WEIGHTED_TRAIN_VAL_V1_bc6034e5"
 SCIENTIFIC_EXECUTION_BASE_COMMIT: str = "bc6034e530d6e92bbfa82feadc0cf783302cb30f"
 
+FROZEN_SCIENTIFIC_PATHS_SPEC: Tuple[str, ...] = (
+    "src/fairbias/**",
+    "src/nhis_fairbias/d5_weighted_runner.py",
+)
+FROZEN_SCIENTIFIC_PATHS_DIFF: Tuple[str, ...] = (
+    "src/fairbias",
+    "src/nhis_fairbias/d5_weighted_runner.py",
+)
+
 # Verified D4 Preflight Arm References (Provenance Only)
 FROZEN_D4_PREFLIGHT_REFERENCES: Dict[str, Dict[str, Any]] = {
     "D5_ARM_001": {
@@ -122,6 +131,117 @@ def compute_sequence_digest(values: Sequence[Any]) -> str:
     return hashlib.sha256(formatted.encode("utf-8")).hexdigest()
 
 
+def verify_scientific_code_boundary(
+    repo_root: Optional[Union[str, pathlib.Path]] = None,
+    base_commit: str = SCIENTIFIC_EXECUTION_BASE_COMMIT,
+    target_commit: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Verify frozen scientific execution code boundary at release runtime.
+
+    Enforces:
+    1. Positive git repository and commit resolution (fail closed on git failure).
+    2. base_commit is an ancestor of current HEAD (git merge-base --is-ancestor).
+    3. Zero diff between base_commit and current HEAD for frozen scientific paths:
+       - src/fairbias/**
+       - src/nhis_fairbias/d5_weighted_runner.py
+    """
+    root = pathlib.Path(repo_root).resolve() if repo_root is not None else _REPO_ROOT
+
+    # 1. Resolve target commit (defaults to current HEAD)
+    if target_commit is None:
+        try:
+            head_res = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(root),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to execute git rev-parse HEAD in {root}: {exc}"
+            ) from exc
+
+        if head_res.returncode != 0:
+            raise RuntimeError(
+                f"Git repository unavailable or git rev-parse HEAD failed "
+                f"(exit {head_res.returncode}): {head_res.stderr.strip()}"
+            )
+        resolved_target = head_res.stdout.strip()
+        if not resolved_target or resolved_target == "UNKNOWN":
+            raise RuntimeError("Unable to resolve valid current git HEAD commit hash.")
+    else:
+        resolved_target = str(target_commit).strip()
+        if not resolved_target or resolved_target == "UNKNOWN":
+            raise RuntimeError(f"Invalid target commit: {target_commit!r}")
+
+    # 2. Check base_commit is an ancestor of resolved_target
+    try:
+        ancestor_res = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", base_commit, resolved_target],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to execute git merge-base for base {base_commit}: {exc}"
+        ) from exc
+
+    if ancestor_res.returncode == 1:
+        raise RuntimeError(
+            f"Provenance failure: scientific execution base commit {base_commit} is not an ancestor of "
+            f"current HEAD {resolved_target}. Canonical D5 release requires verified ancestor lineage; "
+            f"rebased or unrelated history is strictly forbidden."
+        )
+    elif ancestor_res.returncode != 0:
+        raise RuntimeError(
+            f"git merge-base failed (exit {ancestor_res.returncode}): {ancestor_res.stderr.strip()}"
+        )
+
+    # 3. Check diff in frozen scientific execution paths
+    try:
+        diff_res = subprocess.run(
+            [
+                "git",
+                "diff",
+                "--quiet",
+                f"{base_commit}..{resolved_target}",
+                "--",
+                *FROZEN_SCIENTIFIC_PATHS_DIFF,
+            ],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to execute git diff for frozen scientific paths: {exc}"
+        ) from exc
+
+    if diff_res.returncode == 1:
+        raise RuntimeError(
+            f"Provenance failure: canonical D5 release cannot run because reviewed scientific execution "
+            f"code has changed between base {base_commit} and current HEAD {resolved_target}. "
+            f"Frozen scientific execution paths ({', '.join(FROZEN_SCIENTIFIC_PATHS_SPEC)}) "
+            f"must have zero diff."
+        )
+    elif diff_res.returncode != 0:
+        raise RuntimeError(
+            f"git diff failed (exit {diff_res.returncode}): {diff_res.stderr.strip()}"
+        )
+
+    return {
+        "scientific_execution_base_commit": base_commit,
+        "current_git_commit": resolved_target,
+        "scientific_base_is_ancestor": True,
+        "scientific_code_diff_clean": True,
+        "scientific_paths_checked": list(FROZEN_SCIENTIFIC_PATHS_SPEC),
+    }
+
+
 class NHISD5WeightedReleaseManager:
     """Orchestrates frozen TRAIN/VAL release execution, persistence, and verification for Gate D5."""
 
@@ -146,7 +266,7 @@ class NHISD5WeightedReleaseManager:
         )
 
     def verify_release_preconditions(self) -> Dict[str, Any]:
-        """Verify canonical release ID, directory freshness, git base, and frozen input contract."""
+        """Verify canonical release ID, directory freshness, scientific boundary, and frozen input contract."""
         # 1. Canonical release ID validation
         if self.release_id != CANONICAL_D5_RELEASE_ID:
             raise ValueError(
@@ -163,8 +283,11 @@ class NHISD5WeightedReleaseManager:
         # 3. Frozen input contract verification
         contract = self.runner.verify_frozen_input_contract()
 
-        # 4. Git base verification: current commit must contain or match base commit
-        current_commit = get_git_commit()
+        # 4. Scientific boundary verification: base commit must be ancestor of HEAD with zero diff in scientific paths
+        boundary_info = verify_scientific_code_boundary(
+            repo_root=_REPO_ROOT,
+            base_commit=SCIENTIFIC_EXECUTION_BASE_COMMIT,
+        )
 
         # 5. Weight contract verification across all four arms
         arm_audits = {}
@@ -175,8 +298,11 @@ class NHISD5WeightedReleaseManager:
         return {
             "release_id": self.release_id,
             "release_dir": str(self.release_dir),
-            "current_git_commit": current_commit,
+            "current_git_commit": boundary_info["current_git_commit"],
             "scientific_execution_base_commit": SCIENTIFIC_EXECUTION_BASE_COMMIT,
+            "scientific_base_is_ancestor": boundary_info["scientific_base_is_ancestor"],
+            "scientific_code_diff_clean": boundary_info["scientific_code_diff_clean"],
+            "scientific_paths_checked": boundary_info["scientific_paths_checked"],
             "contract": contract,
             "arm_audits_passed": True,
             "status": "PASS",
@@ -227,7 +353,7 @@ class NHISD5WeightedReleaseManager:
     def run_audit_only(self) -> Dict[str, Any]:
         """Perform comprehensive read-only audit of inputs, contracts, and schema without mitigation."""
         pre = self.verify_release_preconditions()
-        current_commit = get_git_commit()
+        current_commit = pre["current_git_commit"]
 
         # Audit-only does not create the release directory or substantive artifacts
         return {
@@ -237,6 +363,9 @@ class NHISD5WeightedReleaseManager:
             "release_dir_fresh": not self.release_dir.exists(),
             "scientific_execution_base_commit": SCIENTIFIC_EXECUTION_BASE_COMMIT,
             "release_harness_commit": current_commit,
+            "scientific_base_is_ancestor": pre["scientific_base_is_ancestor"],
+            "scientific_code_diff_clean": pre["scientific_code_diff_clean"],
+            "scientific_paths_checked": pre["scientific_paths_checked"],
             "frozen_split_manifest_sha256": FROZEN_SPLIT_MANIFEST_SHA256,
             "frozen_features_parquet_sha256": FROZEN_FEATURES_PARQUET_SHA256,
             "four_arms": list(FROZEN_D5_ARMS.keys()),
@@ -259,7 +388,7 @@ class NHISD5WeightedReleaseManager:
 
         # 1. Preflight integrity checks
         pre_info = self.verify_release_preconditions()
-        harness_commit = get_git_commit()
+        harness_commit = pre_info["current_git_commit"]
 
         # 2. Initialize fresh release directory and write STARTED
         self.release_dir.mkdir(parents=True, exist_ok=False)
@@ -472,6 +601,8 @@ class NHISD5WeightedReleaseManager:
             "timestamp_utc": utc_timestamp(),
             "scientific_execution_base_commit": SCIENTIFIC_EXECUTION_BASE_COMMIT,
             "release_harness_commit": harness_commit,
+            "scientific_base_is_ancestor": pre_info["scientific_base_is_ancestor"],
+            "scientific_code_diff_clean": pre_info["scientific_code_diff_clean"],
             "secondary_analysis": True,
             "primary_test_replacement": False,
             "outcome": "MEDDL12M_A",
