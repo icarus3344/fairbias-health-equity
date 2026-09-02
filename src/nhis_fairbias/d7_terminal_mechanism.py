@@ -779,12 +779,8 @@ def verify_frozen_archives(repo_root: Union[str, Path]) -> Dict[str, Any]:
                 if compute_sha256(can_path) != exp_sha:
                     raise ValueError(f"Test canonical file hash mismatch for {rel_path}")
 
-    # Verify git tags if in git repository
-    tag_info: Dict[str, Any] = {}
-    try:
-        tag_info = verify_git_tag_provenance(root)
-    except Exception as exc:
-        tag_info = {"tags_verified": False, "error": str(exc)}
+    # Verify git tags - fail closed on any tag object or commit mismatch
+    tag_info = verify_git_tag_provenance(root)
 
     return {
         "train_val_manifest_sha256": obs_tv_manifest_sha,
@@ -853,6 +849,11 @@ def verify_cohort_provenance_barrier(
     }
 
 
+def read_archived_scoring_benchmark(arch_path: Path) -> Dict[str, Any]:
+    """Read utility metrics dict from archived JSON artifact."""
+    return json.loads(arch_path.read_text(encoding="utf-8"))["utility"]
+
+
 def verify_scoring_reproduction_barrier(
     observed_metrics: Mapping[int, Mapping[str, Mapping[str, Any]]],
     archived_train_val_dir: Union[str, Path],
@@ -877,7 +878,7 @@ def verify_scoring_reproduction_barrier(
             ("fairbias", "validation_metrics_fairbias.json"),
         ):
             arch_path = tv_dir / arm_id / json_name
-            arch_data = json.loads(arch_path.read_text(encoding="utf-8"))["utility"]
+            arch_data = read_archived_scoring_benchmark(arch_path)
 
             obs_data = (
                 observed_metrics.get(2023, {})
@@ -928,7 +929,7 @@ def verify_scoring_reproduction_barrier(
             ("fairbias", "test_metrics_fairbias.json"),
         ):
             arch_path = t_dir / arm_id / json_name
-            arch_data = json.loads(arch_path.read_text(encoding="utf-8"))["utility"]
+            arch_data = read_archived_scoring_benchmark(arch_path)
 
             obs_data = (
                 observed_metrics.get(2024, {})
@@ -1049,8 +1050,20 @@ def compute_family1_diagnostics(
 
     Emits both feature_summary and category_state records for family1_information_compression.csv.
     """
+    if not X_raw.index.equals(y.index):
+        raise ValueError(
+            f"Family-I index alignment failure: X_raw.index != y.index for {arm_id} {year}"
+        )
+    if not X_raw.index.equals(a.index):
+        raise ValueError(
+            f"Family-I index alignment failure: X_raw.index != a.index for {arm_id} {year}"
+        )
+    if not X_raw.index.equals(X_transformed.index):
+        raise ValueError(
+            f"Family-I index alignment failure: X_raw.index != X_transformed.index for {arm_id} {year}"
+        )
+
     records: List[Dict[str, Any]] = []
-    y_arr = np.asarray(y, dtype=int)
 
     for feature, transform in changed_dict.items():
         if transform == "dropped":
@@ -1089,7 +1102,9 @@ def compute_family1_diagnostics(
             # Category state records: before
             for cat_val, grp_df in orig_series.groupby(orig_series):
                 n_c = len(grp_df)
-                y_c = int(np.sum(y_arr[grp_df.index]))
+                group_index = orig_series.index[orig_series == cat_val]
+                y_group = y.loc[group_index]
+                y_c = int(np.sum(y_group))
                 records.append(
                     {
                         "record_type": "category_state",
@@ -1118,7 +1133,7 @@ def compute_family1_diagnostics(
 
             # Category state record: after (constant equivalent)
             total_n = len(orig_series)
-            total_pos = int(np.sum(y_arr))
+            total_pos = int(np.sum(y))
             records.append(
                 {
                     "record_type": "category_state",
@@ -1186,7 +1201,9 @@ def compute_family1_diagnostics(
             # Category state records: before
             for cat_val, grp_df in orig_series.groupby(orig_series):
                 n_c = len(grp_df)
-                y_c = int(np.sum(y_arr[grp_df.index]))
+                group_index = orig_series.index[orig_series == cat_val]
+                y_group = y.loc[group_index]
+                y_c = int(np.sum(y_group))
                 records.append(
                     {
                         "record_type": "category_state",
@@ -1216,7 +1233,9 @@ def compute_family1_diagnostics(
             # Category state records: after
             for cat_val, grp_df in term_series.groupby(term_series):
                 n_c = len(grp_df)
-                y_c = int(np.sum(y_arr[grp_df.index]))
+                group_index = term_series.index[term_series == cat_val]
+                y_group = y.loc[group_index]
+                y_c = int(np.sum(y_group))
                 records.append(
                     {
                         "record_type": "category_state",
@@ -1788,6 +1807,12 @@ class ProductionD7TerminalMechanismRuntime:
             2023: {},
             2024: {},
         }
+        self.observed_cohort_digests: Dict[int, Dict[str, str]] = {
+            2022: {},
+            2023: {},
+            2024: {},
+        }
+        self.observed_preprocessing_sha256: Optional[str] = None
         self.diagnostics: Optional[Dict[str, Any]] = None
 
     def construct_adapter(self) -> Any:
@@ -1799,14 +1824,26 @@ class ProductionD7TerminalMechanismRuntime:
             pq_path = self.repo_root / FROZEN_FEATURES_PARQUET_PATH
             self.adapter = NHISStudyAdapter(features_parquet_path=pq_path)
 
-        fitted_rec = getattr(self.adapter.preprocessor, "fitted_record", None)
-        if fitted_rec is not None:
-            rec_dict = fitted_rec.to_dict() if hasattr(fitted_rec, "to_dict") else dict(fitted_rec)
-            obs_hash = compute_canonical_json_sha256(rec_dict)
-            if obs_hash != PREPROCESSING_STATE_SHA256:
-                raise ValueError(
-                    f"Preprocessing state hash mismatch from adapter: expected {PREPROCESSING_STATE_SHA256}, got {obs_hash}"
-                )
+        if not hasattr(self.adapter, "preprocessor") or getattr(self.adapter.preprocessor, "fitted_record", None) is None:
+            raise ValueError("Adapter preprocessor missing required fitted_record")
+
+        fitted_rec = self.adapter.preprocessor.fitted_record
+        if hasattr(fitted_rec, "to_dict") and callable(fitted_rec.to_dict):
+            rec_dict = fitted_rec.to_dict()
+        elif isinstance(fitted_rec, dict):
+            rec_dict = fitted_rec
+        else:
+            try:
+                rec_dict = dict(fitted_rec)
+            except Exception as exc:
+                raise ValueError(f"Adapter preprocessor fitted_record is not canonicalizable: {exc}")
+
+        obs_hash = compute_canonical_json_sha256(rec_dict)
+        if obs_hash != PREPROCESSING_STATE_SHA256:
+            raise ValueError(
+                f"Preprocessing state hash mismatch from adapter: expected {PREPROCESSING_STATE_SHA256}, got {obs_hash}"
+            )
+        self.observed_preprocessing_sha256 = obs_hash
         return self.adapter
 
     def load_states(self) -> Dict[str, FrozenArmState]:
@@ -1846,6 +1883,8 @@ class ProductionD7TerminalMechanismRuntime:
                     "w": w,
                     "digest": digest,
                 }
+
+        self.observed_cohort_digests = cohort_digests
 
         # Step 2: Enforce 12/12 cohort provenance barrier
         verify_cohort_provenance_barrier(cohort_digests)
@@ -2118,7 +2157,16 @@ class D7TerminalMechanismReleaseManager:
         runtime: ProductionD7TerminalMechanismRuntime,
         diagnostics: Dict[str, Any],
     ) -> None:
-        # Artifact 1: provenance_summary.json
+        cohort_digest_matches = sum(
+            1
+            for y in TEMPORAL_YEARS
+            for a in D6_ARM_IDS
+            if runtime.observed_cohort_digests.get(y, {}).get(a) == EXPECTED_COHORT_SOURCE_ROW_DIGESTS.get(y, {}).get(a)
+        )
+        prep_match = bool(
+            runtime.observed_preprocessing_sha256 == PREPROCESSING_STATE_SHA256
+        )
+
         prov_summary = {
             "gate": "D7 terminal mechanism",
             "release_id": release_id,
@@ -2131,6 +2179,13 @@ class D7TerminalMechanismReleaseManager:
             "nmi_gate_effectively_nonbinding": True,
             "nmi_gate_disclosure": NMI_GATE_DISCLOSURE,
             "cohort_source_row_digests": EXPECTED_COHORT_SOURCE_ROW_DIGESTS,
+            "expected_cohort_source_row_digests": EXPECTED_COHORT_SOURCE_ROW_DIGESTS,
+            "observed_cohort_source_row_digests": runtime.observed_cohort_digests,
+            "cohort_digest_matches": cohort_digest_matches,
+            "cohort_digest_expected": 12,
+            "preprocessing_expected_sha256": PREPROCESSING_STATE_SHA256,
+            "preprocessing_observed_sha256": runtime.observed_preprocessing_sha256,
+            "preprocessing_state_match": prep_match,
             "training_state_anchors": EXPECTED_TRAINING_STATE_ANCHORS,
             "scoring_mode": "ZERO ESTIMATOR REFIT",
             "scoring_reproduction_verified": True,
