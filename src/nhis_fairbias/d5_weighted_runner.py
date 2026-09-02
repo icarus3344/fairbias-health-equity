@@ -56,6 +56,10 @@ from fairbias.transform_trace import (
     FairBiasTransformTrace,
 )
 
+from .adapter import (
+    OUTCOME_MAP,
+    PROTECTED_MAP,
+)
 from .audit import write_csv_atomic
 from .download import (
     compute_sha256,
@@ -210,6 +214,8 @@ def compute_series_weight_diagnostics(
     o: pd.Series,
     partition_name: str,
     record_ids: Optional[pd.Series] = None,
+    y: Optional[pd.Series] = None,
+    metadata: Optional[pd.DataFrame] = None,
 ) -> Dict[str, Any]:
     """Calculate thorough descriptive weight diagnostics and fail-closed integrity checks."""
     if not isinstance(w, pd.Series):
@@ -226,6 +232,11 @@ def compute_series_weight_diagnostics(
         raise ValueError(
             f"Protected attribute index alignment mismatch for {partition_name}: indices must match exactly"
         )
+    if y is not None:
+        if len(y) != len(expected_index) or not y.index.equals(expected_index):
+            raise ValueError(
+                f"Outcome index alignment mismatch for {partition_name}: outcome index must match exactly"
+            )
 
     record_id_aligned = True
     if record_ids is not None:
@@ -234,6 +245,32 @@ def compute_series_weight_diagnostics(
             raise ValueError(
                 f"Record ID alignment mismatch for {partition_name}: record_id series index must match"
             )
+        if record_ids.isna().sum() > 0:
+            raise ValueError(
+                f"Record ID series contains {int(record_ids.isna().sum())} missing values for {partition_name}"
+            )
+        if record_ids.nunique() != len(record_ids):
+            raise ValueError(
+                f"Record ID is not unique within {partition_name}: {record_ids.nunique()} unique vs {len(record_ids)} total"
+            )
+
+    if metadata is not None:
+        if len(metadata) != len(expected_index) or not metadata.index.equals(expected_index):
+            raise ValueError(
+                f"Metadata index alignment mismatch for {partition_name}: metadata index must match exactly"
+            )
+        if "WTFA_A" not in metadata.columns:
+            raise ValueError(f"Metadata missing WTFA_A column for {partition_name}")
+        if not np.array_equal(w.to_numpy(dtype=float), metadata["WTFA_A"].to_numpy(dtype=float)):
+            raise ValueError(f"Weight values do not match metadata['WTFA_A'] for {partition_name}")
+        if "record_id" in metadata.columns:
+            rec_meta = metadata["record_id"]
+            if rec_meta.isna().sum() > 0:
+                raise ValueError(f"Metadata record_id contains missing values for {partition_name}")
+            if rec_meta.nunique() != len(rec_meta):
+                raise ValueError(
+                    f"Metadata record_id is not unique within {partition_name}: {rec_meta.nunique()} unique vs {len(rec_meta)} total"
+                )
 
     w_arr = w.to_numpy(dtype=float)
     missing_count = int(w.isna().sum())
@@ -460,23 +497,80 @@ class NHISD5WeightedRunner:
             )
         return copy.deepcopy(FROZEN_D5_ARMS[arm_key])
 
+    def get_partition_cohort(
+        self,
+        role: str,
+        arm_config: Mapping[str, Any],
+    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.DataFrame]:
+        """Extract preprocessed cohort for a single authorized partition ('train' or 'val').
+
+        Fails closed immediately if role is 'test' or any unauthorized partition.
+        Ensures the named TEST partition is never requested or materialized.
+        """
+        role_norm = str(role).strip().lower()
+        if role_norm not in ("train", "val"):
+            raise ValueError(
+                f"Unauthorized partition role for D5 runner: {role!r}. "
+                "Only 'train' and 'val' are permitted. TEST partition is strictly embargoed."
+            )
+
+        outcome = arm_config["outcome"]
+        protected_attribute = arm_config["protected_attribute"]
+        feature_set = arm_config["feature_set"].lower()
+        disability_arm = arm_config["disability_arm"]
+
+        harm_outcome = OUTCOME_MAP.get(outcome)
+        if harm_outcome is None or harm_outcome not in self.adapter._raw_df.columns:
+            raise ValueError(f"Unsupported outcome: {outcome}. Supported: MEDDL12M_A, MEDNG12M_A")
+
+        harm_prot = PROTECTED_MAP.get(protected_attribute)
+        if harm_prot is None or harm_prot not in self.adapter._raw_df.columns:
+            raise ValueError(
+                f"Unsupported protected attribute: {protected_attribute}. Supported: SEX_A, HISPALLP_A, DISAB3_A"
+            )
+
+        active_feature_names = self.adapter.get_feature_names(
+            feature_set=feature_set, disability_arm=disability_arm
+        )
+
+        raw_sub = self.adapter.get_partition(role_norm)
+        y_raw = raw_sub[harm_outcome]
+        o_raw = raw_sub[harm_prot]
+
+        valid_mask = y_raw.notna() & o_raw.notna()
+        filtered_df = raw_sub[valid_mask].copy()
+
+        X_all = self.adapter.preprocessor.transform(
+            filtered_df, feature_set=feature_set, preserve_metadata=False
+        )
+        X = X_all[active_feature_names].copy()
+
+        y = filtered_df[harm_outcome].astype(int)
+        y.name = outcome
+
+        o = filtered_df[harm_prot].astype(int)
+        o.name = protected_attribute
+
+        w = filtered_df["WTFA_A"].astype(float)
+        w.name = "WTFA_A"
+
+        meta_cols = ["record_id", "survey_year", "study_role", "split_role", "WTFA_A", "PSTRAT", "PPSU"]
+        metadata = filtered_df[meta_cols].copy()
+
+        return X, y, o, w, metadata
+
     def get_train_val_cohort(
         self, arm_id: str
     ) -> Dict[str, Tuple[pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.DataFrame]]:
         """Retrieve TRAIN and VALIDATION partitions for the specified arm.
 
-        TEST partition is completely omitted from retrieval to enforce embargo.
+        Requests and materializes strictly 'train' and 'val' partitions.
+        The named 'test' partition is NEVER requested or materialized.
         """
         arm_config = self.get_arm_config(arm_id)
-        cohorts = self.adapter.get_pooled_cohort(
-            outcome=arm_config["outcome"],
-            protected_attribute=arm_config["protected_attribute"],
-            feature_set=arm_config["feature_set"].lower(),
-            disability_arm=arm_config["disability_arm"],
-        )
         return {
-            "train": cohorts["train"],
-            "val": cohorts["val"],
+            "train": self.get_partition_cohort("train", arm_config),
+            "val": self.get_partition_cohort("val", arm_config),
         }
 
     def audit_arm_weights(self, arm_id: str) -> Dict[str, Any]:
@@ -485,22 +579,23 @@ class NHISD5WeightedRunner:
         X_train, y_train, o_train, w_train, meta_train = cohorts["train"]
         X_val, y_val, o_val, w_val, meta_val = cohorts["val"]
 
-        rec_train = meta_train["record_id"] if "record_id" in meta_train.columns else None
-        rec_val = meta_val["record_id"] if "record_id" in meta_val.columns else None
-
         diag_train = compute_series_weight_diagnostics(
             w=w_train,
             expected_index=X_train.index,
             o=o_train,
             partition_name="train",
-            record_ids=rec_train,
+            record_ids=meta_train["record_id"],
+            y=y_train,
+            metadata=meta_train,
         )
         diag_val = compute_series_weight_diagnostics(
             w=w_val,
             expected_index=X_val.index,
             o=o_val,
             partition_name="val",
-            record_ids=rec_val,
+            record_ids=meta_val["record_id"],
+            y=y_val,
+            metadata=meta_val,
         )
 
         return {
@@ -565,15 +660,23 @@ class NHISD5WeightedRunner:
         execution_time = time.time() - start_time
         git_sha = get_git_commit()
         manifest_payload = {
-            "gate": "D5.1a",
+            "gate": "D5.1a.1",
             "run_id": run_id,
             "timestamp_utc": utc_timestamp(),
             "git_commit": git_sha,
             "real_weighted_mitigation_executed": False,
             "validation_scored": False,
             "test_evaluated": False,
+            "test_scored": False,
             "authorized_partitions": ["train", "validation"],
+            "requested_partitions": ["train", "validation"],
+            "test_partition_requested": False,
             "test_partition_accessed": False,
+            "test_cohort_materialized": False,
+            "partition_access_policy": (
+                "The D5.1 runner requested and materialized only the authorized TRAIN and "
+                "VALIDATION partitions. The named TEST partition was not requested or materialized."
+            ),
             "frozen_input_contract_verified": True,
             "arms_audited": list(FROZEN_D5_ARMS.keys()),
             "execution_time_seconds": execution_time,
@@ -626,9 +729,13 @@ class NHISD5WeightedRunner:
         X_train, y_train, o_train, w_train, meta_train = cohorts["train"]
         X_val, y_val, o_val, w_val, meta_val = cohorts["val"]
 
-        # 2. Validate weights fail-closed
-        compute_series_weight_diagnostics(w_train, X_train.index, o_train, "train")
-        compute_series_weight_diagnostics(w_val, X_val.index, o_val, "val")
+        # 2. Validate weights and respondent alignment fail-closed
+        compute_series_weight_diagnostics(
+            w_train, X_train.index, o_train, "train", record_ids=meta_train["record_id"], y=y_train, metadata=meta_train
+        )
+        compute_series_weight_diagnostics(
+            w_val, X_val.index, o_val, "val", record_ids=meta_val["record_id"], y=y_val, metadata=meta_val
+        )
 
         # 3. Predictor families
         feature_set_key = arm_config["feature_set"].lower()

@@ -463,6 +463,11 @@ def test_15_evaluation_receives_no_sample_weight() -> None:
 # ------------------------------------------------------------------------------
 def test_16_prediction_threshold_fixed_at_0_5() -> None:
     """Probability decision threshold is strictly fixed at 0.5."""
+    # Verify the 0.5 decision rule directly
+    probs = np.array([0.499, 0.500, 0.501])
+    preds = (probs >= 0.5).astype(int)
+    assert np.array_equal(preds, np.array([0, 1, 1]))
+
     mock_cohorts, c_cols, n_cols = create_mock_cohort(n_train=30, n_val=15)
     runner = NHISD5WeightedRunner(enforce_frozen_inputs=False, allow_mitigation=True)
     runner.get_train_val_cohort = MagicMock(return_value=mock_cohorts)
@@ -650,3 +655,161 @@ def test_25_no_weighted_result_artifact_generated_in_audit_only(tmp_path: pathli
     for fn in found_files:
         for prefix in forbidden_prefixes:
             assert not fn.startswith(prefix), f"Forbidden artifact found: {fn}"
+
+
+# ------------------------------------------------------------------------------
+# 26. get_partition_cohort Rejects TEST Partition
+# ------------------------------------------------------------------------------
+def test_26_get_partition_cohort_rejects_test_partition() -> None:
+    """get_partition_cohort must fail closed immediately if 'test' is requested."""
+    runner = NHISD5WeightedRunner(enforce_frozen_inputs=False)
+    arm_config = FROZEN_D5_ARMS["D5_ARM_001"]
+
+    with pytest.raises(ValueError, match="Unauthorized partition role.*TEST partition is strictly embargoed"):
+        runner.get_partition_cohort("test", arm_config)
+
+    with pytest.raises(ValueError, match="Unauthorized partition role"):
+        runner.get_partition_cohort("TEST", arm_config)
+
+    with pytest.raises(ValueError, match="Unauthorized partition role"):
+        runner.get_partition_cohort("unknown", arm_config)
+
+
+# ------------------------------------------------------------------------------
+# 27. Exact Equivalence Against Frozen Adapter
+# ------------------------------------------------------------------------------
+def test_27_exact_equivalence_against_frozen_adapter() -> None:
+    """Verify new single-partition helper matches frozen get_pooled_cohort exactly on real data."""
+    runner = NHISD5WeightedRunner(enforce_frozen_inputs=True)
+
+    for arm_id, arm_config in FROZEN_D5_ARMS.items():
+        ref_cohorts = runner.adapter.get_pooled_cohort(
+            outcome=arm_config["outcome"],
+            protected_attribute=arm_config["protected_attribute"],
+            feature_set=arm_config["feature_set"].lower(),
+            disability_arm=arm_config["disability_arm"],
+        )
+
+        for role in ("train", "val"):
+            X_new, y_new, o_new, w_new, meta_new = runner.get_partition_cohort(role, arm_config)
+            X_ref, y_ref, o_ref, w_ref, meta_ref = ref_cohorts[role]
+
+            assert len(X_new) == len(X_ref), f"Length mismatch for {arm_id} {role}"
+            assert X_new.index.equals(X_ref.index), f"Index mismatch for {arm_id} {role}"
+            assert list(X_new.columns) == list(X_ref.columns), f"Columns mismatch for {arm_id} {role}"
+            assert X_new.equals(X_ref), f"X values mismatch for {arm_id} {role}"
+            assert y_new.equals(y_ref), f"y values mismatch for {arm_id} {role}"
+            assert o_new.equals(o_ref), f"o values mismatch for {arm_id} {role}"
+            assert w_new.equals(w_ref), f"w values mismatch for {arm_id} {role}"
+            assert meta_new.equals(meta_ref), f"metadata mismatch for {arm_id} {role}"
+            assert (meta_new["record_id"].to_numpy() == meta_ref["record_id"].to_numpy()).all()
+
+
+# ------------------------------------------------------------------------------
+# 28. Audit Production Never Requests TEST Partition
+# ------------------------------------------------------------------------------
+def test_28_audit_production_never_requests_test_partition(tmp_path: pathlib.Path) -> None:
+    """Production audit path must only request 'train' and 'val' from adapter; TEST never requested."""
+    runner = NHISD5WeightedRunner(enforce_frozen_inputs=True, allow_mitigation=False)
+    requested_roles = []
+    orig_get_partition = runner.adapter.get_partition
+
+    def spy_get_partition(role: str) -> pd.DataFrame:
+        requested_roles.append(role)
+        return orig_get_partition(role)
+
+    with patch.object(runner.adapter, "get_partition", side_effect=spy_get_partition):
+        results = runner.run_audit(output_dir=tmp_path)
+
+    # 4 arms * 2 partitions = 8 calls
+    assert len(requested_roles) == 8
+    assert all(r in ("train", "val") for r in requested_roles)
+    assert "test" not in requested_roles
+    assert "TEST" not in requested_roles
+
+    manifest = results["manifest"]
+    assert manifest["test_partition_requested"] is False
+    assert manifest["test_partition_accessed"] is False
+    assert manifest["test_cohort_materialized"] is False
+    assert manifest["test_evaluated"] is False
+    assert manifest["test_scored"] is False
+    assert manifest["requested_partitions"] == ["train", "validation"]
+
+
+# ------------------------------------------------------------------------------
+# 29. Execution Production Never Requests TEST Partition
+# ------------------------------------------------------------------------------
+def test_29_execution_production_never_requests_test_partition() -> None:
+    """Production execution path must only request 'train' and 'val' from adapter; TEST never requested."""
+    runner = NHISD5WeightedRunner(enforce_frozen_inputs=True, allow_mitigation=True)
+    requested_roles = []
+    orig_get_partition = runner.adapter.get_partition
+
+    def spy_get_partition(role: str) -> pd.DataFrame:
+        requested_roles.append(role)
+        return orig_get_partition(role)
+
+    def mock_mitigate_step(self, **kwargs):
+        return kwargs["X"], kwargs["changed_dict"], None, None
+
+    with patch.object(runner.adapter, "get_partition", side_effect=spy_get_partition), \
+         patch.object(FairBiasMitigation, "mitigate_step", new=mock_mitigate_step):
+        res = runner.execute_train_validation(arm_id="D5_ARM_001")
+
+    # 1 arm * 2 partitions = 2 calls ('train', 'val')
+    assert len(requested_roles) == 2
+    assert requested_roles == ["train", "val"]
+    assert "test" not in requested_roles
+
+
+# ------------------------------------------------------------------------------
+# 30. Strengthened Respondent Alignment Audit Failures
+# ------------------------------------------------------------------------------
+def test_30_strengthened_respondent_alignment_audit_failures() -> None:
+    """Fail closed on corrupted outcome index, metadata mismatch, duplicate or missing record_ids."""
+    idx = pd.Index(["r1", "r2", "r3"])
+    other_idx = pd.Index(["r1", "r2", "r99"])
+    w = pd.Series([100.0, 200.0, 300.0], index=idx)
+    o = pd.Series([1, 1, 2], index=idx)
+    y_good = pd.Series([0, 1, 0], index=idx)
+    meta_good = pd.DataFrame({
+        "record_id": ["REC_1", "REC_2", "REC_3"],
+        "WTFA_A": [100.0, 200.0, 300.0],
+    }, index=idx)
+
+    # 1. Outcome index mismatch
+    y_bad = pd.Series([0, 1, 0], index=other_idx)
+    with pytest.raises(ValueError, match="Outcome index alignment mismatch"):
+        compute_series_weight_diagnostics(w, idx, o, "test_part", y=y_bad, metadata=meta_good)
+
+    # 2. Metadata index mismatch
+    meta_bad_idx = pd.DataFrame({
+        "record_id": ["REC_1", "REC_2", "REC_3"],
+        "WTFA_A": [100.0, 200.0, 300.0],
+    }, index=other_idx)
+    with pytest.raises(ValueError, match="Metadata index alignment mismatch"):
+        compute_series_weight_diagnostics(w, idx, o, "test_part", y=y_good, metadata=meta_bad_idx)
+
+    # 3. WTFA_A value mismatch
+    meta_bad_wt = pd.DataFrame({
+        "record_id": ["REC_1", "REC_2", "REC_3"],
+        "WTFA_A": [100.0, 999.0, 300.0],  # Mismatch on r2
+    }, index=idx)
+    with pytest.raises(ValueError, match="Weight values do not match metadata"):
+        compute_series_weight_diagnostics(w, idx, o, "test_part", y=y_good, metadata=meta_bad_wt)
+
+    # 4. Duplicate record_id
+    meta_dup_rec = pd.DataFrame({
+        "record_id": ["REC_1", "REC_1", "REC_3"],  # Duplicate REC_1
+        "WTFA_A": [100.0, 200.0, 300.0],
+    }, index=idx)
+    with pytest.raises(ValueError, match="not unique within"):
+        compute_series_weight_diagnostics(w, idx, o, "test_part", y=y_good, metadata=meta_dup_rec)
+
+    # 5. Missing record_id
+    meta_missing_rec = pd.DataFrame({
+        "record_id": ["REC_1", None, "REC_3"],
+        "WTFA_A": [100.0, 200.0, 300.0],
+    }, index=idx)
+    with pytest.raises(ValueError, match="missing values"):
+        compute_series_weight_diagnostics(w, idx, o, "test_part", y=y_good, metadata=meta_missing_rec)

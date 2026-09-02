@@ -100,10 +100,13 @@ def main(args: Sequence[str] | None = None) -> int:
         art_path = results["output_dir"] / art
         print(f"  - {art}: {art_path}")
 
-    print("\n--- Gate D5.1a Status Guarantees ---")
-    print("REAL WEIGHTED MITIGATION EXECUTED: FALSE")
-    print("VALIDATION SCORED: FALSE")
-    print("TEST EVALUATED: FALSE")
+    print("\n--- Gate D5.1a.1 Status Guarantees ---")
+    print("requested named partitions = train, val")
+    print("TEST named partition requested = FALSE")
+    print("TEST cohort materialized = FALSE")
+    print("REAL WEIGHTED MITIGATION EXECUTED = FALSE")
+    print("VALIDATION SCORED = FALSE")
+    print("TEST EVALUATED = FALSE")
     print("STATUS: PASS")
 
     return 0
