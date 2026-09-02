@@ -1,0 +1,25 @@
+{
+  "changed_dict": {
+    "agep_a": {
+      "power": 0.14285714285714285
+    },
+    "cogmemdff_a": {
+      "3": 1
+    },
+    "diff_a": {
+      "3": 1
+    },
+    "empwrkft1_a": {
+      "-1": 1
+    },
+    "empwrklsw1_a": {
+      "2": 1
+    },
+    "hypev_a": {
+      "1": 2
+    }
+  },
+  "expected_logical_sha256": "95ce9da442e66adbd8e1d5e0deab32d831a7a171922f5d6a8cda21a43e9c16af",
+  "match": true,
+  "observed_logical_sha256": "95ce9da442e66adbd8e1d5e0deab32d831a7a171922f5d6a8cda21a43e9c16af"
+}

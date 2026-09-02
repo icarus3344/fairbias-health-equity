@@ -1,0 +1,479 @@
+{
+  "fairness_gaps": {
+    "defined_groups": {
+      "fpr": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "ppv": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selection_rate": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "tpr": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    "demographic_parity_gap": 0.008724007961716004,
+    "equal_opportunity_gap": 0.038135593220338986,
+    "equalized_odds_max_gap": 0.038135593220338986,
+    "fpr_gap": 0.00800931502449209,
+    "group_ppv_values": {
+      "1": 0.43902439024390244,
+      "2": 0.31746031746031744,
+      "3": 0.38461538461538464,
+      "4": 0.5,
+      "5": 0.0,
+      "6": 0.5,
+      "7": 0.25
+    }
+  },
+  "group_coverage": {
+    "diagnostics": null,
+    "expected_group_count": 7,
+    "expected_pair_count": 21,
+    "group_coverage_complete": true,
+    "observed_group_count": 7,
+    "observed_groups": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "observed_pair_count": 21
+  },
+  "group_metrics": [
+    {
+      "fn_count": 454,
+      "fp_count": 23,
+      "fpr": 0.005424528301886792,
+      "fpr_denominator": 4240,
+      "group": 1,
+      "n": 4712,
+      "outcome_negative_count": 4240,
+      "outcome_positive_count": 472,
+      "ppv": 0.43902439024390244,
+      "ppv_denominator": 41,
+      "predicted_negative_count": 4671,
+      "predicted_positive_count": 41,
+      "prevalence": 0.100169779286927,
+      "selection_rate": 0.00870118845500849,
+      "tn_count": 4217,
+      "tp_count": 18,
+      "tpr": 0.038135593220338986,
+      "tpr_denominator": 472,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 1644,
+      "fp_count": 43,
+      "fpr": 0.0021538769785614106,
+      "fpr_denominator": 19964,
+      "group": 2,
+      "n": 21628,
+      "outcome_negative_count": 19964,
+      "outcome_positive_count": 1664,
+      "ppv": 0.31746031746031744,
+      "ppv_denominator": 63,
+      "predicted_negative_count": 21565,
+      "predicted_positive_count": 63,
+      "prevalence": 0.07693730349546883,
+      "selection_rate": 0.002912890697244313,
+      "tn_count": 19921,
+      "tp_count": 20,
+      "tpr": 0.01201923076923077,
+      "tpr_denominator": 1664,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 241,
+      "fp_count": 8,
+      "fpr": 0.0026746907388833165,
+      "fpr_denominator": 2991,
+      "group": 3,
+      "n": 3237,
+      "outcome_negative_count": 2991,
+      "outcome_positive_count": 246,
+      "ppv": 0.38461538461538464,
+      "ppv_denominator": 13,
+      "predicted_negative_count": 3224,
+      "predicted_positive_count": 13,
+      "prevalence": 0.07599629286376275,
+      "selection_rate": 0.004016064257028112,
+      "tn_count": 2983,
+      "tp_count": 5,
+      "tpr": 0.02032520325203252,
+      "tpr_denominator": 246,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 72,
+      "fp_count": 1,
+      "fpr": 0.0005621135469364812,
+      "fpr_denominator": 1779,
+      "group": 4,
+      "n": 1852,
+      "outcome_negative_count": 1779,
+      "outcome_positive_count": 73,
+      "ppv": 0.5,
+      "ppv_denominator": 2,
+      "predicted_negative_count": 1850,
+      "predicted_positive_count": 2,
+      "prevalence": 0.03941684665226782,
+      "selection_rate": 0.0010799136069114472,
+      "tn_count": 1778,
+      "tp_count": 1,
+      "tpr": 0.0136986301369863,
+      "tpr_denominator": 73,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 17,
+      "fp_count": 2,
+      "fpr": 0.008032128514056224,
+      "fpr_denominator": 249,
+      "group": 5,
+      "n": 266,
+      "outcome_negative_count": 249,
+      "outcome_positive_count": 17,
+      "ppv": 0.0,
+      "ppv_denominator": 2,
+      "predicted_negative_count": 264,
+      "predicted_positive_count": 2,
+      "prevalence": 0.06390977443609022,
+      "selection_rate": 0.007518796992481203,
+      "tn_count": 247,
+      "tp_count": 0,
+      "tpr": 0.0,
+      "tpr_denominator": 17,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 33,
+      "fp_count": 1,
+      "fpr": 0.0045871559633027525,
+      "fpr_denominator": 218,
+      "group": 6,
+      "n": 252,
+      "outcome_negative_count": 218,
+      "outcome_positive_count": 34,
+      "ppv": 0.5,
+      "ppv_denominator": 2,
+      "predicted_negative_count": 250,
+      "predicted_positive_count": 2,
+      "prevalence": 0.1349206349206349,
+      "selection_rate": 0.007936507936507936,
+      "tn_count": 217,
+      "tp_count": 1,
+      "tpr": 0.029411764705882353,
+      "tpr_denominator": 34,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 57,
+      "fp_count": 3,
+      "fpr": 0.008571428571428572,
+      "fpr_denominator": 350,
+      "group": 7,
+      "n": 408,
+      "outcome_negative_count": 350,
+      "outcome_positive_count": 58,
+      "ppv": 0.25,
+      "ppv_denominator": 4,
+      "predicted_negative_count": 404,
+      "predicted_positive_count": 4,
+      "prevalence": 0.14215686274509803,
+      "selection_rate": 0.00980392156862745,
+      "tn_count": 347,
+      "tp_count": 1,
+      "tpr": 0.017241379310344827,
+      "tpr_denominator": 58,
+      "undefined_reasons": {}
+    }
+  ],
+  "multicategory_pairwise": {
+    "coverage_complete": true,
+    "expected_pairs_for_k": 21,
+    "formulation_label": "empirical_multicategory_pairwise_extension",
+    "max_pair_gaps": {
+      "fpr_max_pair_diff": 0.00800931502449209,
+      "ppv_max_pair_diff": 0.5,
+      "selection_rate_max_pair_diff": 0.008724007961716004,
+      "tpr_max_pair_diff": 0.038135593220338986
+    },
+    "num_groups": 7,
+    "num_pairs": 21,
+    "pairs": [
+      {
+        "fpr_diff": 0.0032706513233253815,
+        "pair": [
+          1,
+          2
+        ],
+        "pair_key": "1_vs_2",
+        "ppv_diff": 0.121564072783585,
+        "selection_rate_diff": 0.0057882977577641765,
+        "tpr_diff": 0.026116362451108217
+      },
+      {
+        "fpr_diff": 0.0027498375630034756,
+        "pair": [
+          1,
+          3
+        ],
+        "pair_key": "1_vs_3",
+        "ppv_diff": 0.054409005628517804,
+        "selection_rate_diff": 0.0046851241979803775,
+        "tpr_diff": 0.017810389968306466
+      },
+      {
+        "fpr_diff": 0.004862414754950311,
+        "pair": [
+          1,
+          4
+        ],
+        "pair_key": "1_vs_4",
+        "ppv_diff": 0.06097560975609756,
+        "selection_rate_diff": 0.007621274848097042,
+        "tpr_diff": 0.024436963083352685
+      },
+      {
+        "fpr_diff": 0.002607600212169432,
+        "pair": [
+          1,
+          5
+        ],
+        "pair_key": "1_vs_5",
+        "ppv_diff": 0.43902439024390244,
+        "selection_rate_diff": 0.001182391462527287,
+        "tpr_diff": 0.038135593220338986
+      },
+      {
+        "fpr_diff": 0.0008373723385840396,
+        "pair": [
+          1,
+          6
+        ],
+        "pair_key": "1_vs_6",
+        "ppv_diff": 0.06097560975609756,
+        "selection_rate_diff": 0.0007646805185005535,
+        "tpr_diff": 0.008723828514456633
+      },
+      {
+        "fpr_diff": 0.0031469002695417797,
+        "pair": [
+          1,
+          7
+        ],
+        "pair_key": "1_vs_7",
+        "ppv_diff": 0.18902439024390244,
+        "selection_rate_diff": 0.0011027331136189613,
+        "tpr_diff": 0.020894213909994158
+      },
+      {
+        "fpr_diff": 0.0005208137603219059,
+        "pair": [
+          2,
+          3
+        ],
+        "pair_key": "2_vs_3",
+        "ppv_diff": 0.0671550671550672,
+        "selection_rate_diff": 0.001103173559783799,
+        "tpr_diff": 0.00830597248280175
+      },
+      {
+        "fpr_diff": 0.0015917634316249293,
+        "pair": [
+          2,
+          4
+        ],
+        "pair_key": "2_vs_4",
+        "ppv_diff": 0.18253968253968256,
+        "selection_rate_diff": 0.001832977090332866,
+        "tpr_diff": 0.0016793993677555307
+      },
+      {
+        "fpr_diff": 0.0058782515354948136,
+        "pair": [
+          2,
+          5
+        ],
+        "pair_key": "2_vs_5",
+        "ppv_diff": 0.31746031746031744,
+        "selection_rate_diff": 0.0046059062952368895,
+        "tpr_diff": 0.01201923076923077
+      },
+      {
+        "fpr_diff": 0.002433278984741342,
+        "pair": [
+          2,
+          6
+        ],
+        "pair_key": "2_vs_6",
+        "ppv_diff": 0.18253968253968256,
+        "selection_rate_diff": 0.005023617239263623,
+        "tpr_diff": 0.017392533936651584
+      },
+      {
+        "fpr_diff": 0.006417551592867161,
+        "pair": [
+          2,
+          7
+        ],
+        "pair_key": "2_vs_7",
+        "ppv_diff": 0.06746031746031744,
+        "selection_rate_diff": 0.006891030871383138,
+        "tpr_diff": 0.0052221485411140574
+      },
+      {
+        "fpr_diff": 0.002112577191946835,
+        "pair": [
+          3,
+          4
+        ],
+        "pair_key": "3_vs_4",
+        "ppv_diff": 0.11538461538461536,
+        "selection_rate_diff": 0.0029361506501166647,
+        "tpr_diff": 0.006626573115046219
+      },
+      {
+        "fpr_diff": 0.005357437775172908,
+        "pair": [
+          3,
+          5
+        ],
+        "pair_key": "3_vs_5",
+        "ppv_diff": 0.38461538461538464,
+        "selection_rate_diff": 0.0035027327354530905,
+        "tpr_diff": 0.02032520325203252
+      },
+      {
+        "fpr_diff": 0.001912465224419436,
+        "pair": [
+          3,
+          6
+        ],
+        "pair_key": "3_vs_6",
+        "ppv_diff": 0.11538461538461536,
+        "selection_rate_diff": 0.003920443679479824,
+        "tpr_diff": 0.009086561453849833
+      },
+      {
+        "fpr_diff": 0.005896737832545256,
+        "pair": [
+          3,
+          7
+        ],
+        "pair_key": "3_vs_7",
+        "ppv_diff": 0.13461538461538464,
+        "selection_rate_diff": 0.005787857311599339,
+        "tpr_diff": 0.0030838239416876925
+      },
+      {
+        "fpr_diff": 0.007470014967119743,
+        "pair": [
+          4,
+          5
+        ],
+        "pair_key": "4_vs_5",
+        "ppv_diff": 0.5,
+        "selection_rate_diff": 0.006438883385569755,
+        "tpr_diff": 0.0136986301369863
+      },
+      {
+        "fpr_diff": 0.004025042416366272,
+        "pair": [
+          4,
+          6
+        ],
+        "pair_key": "4_vs_6",
+        "ppv_diff": 0.0,
+        "selection_rate_diff": 0.006856594329596489,
+        "tpr_diff": 0.015713134568896052
+      },
+      {
+        "fpr_diff": 0.00800931502449209,
+        "pair": [
+          4,
+          7
+        ],
+        "pair_key": "4_vs_7",
+        "ppv_diff": 0.25,
+        "selection_rate_diff": 0.008724007961716004,
+        "tpr_diff": 0.0035427491733585267
+      },
+      {
+        "fpr_diff": 0.0034449725507534716,
+        "pair": [
+          5,
+          6
+        ],
+        "pair_key": "5_vs_6",
+        "ppv_diff": 0.5,
+        "selection_rate_diff": 0.0004177109440267335,
+        "tpr_diff": 0.029411764705882353
+      },
+      {
+        "fpr_diff": 0.0005393000573723477,
+        "pair": [
+          5,
+          7
+        ],
+        "pair_key": "5_vs_7",
+        "ppv_diff": 0.25,
+        "selection_rate_diff": 0.0022851245761462483,
+        "tpr_diff": 0.017241379310344827
+      },
+      {
+        "fpr_diff": 0.003984272608125819,
+        "pair": [
+          6,
+          7
+        ],
+        "pair_key": "6_vs_7",
+        "ppv_diff": 0.25,
+        "selection_rate_diff": 0.0018674136321195148,
+        "tpr_diff": 0.012170385395537525
+      }
+    ]
+  },
+  "utility": {
+    "accuracy": 0.9196723844846237,
+    "auprc": 0.21480999255828503,
+    "auroc": 0.7513692505002743,
+    "balanced_accuracy": 0.5076108878331838,
+    "count_outcome_positive": 2564,
+    "count_predicted_positive": 127,
+    "f1": 0.03418803418803419,
+    "prevalence": 0.07924586617215268,
+    "selection_rate": 0.00392520475969711,
+    "undefined_reasons": {}
+  }
+}

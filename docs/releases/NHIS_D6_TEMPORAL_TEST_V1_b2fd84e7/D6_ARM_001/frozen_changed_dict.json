@@ -1,0 +1,36 @@
+{
+  "changed_dict": {
+    "agep_a": "dropped",
+    "asev_a": {
+      "1": 2
+    },
+    "diff_a": {
+      "2": 1
+    },
+    "empwrkft1_a": {
+      "-1": 1,
+      "2": 1
+    },
+    "empwrklsw1_a": {
+      "2": 1
+    },
+    "hearingdf_a": {
+      "1": 2
+    },
+    "notcov_a": {
+      "2": 1
+    },
+    "pcnt18uptc": {
+      "power": 5.0
+    },
+    "pcntlt18tc": {
+      "power": 9.0
+    },
+    "usualpl_a": {
+      "1": 2
+    }
+  },
+  "expected_logical_sha256": "40511e6c0d55b0ffdcef534f6b0eb120a16cdfe24ca75bf135ce1ce803f85f79",
+  "match": true,
+  "observed_logical_sha256": "40511e6c0d55b0ffdcef534f6b0eb120a16cdfe24ca75bf135ce1ce803f85f79"
+}

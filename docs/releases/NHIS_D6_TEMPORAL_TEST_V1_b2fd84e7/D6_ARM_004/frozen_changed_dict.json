@@ -1,0 +1,30 @@
+{
+  "changed_dict": {
+    "agep_a": "dropped",
+    "chlev_a": {
+      "1": 2
+    },
+    "dibev_a": {
+      "1": 2
+    },
+    "empwrkft1_a": {
+      "-1": 1
+    },
+    "empwrklsw1_a": {
+      "2": 1
+    },
+    "hypev_a": {
+      "1": 2
+    },
+    "pcntlt18tc": {
+      "power": 3.0
+    },
+    "phstat_a": {
+      "4": 2,
+      "5": 1
+    }
+  },
+  "expected_logical_sha256": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568",
+  "match": true,
+  "observed_logical_sha256": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568"
+}

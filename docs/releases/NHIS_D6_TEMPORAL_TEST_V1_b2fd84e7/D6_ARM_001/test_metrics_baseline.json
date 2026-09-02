@@ -1,0 +1,98 @@
+{
+  "fairness_gaps": {
+    "defined_groups": {
+      "fpr": [
+        1,
+        2
+      ],
+      "ppv": [
+        1,
+        2
+      ],
+      "selection_rate": [
+        1,
+        2
+      ],
+      "tpr": [
+        1,
+        2
+      ]
+    },
+    "demographic_parity_gap": 0.0005829991820541875,
+    "equal_opportunity_gap": 0.00029304592565330273,
+    "equalized_odds_max_gap": 0.00033343049891302635,
+    "fpr_gap": 0.00033343049891302635,
+    "group_ppv_values": {
+      "1": 0.34545454545454546,
+      "2": 0.37333333333333335
+    }
+  },
+  "group_coverage": {
+    "diagnostics": null,
+    "expected_group_count": 2,
+    "expected_pair_count": 1,
+    "group_coverage_complete": true,
+    "observed_group_count": 2,
+    "observed_groups": [
+      1,
+      2
+    ],
+    "observed_pair_count": 1
+  },
+  "group_metrics": [
+    {
+      "fn_count": 1027,
+      "fp_count": 36,
+      "fpr": 0.002607561929595828,
+      "fpr_denominator": 13806,
+      "group": 1,
+      "n": 14852,
+      "outcome_negative_count": 13806,
+      "outcome_positive_count": 1046,
+      "ppv": 0.34545454545454546,
+      "ppv_denominator": 55,
+      "predicted_negative_count": 14797,
+      "predicted_positive_count": 55,
+      "prevalence": 0.0704282251548613,
+      "selection_rate": 0.0037032049555615404,
+      "tn_count": 13770,
+      "tp_count": 19,
+      "tpr": 0.018164435946462717,
+      "tpr_denominator": 1046,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 1489,
+      "fp_count": 47,
+      "fpr": 0.002940992428508854,
+      "fpr_denominator": 15981,
+      "group": 2,
+      "n": 17498,
+      "outcome_negative_count": 15981,
+      "outcome_positive_count": 1517,
+      "ppv": 0.37333333333333335,
+      "ppv_denominator": 75,
+      "predicted_negative_count": 17423,
+      "predicted_positive_count": 75,
+      "prevalence": 0.08669562235684078,
+      "selection_rate": 0.004286204137615728,
+      "tn_count": 15934,
+      "tp_count": 28,
+      "tpr": 0.01845748187211602,
+      "tpr_denominator": 1517,
+      "undefined_reasons": {}
+    }
+  ],
+  "utility": {
+    "accuracy": 0.9196599690880989,
+    "auprc": 0.21530154489634734,
+    "auroc": 0.7516813909908746,
+    "balanced_accuracy": 0.5077757174128535,
+    "count_outcome_positive": 2563,
+    "count_predicted_positive": 130,
+    "f1": 0.034905310063126624,
+    "prevalence": 0.07922720247295209,
+    "selection_rate": 0.00401854714064915,
+    "undefined_reasons": {}
+  }
+}

@@ -1,0 +1,326 @@
+{
+  "archive_commit_file_count": 44,
+  "archive_gate": "D6.1c",
+  "archive_path": "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/",
+  "archived_manifest_sha256": "2a134eb1c23421fd7e50f8c255f2d55395ecfda8149700c78f76dac3da553fd5",
+  "canonical_execution_count": 1,
+  "canonical_file_hashes": [
+    {
+      "relative_path": "D6_ARM_001/arm_config.json",
+      "sha256": "e83d387d67c487c6f905435aac33ca079938e643816c46bc0d9bc6adc3a85a78"
+    },
+    {
+      "relative_path": "D6_ARM_001/frozen_changed_dict.json",
+      "sha256": "333c01b0518435355b5fa2b6519d8200fd9424572b74e6d3329972edc24c42eb"
+    },
+    {
+      "relative_path": "D6_ARM_001/input_provenance.json",
+      "sha256": "c96c275e7562788ee4441c5c869289428b26177b7a64c22380abbf868d9b238b"
+    },
+    {
+      "relative_path": "D6_ARM_001/test_comparison.json",
+      "sha256": "8c4d236229ea9eb383d6d08eb9892725ead66b5410c666887f4a6e711e55d25c"
+    },
+    {
+      "relative_path": "D6_ARM_001/test_dphi_before_after.json",
+      "sha256": "268e02aeee87e090356360dd047d4f1b7ea8a9a31bfb260bc837fa7aca6d869a"
+    },
+    {
+      "relative_path": "D6_ARM_001/test_group_metrics_baseline.csv",
+      "sha256": "8d3c50fae6913eb402b612a11e5c748807371725abc702a50eac4caf85ac019e"
+    },
+    {
+      "relative_path": "D6_ARM_001/test_group_metrics_fairbias.csv",
+      "sha256": "d05b5bbc047fedaa2cadcdb81ff7e3893ddf034341da4784db99a695b189e847"
+    },
+    {
+      "relative_path": "D6_ARM_001/test_metrics_baseline.json",
+      "sha256": "e48d3caf2099fdaffce07042beaa387220bfac13ffa7948488931e8fd5043dd6"
+    },
+    {
+      "relative_path": "D6_ARM_001/test_metrics_fairbias.json",
+      "sha256": "4a15a4316a4ccb389281dff09aadc3c3eebb205be948b06d71b8d6c79e74656c"
+    },
+    {
+      "relative_path": "D6_ARM_001/training_state_reproduction.json",
+      "sha256": "ca7ed1b7ca2ae14d480a86f4a9c3ae561cef049ab0810c588924225c34636c27"
+    },
+    {
+      "relative_path": "D6_ARM_002/arm_config.json",
+      "sha256": "bd412023577f461f2e213e1d6b60e8aae6100f63dc3741fab489562601261fea"
+    },
+    {
+      "relative_path": "D6_ARM_002/frozen_changed_dict.json",
+      "sha256": "117405d4d68653a6b1d41cf474e17b1b42f6faa5ecb9e992c228cf49a706b49f"
+    },
+    {
+      "relative_path": "D6_ARM_002/input_provenance.json",
+      "sha256": "bad99f5e28744502e2d4de64ee1d846e9c0e1ae0997f748b32c066e8ee1a2d63"
+    },
+    {
+      "relative_path": "D6_ARM_002/test_comparison.json",
+      "sha256": "9c9de6692923deb68ec758589ff3ba46296d958bdae6225815d7359ab4686eff"
+    },
+    {
+      "relative_path": "D6_ARM_002/test_dphi_before_after.json",
+      "sha256": "856b1d68e5510da3806ee35ae31f99999b0d490a30f338e532d3f884d90f4ae2"
+    },
+    {
+      "relative_path": "D6_ARM_002/test_group_metrics_baseline.csv",
+      "sha256": "e571eb33ef2faba69664b8176f49ed21e82e174c4c289e109b4472b9152ffe3b"
+    },
+    {
+      "relative_path": "D6_ARM_002/test_group_metrics_fairbias.csv",
+      "sha256": "d7271cdc9d332e446ea6a3543c86b5a0e0596dcc25f9a34fbaab1d93dc4b537c"
+    },
+    {
+      "relative_path": "D6_ARM_002/test_metrics_baseline.json",
+      "sha256": "ab859c3ebdaed5eafbc37bbe401f6faf27b30880d6e8e8f51bb5b1c010c172cd"
+    },
+    {
+      "relative_path": "D6_ARM_002/test_metrics_fairbias.json",
+      "sha256": "8ac210783fd4641468db9a595579877bd79b9a71b4c4d8104f9c166b7cf1c70c"
+    },
+    {
+      "relative_path": "D6_ARM_002/training_state_reproduction.json",
+      "sha256": "29cc0d29586947f22e5bc6e20010c3a1039cba8d962a806b9a3ecb9ecbd7ce38"
+    },
+    {
+      "relative_path": "D6_ARM_003/arm_config.json",
+      "sha256": "b448c86e770736387c43be7d98260b50ff555d429c7a2c5ae08cfeb2a171874c"
+    },
+    {
+      "relative_path": "D6_ARM_003/frozen_changed_dict.json",
+      "sha256": "12e3502af5e51798c45afafd4a7750acd943d4f3acedad34ce95197d27936b65"
+    },
+    {
+      "relative_path": "D6_ARM_003/input_provenance.json",
+      "sha256": "a15e8ab050be2e95647a0164d16890f2bc0eb45ff5ea60903129a3c528511c10"
+    },
+    {
+      "relative_path": "D6_ARM_003/test_comparison.json",
+      "sha256": "1eb78f4c7663f6a8635f29684e1af1f9791b77b13ea6760be23c9e214c3843ac"
+    },
+    {
+      "relative_path": "D6_ARM_003/test_dphi_before_after.json",
+      "sha256": "35f6720331b2903fffd4bf1401379110cbbee202c9600a0da64b4c0dd3f8dda5"
+    },
+    {
+      "relative_path": "D6_ARM_003/test_group_metrics_baseline.csv",
+      "sha256": "ae0788308f6e597124ae629907f543962982bd12dbbe0fe27dffd3a619cfe23a"
+    },
+    {
+      "relative_path": "D6_ARM_003/test_group_metrics_fairbias.csv",
+      "sha256": "b3b65115af6bd990803759d3aac8dd10fb07c685fa244cd21fb35304476264a8"
+    },
+    {
+      "relative_path": "D6_ARM_003/test_metrics_baseline.json",
+      "sha256": "634933aa1bbddcc3acba726fc5316e156ce3c267c0b5879d67c738e66e711f0b"
+    },
+    {
+      "relative_path": "D6_ARM_003/test_metrics_fairbias.json",
+      "sha256": "bd69d41386c5f2fc544fd3d1a45739d246843bec35256673226e7877cf2f56c5"
+    },
+    {
+      "relative_path": "D6_ARM_003/training_state_reproduction.json",
+      "sha256": "0c597b194a183d0ae676e39cf8c34e3d9530dc20de4d151770d5dbeb74e1d2e9"
+    },
+    {
+      "relative_path": "D6_ARM_004/arm_config.json",
+      "sha256": "a06c8b18f19cdd13f56ac60da7ae34cbb32b987960f496652c1378bdc459dfe1"
+    },
+    {
+      "relative_path": "D6_ARM_004/frozen_changed_dict.json",
+      "sha256": "b0c232ce526c79047c3d2eb6f6b570018005a2609ebaa412c011d9b8fba63fe7"
+    },
+    {
+      "relative_path": "D6_ARM_004/input_provenance.json",
+      "sha256": "be377a82e9767b7d00912cfebcd2cea08db3dadb48c4e249b4971e6c7407a3d2"
+    },
+    {
+      "relative_path": "D6_ARM_004/test_comparison.json",
+      "sha256": "2cf4512ec48f8fee98b0d4aa5ff6f06205f7842c679a8b9e3a73c7504d119ae7"
+    },
+    {
+      "relative_path": "D6_ARM_004/test_dphi_before_after.json",
+      "sha256": "5b20d374e8e3bead8adaee52fdbd899816c543787222c1ce751e3e15e5e27e76"
+    },
+    {
+      "relative_path": "D6_ARM_004/test_group_metrics_baseline.csv",
+      "sha256": "d04f320f5d2a1f02558be812cd97f101b689c3b035a6e9351b0c77f7b60a9c24"
+    },
+    {
+      "relative_path": "D6_ARM_004/test_group_metrics_fairbias.csv",
+      "sha256": "593e3b357616b19abd82e8ae8ec0d88e1c08b2dd9922f84ac19fe9424817d23e"
+    },
+    {
+      "relative_path": "D6_ARM_004/test_metrics_baseline.json",
+      "sha256": "b2355a2511e3c43bad547e5677792578c6144f43fa24b30f9b2116f125665156"
+    },
+    {
+      "relative_path": "D6_ARM_004/test_metrics_fairbias.json",
+      "sha256": "8245e43b98b643c2447198ba0dcf07ec6b5501615baf95bf75bead3ff60069d0"
+    },
+    {
+      "relative_path": "D6_ARM_004/training_state_reproduction.json",
+      "sha256": "469c9389f908fd730d84518489673daef063dbb8d057081d7f1ee5c9d2df2263"
+    },
+    {
+      "relative_path": "d6_temporal_test_manifest.json",
+      "sha256": "2a134eb1c23421fd7e50f8c255f2d55395ecfda8149700c78f76dac3da553fd5"
+    },
+    {
+      "relative_path": "release_state.json",
+      "sha256": "8b1765780228ab51739c468510b2006d643234d14e36640c8e6812787f9f2c41"
+    },
+    {
+      "relative_path": "training_state_reproduction_summary.json",
+      "sha256": "03220519f72c86e842b440cb3e476be3430b27ad074faed1231a91f8a297ca37"
+    }
+  ],
+  "canonical_source_path": "runs/nhis_d6_temporal_test/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/",
+  "causal_analysis": false,
+  "classifier_weighted": false,
+  "cohort_counts_2024": {
+    "D6_ARM_001": 32350,
+    "D6_ARM_002": 32355,
+    "D6_ARM_003": 32354,
+    "D6_ARM_004": 32354
+  },
+  "cohort_source_row_digests": {
+    "2022_train": {
+      "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+      "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+      "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+      "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+    },
+    "2024_test": {
+      "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+      "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+      "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+      "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+    }
+  },
+  "d6_train_val_archive_commit": "bdf154c541d365b216a732bc3a58415af41cdcc7",
+  "disclosure_2024": "D6 is a predeclared temporal robustness analysis using 2022 for development training, 2023 for temporal validation, and 2024 for forward-time evaluation. However, 2024 respondents were previously included in the pooled D4/D5 analyses, so the 2024 partition is not a globally untouched primary holdout. D6-specific transformations and models were nevertheless frozen before D6-specific 2024 evaluation.",
+  "evaluation_weighted": false,
+  "execution_commit": "b2fd84e775eb16329a2463c13337cd630b015d88",
+  "fairbias_relearned_after_test": false,
+  "frozen_training_state_anchors": {
+    "D6_ARM_001": {
+      "FairBias_LR": "cdfe73f72d0046f0e0068d0047b1b6ef1d934b334d287e208690c176ce95764e",
+      "FairBias_scaler": "1fc71b9805939e5627fcbe081c1b23f3fc14373c919cdbe6de557e188b26cfb6",
+      "baseline_LR": "3a260ed45d5232ff14d2b2070de2196d91380e0b7ea5005972436a28138f46df",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "changed_dict": "40511e6c0d55b0ffdcef534f6b0eb120a16cdfe24ca75bf135ce1ce803f85f79"
+    },
+    "D6_ARM_002": {
+      "FairBias_LR": "6d03134ce077895b8ffb4914bd57f7d73b1b4c94ed09f99456e7cc266bab05c3",
+      "FairBias_scaler": "c89d08e57c67bc1fbd9d5c70671d1eb71ca6b51798e7173d08413a69c1aac5dc",
+      "baseline_LR": "adca7c506795db6a15d7293be0363e546c79f5c85523cebd20f979c2287ed2f8",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "changed_dict": "4c0bbba5d40022d61119f5ef16db6aa46f0b40bc89132777a3e7b877e42bbe6e"
+    },
+    "D6_ARM_003": {
+      "FairBias_LR": "48c0dced8358bd123bd41aba265bf728eae7d2fa32aaa0005ecedc450859f6f5",
+      "FairBias_scaler": "3fad8127699fa2da2b6fad79d883dc02f45ba1e6494ee896cdcbd93dcc3a3b95",
+      "baseline_LR": "ba6914f12b8c1e653c161791199e13392597911de31d19ff2e42f50c26d3f58d",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "changed_dict": "95ce9da442e66adbd8e1d5e0deab32d831a7a171922f5d6a8cda21a43e9c16af"
+    },
+    "D6_ARM_004": {
+      "FairBias_LR": "cb0e9a360d68b1705bc1b3b54d508afe80803648fdb22aafc468e245b6045bca",
+      "FairBias_scaler": "42236586cddc6dd9bf36d46d3209ef40e830c03493a3f041bb429aedc5d4856c",
+      "baseline_LR": "d050dc2a3ba59b2ea1f1767342dbb468680175cc182e94d2143d0ea01563bc3d",
+      "baseline_scaler": "f59d3f21087ae95c2accbc70e0edf9a5e055abe97e2a69d5279aa691688f07a1",
+      "changed_dict": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568"
+    }
+  },
+  "longitudinal": false,
+  "manifest_tracked_artifact_count": 41,
+  "model_refit_after_test": false,
+  "no_cohort_access_during_archival": true,
+  "no_fairbias_relearning_during_archival": true,
+  "no_model_fit_during_archival": true,
+  "no_temporal_test_rerun": true,
+  "numerical_warning_reconciliation": {
+    "canonical_release_rerun": false,
+    "expected_undefined_group_metric_count": 2,
+    "frozen_state_finite": true,
+    "interpretation": "Runtime numerical warnings were observed during canonical execution. Their precise origin was not independently assigned. A post-execution read-only audit found no unexpected nonfinite values in frozen terminal state or substantive overall evaluation artifacts. No execution was repeated.",
+    "overall_dphi_finite": true,
+    "overall_fairness_gaps_finite": true,
+    "overall_utility_finite": true,
+    "precise_warning_origin_assigned": false,
+    "reconciliation_verdict": "PASS",
+    "runtime_warnings_reported": true,
+    "unexpected_nonfinite_frozen_state_count": 0,
+    "warning_classes_reported": [
+      "divide-by-zero",
+      "overflow",
+      "invalid matrix multiplication"
+    ]
+  },
+  "per_arm_artifact_count": 40,
+  "post_test_tuning": false,
+  "prediction_threshold": 0.5,
+  "preprocessing_state_logical_hash": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+  "preprocessing_state_match": true,
+  "primary_analysis": false,
+  "raw_canonical_file_count": 43,
+  "release_id": "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7",
+  "repeated_cross_sectional": true,
+  "replaces_d4_primary": false,
+  "reporting_corrections": {
+    "canonical_release_modified": false,
+    "correction_1_study_units": "Do not use 'patients'. Use 'NHIS respondents' or 'respondents' because D6 is repeated cross-sectional survey analysis, not a clinical patient cohort.",
+    "correction_2_arm003_interpretation": "ARM003 showed the most favorable downstream trade-off among the four arms: conventional fairness gaps were reduced with substantially less prediction suppression and substantially smaller ranking loss than the other arms. Also note that hard-label predictions remain sparse at threshold 0.5, so the conventional fairness-gap estimates still require cautious interpretation. Do not claim 'genuine fairness improvement' or 'genuine fairness gap reduction'.",
+    "correction_3_numerical_warning_attribution": "Runtime numerical warnings were observed during canonical execution. Their precise origin was not independently assigned. A post-execution read-only audit found no unexpected nonfinite values in frozen terminal state or substantive overall evaluation artifacts. No execution was repeated.",
+    "reporting_interpretation_only": true,
+    "scientific_results_modified": false
+  },
+  "scientific_anchors_2024": {
+    "predicted_positive_counts": {
+      "D6_ARM_001": {
+        "baseline": 130,
+        "fairbias": 2
+      },
+      "D6_ARM_002": {
+        "baseline": 127,
+        "fairbias": 43
+      },
+      "D6_ARM_003": {
+        "baseline": 131,
+        "fairbias": 104
+      },
+      "D6_ARM_004": {
+        "baseline": 88,
+        "fairbias": 67
+      }
+    },
+    "transformed_max_dphi": {
+      "D6_ARM_001": 0.0014029923016365678,
+      "D6_ARM_002": 0.0021079069902435557,
+      "D6_ARM_003": 0.004575527885988915,
+      "D6_ARM_004": 0.004586216225595551
+    },
+    "transformed_max_dphi_within_frozen_epsilon": {
+      "D6_ARM_001": false,
+      "D6_ARM_002": false,
+      "D6_ARM_003": true,
+      "D6_ARM_004": true
+    }
+  },
+  "source_manifest_sha256": "2a134eb1c23421fd7e50f8c255f2d55395ecfda8149700c78f76dac3da553fd5",
+  "survey_weighted_geometry": false,
+  "temporal_test_rerun": false,
+  "test_requested_after_global_barrier": true,
+  "test_year": 2024,
+  "train_year": 2022,
+  "training_cohort_digest_expected": 4,
+  "training_cohort_digest_matches": 4,
+  "training_state_anchor_expected": 20,
+  "training_state_anchor_matches": 20,
+  "validation_cohort_requested": false,
+  "validation_year": 2023
+}

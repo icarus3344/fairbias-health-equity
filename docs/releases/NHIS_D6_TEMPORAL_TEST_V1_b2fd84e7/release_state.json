@@ -1,0 +1,11 @@
+{
+  "complete_file_count": 43,
+  "completed_at": "2026-09-02T09:17:43Z",
+  "manifest_sha256": "2a134eb1c23421fd7e50f8c255f2d55395ecfda8149700c78f76dac3da553fd5",
+  "manifest_tracked_artifact_count": 41,
+  "release_id": "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7",
+  "status": "COMPLETE",
+  "test_year_evaluated": true,
+  "test_year_requested": true,
+  "validation_year_requested": false
+}

@@ -1,0 +1,48 @@
+{
+  "all_training_state_hashes_match": true,
+  "archived_d6_train_val_commit": "bdf154c541d365b216a732bc3a58415af41cdcc7",
+  "archived_d6_train_val_manifest_sha256": "773d43b2d893232eb4cbba9dfcdcc639ecdc2fbc8efb2e353f7d2a68514159c4",
+  "archived_d6_train_val_release_id": "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609",
+  "archived_d6_train_val_tag": "nhis-d6-temporal-train-val-v1",
+  "arm_id": "D6_ARM_004",
+  "classifier_weighted": false,
+  "disability_arm": "exclude_disability_components",
+  "evaluation_weighted": false,
+  "expected_train_source_row_digest": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+  "expected_training_state_hashes": {
+    "FairBias_LR": "cb0e9a360d68b1705bc1b3b54d508afe80803648fdb22aafc468e245b6045bca",
+    "FairBias_scaler": "42236586cddc6dd9bf36d46d3209ef40e830c03493a3f041bb429aedc5d4856c",
+    "baseline_LR": "d050dc2a3ba59b2ea1f1767342dbb468680175cc182e94d2143d0ea01563bc3d",
+    "baseline_scaler": "f59d3f21087ae95c2accbc70e0edf9a5e055abe97e2a69d5279aa691688f07a1",
+    "changed_dict": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568"
+  },
+  "feature_set": "PRIMARY_CORE",
+  "observed_train_source_row_digest": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+  "observed_training_state_hashes": {
+    "FairBias_LR": "cb0e9a360d68b1705bc1b3b54d508afe80803648fdb22aafc468e245b6045bca",
+    "FairBias_scaler": "42236586cddc6dd9bf36d46d3209ef40e830c03493a3f041bb429aedc5d4856c",
+    "baseline_LR": "d050dc2a3ba59b2ea1f1767342dbb468680175cc182e94d2143d0ea01563bc3d",
+    "baseline_scaler": "f59d3f21087ae95c2accbc70e0edf9a5e055abe97e2a69d5279aa691688f07a1",
+    "changed_dict": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568"
+  },
+  "preprocessing_state_expected_hash": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+  "preprocessing_state_match": true,
+  "preprocessing_state_observed_hash": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+  "preprocessor_fit_role": "development_train",
+  "preprocessor_fit_year": 2022,
+  "protected_attribute": "DISAB3_A",
+  "survey_weighted_geometry": false,
+  "test_group_counts": {
+    "1": 3705,
+    "2": 28649
+  },
+  "test_n": 32354,
+  "test_outcome_positive_count": 2563,
+  "test_prevalence": 0.07921740743030228,
+  "test_requested_only_after_global_reproduction_barrier": true,
+  "test_source_row_digest": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+  "test_year": 2024,
+  "train_source_row_digest_match": true,
+  "train_year": 2022,
+  "validation_year_requested": false
+}

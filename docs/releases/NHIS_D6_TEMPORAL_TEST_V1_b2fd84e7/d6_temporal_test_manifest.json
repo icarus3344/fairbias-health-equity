@@ -1,0 +1,193 @@
+{
+  "artifacts": {
+    "D6_ARM_001/arm_config.json": {
+      "sha256": "e83d387d67c487c6f905435aac33ca079938e643816c46bc0d9bc6adc3a85a78",
+      "size_bytes": 1050
+    },
+    "D6_ARM_001/frozen_changed_dict.json": {
+      "sha256": "333c01b0518435355b5fa2b6519d8200fd9424572b74e6d3329972edc24c42eb",
+      "size_bytes": 643
+    },
+    "D6_ARM_001/input_provenance.json": {
+      "sha256": "c96c275e7562788ee4441c5c869289428b26177b7a64c22380abbf868d9b238b",
+      "size_bytes": 2569
+    },
+    "D6_ARM_001/test_comparison.json": {
+      "sha256": "8c4d236229ea9eb383d6d08eb9892725ead66b5410c666887f4a6e711e55d25c",
+      "size_bytes": 1819
+    },
+    "D6_ARM_001/test_dphi_before_after.json": {
+      "sha256": "268e02aeee87e090356360dd047d4f1b7ea8a9a31bfb260bc837fa7aca6d869a",
+      "size_bytes": 2022
+    },
+    "D6_ARM_001/test_group_metrics_baseline.csv": {
+      "sha256": "8d3c50fae6913eb402b612a11e5c748807371725abc702a50eac4caf85ac019e",
+      "size_bytes": 576
+    },
+    "D6_ARM_001/test_group_metrics_fairbias.csv": {
+      "sha256": "d05b5bbc047fedaa2cadcdb81ff7e3893ddf034341da4784db99a695b189e847",
+      "size_bytes": 507
+    },
+    "D6_ARM_001/test_metrics_baseline.json": {
+      "sha256": "e48d3caf2099fdaffce07042beaa387220bfac13ffa7948488931e8fd5043dd6",
+      "size_bytes": 2432
+    },
+    "D6_ARM_001/test_metrics_fairbias.json": {
+      "sha256": "4a15a4316a4ccb389281dff09aadc3c3eebb205be948b06d71b8d6c79e74656c",
+      "size_bytes": 2291
+    },
+    "D6_ARM_001/training_state_reproduction.json": {
+      "sha256": "ca7ed1b7ca2ae14d480a86f4a9c3ae561cef049ab0810c588924225c34636c27",
+      "size_bytes": 2765
+    },
+    "D6_ARM_002/arm_config.json": {
+      "sha256": "bd412023577f461f2e213e1d6b60e8aae6100f63dc3741fab489562601261fea",
+      "size_bytes": 1091
+    },
+    "D6_ARM_002/frozen_changed_dict.json": {
+      "sha256": "117405d4d68653a6b1d41cf474e17b1b42f6faa5ecb9e992c228cf49a706b49f",
+      "size_bytes": 575
+    },
+    "D6_ARM_002/input_provenance.json": {
+      "sha256": "bad99f5e28744502e2d4de64ee1d846e9c0e1ae0997f748b32c066e8ee1a2d63",
+      "size_bytes": 2645
+    },
+    "D6_ARM_002/test_comparison.json": {
+      "sha256": "9c9de6692923deb68ec758589ff3ba46296d958bdae6225815d7359ab4686eff",
+      "size_bytes": 2566
+    },
+    "D6_ARM_002/test_dphi_before_after.json": {
+      "sha256": "856b1d68e5510da3806ee35ae31f99999b0d490a30f338e532d3f884d90f4ae2",
+      "size_bytes": 1956
+    },
+    "D6_ARM_002/test_group_metrics_baseline.csv": {
+      "sha256": "e571eb33ef2faba69664b8176f49ed21e82e174c4c289e109b4472b9152ffe3b",
+      "size_bytes": 1230
+    },
+    "D6_ARM_002/test_group_metrics_fairbias.csv": {
+      "sha256": "d7271cdc9d332e446ea6a3543c86b5a0e0596dcc25f9a34fbaab1d93dc4b537c",
+      "size_bytes": 1213
+    },
+    "D6_ARM_002/test_metrics_baseline.json": {
+      "sha256": "ab859c3ebdaed5eafbc37bbe401f6faf27b30880d6e8e8f51bb5b1c010c172cd",
+      "size_bytes": 11875
+    },
+    "D6_ARM_002/test_metrics_fairbias.json": {
+      "sha256": "8ac210783fd4641468db9a595579877bd79b9a71b4c4d8104f9c166b7cf1c70c",
+      "size_bytes": 11555
+    },
+    "D6_ARM_002/training_state_reproduction.json": {
+      "sha256": "29cc0d29586947f22e5bc6e20010c3a1039cba8d962a806b9a3ecb9ecbd7ce38",
+      "size_bytes": 2765
+    },
+    "D6_ARM_003/arm_config.json": {
+      "sha256": "b448c86e770736387c43be7d98260b50ff555d429c7a2c5ae08cfeb2a171874c",
+      "size_bytes": 1053
+    },
+    "D6_ARM_003/frozen_changed_dict.json": {
+      "sha256": "12e3502af5e51798c45afafd4a7750acd943d4f3acedad34ce95197d27936b65",
+      "size_bytes": 494
+    },
+    "D6_ARM_003/input_provenance.json": {
+      "sha256": "a15e8ab050be2e95647a0164d16890f2bc0eb45ff5ea60903129a3c528511c10",
+      "size_bytes": 2571
+    },
+    "D6_ARM_003/test_comparison.json": {
+      "sha256": "1eb78f4c7663f6a8635f29684e1af1f9791b77b13ea6760be23c9e214c3843ac",
+      "size_bytes": 1837
+    },
+    "D6_ARM_003/test_dphi_before_after.json": {
+      "sha256": "35f6720331b2903fffd4bf1401379110cbbee202c9600a0da64b4c0dd3f8dda5",
+      "size_bytes": 2031
+    },
+    "D6_ARM_003/test_group_metrics_baseline.csv": {
+      "sha256": "ae0788308f6e597124ae629907f543962982bd12dbbe0fe27dffd3a619cfe23a",
+      "size_bytes": 567
+    },
+    "D6_ARM_003/test_group_metrics_fairbias.csv": {
+      "sha256": "b3b65115af6bd990803759d3aac8dd10fb07c685fa244cd21fb35304476264a8",
+      "size_bytes": 567
+    },
+    "D6_ARM_003/test_metrics_baseline.json": {
+      "sha256": "634933aa1bbddcc3acba726fc5316e156ce3c267c0b5879d67c738e66e711f0b",
+      "size_bytes": 2415
+    },
+    "D6_ARM_003/test_metrics_fairbias.json": {
+      "sha256": "bd69d41386c5f2fc544fd3d1a45739d246843bec35256673226e7877cf2f56c5",
+      "size_bytes": 2411
+    },
+    "D6_ARM_003/training_state_reproduction.json": {
+      "sha256": "0c597b194a183d0ae676e39cf8c34e3d9530dc20de4d151770d5dbeb74e1d2e9",
+      "size_bytes": 2765
+    },
+    "D6_ARM_004/arm_config.json": {
+      "sha256": "a06c8b18f19cdd13f56ac60da7ae34cbb32b987960f496652c1378bdc459dfe1",
+      "size_bytes": 965
+    },
+    "D6_ARM_004/frozen_changed_dict.json": {
+      "sha256": "b0c232ce526c79047c3d2eb6f6b570018005a2609ebaa412c011d9b8fba63fe7",
+      "size_bytes": 556
+    },
+    "D6_ARM_004/input_provenance.json": {
+      "sha256": "be377a82e9767b7d00912cfebcd2cea08db3dadb48c4e249b4971e6c7407a3d2",
+      "size_bytes": 2588
+    },
+    "D6_ARM_004/test_comparison.json": {
+      "sha256": "2cf4512ec48f8fee98b0d4aa5ff6f06205f7842c679a8b9e3a73c7504d119ae7",
+      "size_bytes": 1842
+    },
+    "D6_ARM_004/test_dphi_before_after.json": {
+      "sha256": "5b20d374e8e3bead8adaee52fdbd899816c543787222c1ce751e3e15e5e27e76",
+      "size_bytes": 1509
+    },
+    "D6_ARM_004/test_group_metrics_baseline.csv": {
+      "sha256": "d04f320f5d2a1f02558be812cd97f101b689c3b035a6e9351b0c77f7b60a9c24",
+      "size_bytes": 568
+    },
+    "D6_ARM_004/test_group_metrics_fairbias.csv": {
+      "sha256": "593e3b357616b19abd82e8ae8ec0d88e1c08b2dd9922f84ac19fe9424817d23e",
+      "size_bytes": 551
+    },
+    "D6_ARM_004/test_metrics_baseline.json": {
+      "sha256": "b2355a2511e3c43bad547e5677792578c6144f43fa24b30f9b2116f125665156",
+      "size_bytes": 2415
+    },
+    "D6_ARM_004/test_metrics_fairbias.json": {
+      "sha256": "8245e43b98b643c2447198ba0dcf07ec6b5501615baf95bf75bead3ff60069d0",
+      "size_bytes": 2387
+    },
+    "D6_ARM_004/training_state_reproduction.json": {
+      "sha256": "469c9389f908fd730d84518489673daef063dbb8d057081d7f1ee5c9d2df2263",
+      "size_bytes": 2765
+    },
+    "training_state_reproduction_summary.json": {
+      "sha256": "03220519f72c86e842b440cb3e476be3430b27ad074faed1231a91f8a297ca37",
+      "size_bytes": 12718
+    }
+  },
+  "causal_analysis": false,
+  "classifier_weighted": false,
+  "cohort_digest_expected": 4,
+  "cohort_digest_matches": 4,
+  "disclosure_2024": "D6 is a predeclared temporal robustness analysis using 2022 for development training, 2023 for temporal validation, and 2024 for forward-time evaluation. However, 2024 respondents were previously included in the pooled D4/D5 analyses, so the 2024 partition is not a globally untouched primary holdout. D6-specific transformations and models were nevertheless frozen before D6-specific 2024 evaluation.",
+  "evaluation_weighted": false,
+  "gate": "D6 temporal TEST",
+  "longitudinal": false,
+  "prediction_threshold": 0.5,
+  "preprocessing_state_match": true,
+  "primary_analysis": false,
+  "release_id": "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7",
+  "repeated_cross_sectional": true,
+  "replaces_d4_primary": false,
+  "status": "COMPLETE",
+  "survey_weighted_geometry": false,
+  "temporal_robustness_analysis": true,
+  "test_requested_after_global_barrier": true,
+  "test_year": 2024,
+  "train_year": 2022,
+  "training_state_anchor_expected": 20,
+  "training_state_anchor_matches": 20,
+  "training_state_reproduction_required": true,
+  "validation_cohort_requested": false,
+  "validation_year": 2023
+}

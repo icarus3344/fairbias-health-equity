@@ -1,0 +1,98 @@
+{
+  "fairness_gaps": {
+    "defined_groups": {
+      "fpr": [
+        1,
+        2
+      ],
+      "ppv": [
+        1,
+        2
+      ],
+      "selection_rate": [
+        1,
+        2
+      ],
+      "tpr": [
+        1,
+        2
+      ]
+    },
+    "demographic_parity_gap": 1.0181610690484973e-05,
+    "equal_opportunity_gap": 0.0,
+    "equalized_odds_max_gap": 9.857968832556238e-06,
+    "fpr_gap": 9.857968832556238e-06,
+    "group_ppv_values": {
+      "1": 0.0,
+      "2": 0.0
+    }
+  },
+  "group_coverage": {
+    "diagnostics": null,
+    "expected_group_count": 2,
+    "expected_pair_count": 1,
+    "group_coverage_complete": true,
+    "observed_group_count": 2,
+    "observed_groups": [
+      1,
+      2
+    ],
+    "observed_pair_count": 1
+  },
+  "group_metrics": [
+    {
+      "fn_count": 1046,
+      "fp_count": 1,
+      "fpr": 7.243227582210633e-05,
+      "fpr_denominator": 13806,
+      "group": 1,
+      "n": 14852,
+      "outcome_negative_count": 13806,
+      "outcome_positive_count": 1046,
+      "ppv": 0.0,
+      "ppv_denominator": 1,
+      "predicted_negative_count": 14851,
+      "predicted_positive_count": 1,
+      "prevalence": 0.0704282251548613,
+      "selection_rate": 6.733099919202801e-05,
+      "tn_count": 13805,
+      "tp_count": 0,
+      "tpr": 0.0,
+      "tpr_denominator": 1046,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 1517,
+      "fp_count": 1,
+      "fpr": 6.257430698955009e-05,
+      "fpr_denominator": 15981,
+      "group": 2,
+      "n": 17498,
+      "outcome_negative_count": 15981,
+      "outcome_positive_count": 1517,
+      "ppv": 0.0,
+      "ppv_denominator": 1,
+      "predicted_negative_count": 17497,
+      "predicted_positive_count": 1,
+      "prevalence": 0.08669562235684078,
+      "selection_rate": 5.7149388501543034e-05,
+      "tn_count": 15980,
+      "tp_count": 0,
+      "tpr": 0.0,
+      "tpr_denominator": 1517,
+      "undefined_reasons": {}
+    }
+  ],
+  "utility": {
+    "accuracy": 0.9207109737248841,
+    "auprc": 0.1408667675847245,
+    "auroc": 0.663616305761805,
+    "balanced_accuracy": 0.499966428307651,
+    "count_outcome_positive": 2563,
+    "count_predicted_positive": 2,
+    "f1": 0.0,
+    "prevalence": 0.07922720247295209,
+    "selection_rate": 6.182380216383307e-05,
+    "undefined_reasons": {}
+  }
+}

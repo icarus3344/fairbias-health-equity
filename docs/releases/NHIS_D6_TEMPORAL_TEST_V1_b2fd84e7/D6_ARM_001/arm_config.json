@@ -1,0 +1,54 @@
+{
+  "arm_id": "D6_ARM_001",
+  "categorical_features": [
+    "educp_a",
+    "region",
+    "ratcat_a",
+    "empwrklsw1_a",
+    "empwrkft1_a",
+    "notcov_a",
+    "phstat_a",
+    "hypev_a",
+    "chlev_a",
+    "dibev_a",
+    "asev_a",
+    "visiondf_a",
+    "hearingdf_a",
+    "diff_a",
+    "comdiff_a",
+    "uppslfcr_a",
+    "cogmemdff_a",
+    "usualpl_a"
+  ],
+  "causal_analysis": false,
+  "classifier": {
+    "max_iter": 1000,
+    "random_state": 0,
+    "sample_weight": null,
+    "solver": "lbfgs",
+    "type": "LR"
+  },
+  "disability_arm": "full_feature",
+  "expected_group_count": 2,
+  "expected_groups": [
+    1,
+    2
+  ],
+  "expected_pair_count": 1,
+  "expected_predictors": 21,
+  "feature_set": "PRIMARY_CORE",
+  "longitudinal": false,
+  "numerical_features": [
+    "agep_a",
+    "pcnt18uptc",
+    "pcntlt18tc"
+  ],
+  "outcome": "MEDDL12M_A",
+  "prediction_threshold": 0.5,
+  "protected_attribute": "SEX_A",
+  "repeated_cross_sectional": true,
+  "survey_weighting": "NONE",
+  "test_year": 2024,
+  "train_year": 2022,
+  "validation_year": 2023
+}
