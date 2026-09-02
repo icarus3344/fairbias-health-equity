@@ -1,4 +1,4 @@
-"""Unit, integration, and barrier tests for Gate D7.1a mechanism-audit harness.
+"""Unit, integration, barrier, and production-wiring tests for Gate D7.1a.1.
 
 All tests use synthetic/mock cohorts and frozen archive data.
 Zero real NHIS cohort access, zero estimator fitting, zero FairBias relearning.
@@ -11,6 +11,7 @@ import copy
 import inspect
 import json
 from pathlib import Path
+import subprocess
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
@@ -20,35 +21,46 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import MinMaxScaler
 
+from nhis_fairbias.adapter import NHISStudyAdapter
 from nhis_fairbias.d7_terminal_mechanism import (
     CANONICAL_DECISION_THRESHOLD,
     CohortProvenanceBarrierError,
     D6_ARM_IDS,
+    D6_TEST_COMMIT,
     D6_TEST_MANIFEST_SHA256,
     D6_TEST_TAG,
+    D6_TEST_TAG_OBJECT,
+    D6_TRAIN_VAL_COMMIT,
     D6_TRAIN_VAL_MANIFEST_SHA256,
     D6_TRAIN_VAL_TAG,
+    D6_TRAIN_VAL_TAG_OBJECT,
     D7_ALL_RELEASE_FILES,
     D7_HYPOTHESES,
     D7_MANIFEST_TRACKED_ARTIFACTS,
     D7_UNTRACKED_CONTROL_FILES,
+    D7TerminalMechanismReleaseManager,
     EXPECTED_COHORT_SOURCE_ROW_DIGESTS,
     EXPECTED_TRAINING_STATE_ANCHORS,
     FAMILY_I_INVARIANT,
     FAMILY_II_INVARIANT,
+    FROZEN_FEATURES_PARQUET_PATH,
+    FROZEN_FEATURES_PARQUET_SHA256,
     FrozenArmState,
     FrozenLogisticRegression,
     FrozenScaler,
+    FrozenScoredCohort,
     MANDATORY_D7_DISCLOSURE,
     NHISD7TerminalMechanismHarness,
     PREPROCESSING_STATE_SHA256,
-    PROHIBITED_SUBSTANTIVE_CALLS,
+    ProductionD7TerminalMechanismRuntime,
     SCIENTIFIC_TERMINOLOGY,
     SCORING_REPRODUCTION_ABSOLUTE_TOLERANCE,
     TEMPORAL_YEARS,
     ScoringReproductionBarrierError,
     build_macro_context,
+    compute_canonical_json_sha256,
     compute_cohort_source_row_digest,
+    compute_cohort_utility_metrics,
     compute_distribution_summary,
     compute_family1_diagnostics,
     compute_family2_diagnostics,
@@ -58,11 +70,11 @@ from nhis_fairbias.d7_terminal_mechanism import (
     compute_protected_group_score_diagnostics,
     compute_score_distribution_diagnostics,
     compute_sha256,
-    execute_mechanism_diagnostics_pipeline,
     load_frozen_20_states,
     verify_cohort_provenance_barrier,
     verify_frozen_archives,
     verify_git_execution_preconditions,
+    verify_git_tag_provenance,
     verify_scoring_reproduction_barrier,
 )
 
@@ -77,10 +89,10 @@ def poison_estimator_fits(monkeypatch):
     """Enforce zero estimator fitting globally across test execution."""
 
     def poisoned_fit(*args, **kwargs):
-        raise AssertionError("POISON TRIGGERED: Estimator .fit() called during D7.1a test!")
+        raise AssertionError("POISON TRIGGERED: Estimator .fit() called during D7 test!")
 
     def poisoned_fit_transform(*args, **kwargs):
-        raise AssertionError("POISON TRIGGERED: Estimator .fit_transform() called during D7.1a test!")
+        raise AssertionError("POISON TRIGGERED: Estimator .fit_transform() called during D7 test!")
 
     monkeypatch.setattr(MinMaxScaler, "fit", poisoned_fit)
     monkeypatch.setattr(MinMaxScaler, "fit_transform", poisoned_fit_transform)
@@ -88,18 +100,13 @@ def poison_estimator_fits(monkeypatch):
 
 
 @pytest.fixture
-def poison_adapter_cohort_access(monkeypatch):
-    """Poison real NHIS cohort downloads or adapter cohort requests."""
-    try:
-        import nhis_fairbias.adapter as adapter_mod
+def poison_real_nhis_adapter(monkeypatch):
+    """Poison real NHISStudyAdapter constructor to guarantee zero real microdata access."""
 
-        def poisoned_get_cohort(*args, **kwargs):
-            raise AssertionError("POISON TRIGGERED: Real NHIS cohort accessed via adapter!")
+    def poisoned_init(*args, **kwargs):
+        raise AssertionError("POISON TRIGGERED: Real NHISStudyAdapter instantiated during test!")
 
-        if hasattr(adapter_mod, "NHISAdapter"):
-            monkeypatch.setattr(adapter_mod.NHISAdapter, "get_cohort", poisoned_get_cohort)
-    except ImportError:
-        pass
+    monkeypatch.setattr(NHISStudyAdapter, "__init__", poisoned_init)
 
 
 @pytest.fixture
@@ -136,14 +143,18 @@ def test_01_frozen_d6_archive_manifest_verification():
     res = verify_frozen_archives(_REPO_ROOT)
     assert res["train_val_manifest_sha256"] == D6_TRAIN_VAL_MANIFEST_SHA256
     assert res["test_manifest_sha256"] == D6_TEST_MANIFEST_SHA256
+    assert res["train_val_artifact_count"] == 45
+    assert res["test_artifact_count"] == 41
     assert res["status"] == "VERIFIED"
 
 
 def test_02_frozen_d6_tag_verification():
-    res = verify_frozen_archives(_REPO_ROOT)
-    assert res["tag_verification"]["tags_verified"] is True
-    assert res["tag_verification"]["train_val_tag"] == D6_TRAIN_VAL_TAG
-    assert res["tag_verification"]["test_tag"] == D6_TEST_TAG
+    res = verify_git_tag_provenance(_REPO_ROOT)
+    assert res["tags_verified"] is True
+    assert res["train_val_tag_object"] == D6_TRAIN_VAL_TAG_OBJECT
+    assert res["train_val_commit"] == D6_TRAIN_VAL_COMMIT
+    assert res["test_tag_object"] == D6_TEST_TAG_OBJECT
+    assert res["test_commit"] == D6_TEST_COMMIT
 
 
 def test_03_d6_20_20_state_anchor_loading(mock_arm_states):
@@ -181,13 +192,14 @@ def test_05_d4_local_preflight_paths_not_required():
 def test_06_d5_only_archive_context_is_used():
     macro = build_macro_context(_REPO_ROOT)
     assert "d5_weighted_aggregate_context" in macro
+    assert "d5_weighted_terminal_transformation_summary" in macro
     assert macro["source"] == "canonical_frozen_releases_only"
 
 
 # -----------------------------------------------------------------------------
 # 7-11. Audit-Only Constraints & Git Preconditions
 # -----------------------------------------------------------------------------
-def test_07_audit_only_constructs_no_adapter(poison_adapter_cohort_access):
+def test_07_audit_only_constructs_no_adapter(poison_real_nhis_adapter):
     harness = NHISD7TerminalMechanismHarness(repo_root=_REPO_ROOT)
     res = harness.run_audit_only()
     assert res["audit_status"] == "PASS"
@@ -214,14 +226,14 @@ def test_11_tracked_dirty_substantive_authorization_fails(monkeypatch):
     def mock_run(cmd, *args, **kwargs):
         res = MagicMock()
         if "rev-parse" in cmd:
-            res.stdout = "e24685cbde26497d0209f26fcf1d82b131dbe726\n"
+            res.stdout = "e365d020d67f39ee9b2aeace9dcb3ede6c09391d\n"
         elif "status" in cmd:
             res.stdout = " M src/nhis_fairbias/some_file.py\n"
         return res
 
     monkeypatch.setattr("subprocess.run", mock_run)
     with pytest.raises(ValueError, match="Tracked working tree is dirty"):
-        verify_git_execution_preconditions(_REPO_ROOT, "e24685cbde26497d0209f26fcf1d82b131dbe726")
+        verify_git_execution_preconditions(_REPO_ROOT, "e365d020d67f39ee9b2aeace9dcb3ede6c09391d")
 
 
 # -----------------------------------------------------------------------------
@@ -242,7 +254,6 @@ def test_12_scaler_direct_formula_equals_X_scale_plus_min():
     X = np.array([[10.0, 100.0], [15.0, 200.0], [20.0, 300.0]])
     scaled = scaler.transform(X)
 
-    # Equivalence with exact sklearn transform
     sk_scaler = scaler.to_sklearn_scaler()
     df_X = pd.DataFrame(X, columns=scaler.feature_order)
     sk_scaled = sk_scaler.transform(df_X)
@@ -319,13 +330,11 @@ def test_16_stable_logistic_score_computation_works():
     }
     lr = FrozenLogisticRegression(state)
     X = np.array([[0.5]])
-    # logit = -1.0 + 2.0*0.5 = 0.0 -> prob = 0.5
     probs = lr.predict_proba(X)
     assert abs(probs[0] - 0.5) < 1e-12
 
 
 def test_17_scorer_performs_zero_lr_fit():
-    # poison_estimator_fits fixture ensures any .fit() will fail immediately
     state = {
         "feature_order": ["f1"],
         "classes_": [0, 1],
@@ -402,21 +411,12 @@ def test_23_preprocessing_hash_mismatch_blocks_diagnostics(tmp_path):
         verify_frozen_archives(tmp_path)
 
 
-def test_24_no_diagnostics_before_global_provenance_barrier(mock_observed_perfect_metrics):
-    """Verify that execute_mechanism_diagnostics_pipeline fails closed if provenance fails."""
-    tv_dir = _REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609"
-    t_dir = _REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7"
-
+def test_24_no_diagnostics_before_global_provenance_barrier():
     corrupted_digests = copy.deepcopy(EXPECTED_COHORT_SOURCE_ROW_DIGESTS)
     corrupted_digests[2022]["D6_ARM_001"] = "corrupted_sha"
 
     with pytest.raises(CohortProvenanceBarrierError):
-        execute_mechanism_diagnostics_pipeline(
-            cohort_digests=corrupted_digests,
-            observed_metrics=mock_observed_perfect_metrics,
-            archived_train_val_dir=tv_dir,
-            archived_test_dir=t_dir,
-        )
+        verify_cohort_provenance_barrier(corrupted_digests)
 
 
 # -----------------------------------------------------------------------------
@@ -487,11 +487,15 @@ def test_32_family1_drop_post_nmi_convention_equals_zero():
     changed_dict = {"agep_a": "dropped"}
 
     records = compute_family1_diagnostics(df_raw, df_trans, y, a, changed_dict, "D6_ARM_001", 2022)
-    rec = records[0]
-    assert rec["transform_type"] == "feature_drop"
-    assert rec["terminal_cardinality"] == 1
-    assert rec["nmi_y_after"] == 0.0
-    assert rec["post_state"] == "dropped_constant_equivalent"
+    feat_summary = next(r for r in records if r["record_type"] == "feature_summary")
+    assert feat_summary["transform_type"] == "feature_drop"
+    assert feat_summary["terminal_cardinality"] == 1
+    assert feat_summary["nmi_y_after"] == 0.0
+    assert feat_summary["post_state"] == "dropped_constant_equivalent"
+
+    cat_after = next(r for r in records if r["record_type"] == "category_state" and r["state"] == "after")
+    assert cat_after["category"] == "dropped_constant_equivalent"
+    assert cat_after["outcome_prevalence"] == 0.5
 
 
 def test_33_family1_category_cardinality_reduction_correct():
@@ -502,11 +506,11 @@ def test_33_family1_category_cardinality_reduction_correct():
     changed_dict = {"diff_a": {"2": 1, "3": 1, "4": 1}}
 
     records = compute_family1_diagnostics(df_raw, df_trans, y, a, changed_dict, "D6_ARM_001", 2023)
-    rec = records[0]
-    assert rec["transform_type"] == "categorical_merge"
-    assert rec["original_cardinality"] == 4
-    assert rec["terminal_cardinality"] == 1
-    assert rec["cardinality_reduction"] == 3
+    feat_summary = next(r for r in records if r["record_type"] == "feature_summary")
+    assert feat_summary["transform_type"] == "categorical_merge"
+    assert feat_summary["original_cardinality"] == 4
+    assert feat_summary["terminal_cardinality"] == 1
+    assert feat_summary["cardinality_reduction"] == 3
 
 
 # -----------------------------------------------------------------------------
@@ -586,7 +590,7 @@ def test_39_fraction_ge_0_5_correct():
 
 
 # -----------------------------------------------------------------------------
-# 40-41. Protected Group Summaries
+# 40-41. Protected Group Summaries (all, Y0, Y1 strata)
 # -----------------------------------------------------------------------------
 def test_40_protected_group_summaries_retain_all_expected_hisp_groups():
     y = pd.Series([0, 1, 0, 0])
@@ -596,8 +600,10 @@ def test_40_protected_group_summaries_retain_all_expected_hisp_groups():
     records = compute_protected_group_score_diagnostics(
         probs, y, a, expected_groups=range(1, 8), arm_id="D6_ARM_002", year=2024, model_name="fairbias"
     )
-    groups = [r["group"] for r in records]
-    assert groups == list(range(1, 8))
+    groups = {r["group"] for r in records}
+    assert groups == set(range(1, 8))
+    strata = {r["outcome_stratum"] for r in records}
+    assert strata == {"all", "Y0", "Y1"}
 
 
 def test_41_small_empty_denominator_remains_undefined():
@@ -608,9 +614,9 @@ def test_41_small_empty_denominator_remains_undefined():
     records = compute_protected_group_score_diagnostics(
         probs, y, a, expected_groups=range(1, 8), arm_id="D6_ARM_002", year=2024, model_name="fairbias"
     )
-    g4 = next(r for r in records if r["group"] == 4)
+    g4 = next(r for r in records if r["group"] == 4 and r["outcome_stratum"] == "all")
     assert g4["n"] == 0
-    assert g4["score_mean"] is None
+    assert g4["mean"] is None
     assert g4["fraction_ge_0_5"] is None
 
 
@@ -651,7 +657,9 @@ def test_43_intercept_tracked_separately():
         "random_state": 0,
     }
     lr = FrozenLogisticRegression(state)
-    records = compute_logit_contribution_diagnostics(np.array([[0.5], [0.5]]), pd.Series([0, 1]), lr, "D6_ARM_001", 2024, "baseline")
+    records = compute_logit_contribution_diagnostics(
+        np.array([[0.5], [0.5]]), pd.Series([0, 1]), lr, "D6_ARM_001", 2024, "baseline"
+    )
     assert records[0]["intercept"] == -3.14
 
 
@@ -667,7 +675,9 @@ def test_44_no_contribution_called_causal():
         "random_state": 0,
     }
     lr = FrozenLogisticRegression(state)
-    records = compute_logit_contribution_diagnostics(np.array([[0.1], [0.9]]), pd.Series([0, 1]), lr, "D6_ARM_001", 2024, "baseline")
+    records = compute_logit_contribution_diagnostics(
+        np.array([[0.1], [0.9]]), pd.Series([0, 1]), lr, "D6_ARM_001", 2024, "baseline"
+    )
     assert "causal" not in records[0]["interpretation_status"].lower()
     assert records[0]["interpretation_status"] == "descriptive decomposition of the fitted terminal linear scoring function"
 
@@ -719,19 +729,18 @@ def test_51_no_threshold_optimization():
 
 
 def test_52_no_synthetic_transform_family_counterfactuals(mock_arm_states):
-    # Verify that all changed_dicts are strictly the frozen immutable ones
     for arm_id in D6_ARM_IDS:
         assert mock_arm_states[arm_id].changed_dict is not None
 
 
-def test_53_no_real_nhis_cohort_access(poison_adapter_cohort_access):
+def test_53_no_real_nhis_cohort_access(poison_real_nhis_adapter):
     harness = NHISD7TerminalMechanismHarness(repo_root=_REPO_ROOT)
     audit_res = harness.run_audit_only()
     assert audit_res["real_nhis_cohort_accessed"] is False
 
 
 # -----------------------------------------------------------------------------
-# 54. AST-Level Anti-Fit Inspection Test (Section 33)
+# 54. AST-Level Anti-Fit Inspection Test (Section 22)
 # -----------------------------------------------------------------------------
 def test_54_source_level_ast_anti_fit_inspection():
     """Inspect AST of d7_terminal_mechanism.py to ensure zero .fit() / .fit_transform() calls."""
@@ -742,7 +751,6 @@ def test_54_source_level_ast_anti_fit_inspection():
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
-            # Check attribute calls like model.fit() or scaler.fit_transform()
             if isinstance(node.func, ast.Attribute):
                 attr_name = node.func.attr
                 assert attr_name != "fit", (
@@ -751,9 +759,420 @@ def test_54_source_level_ast_anti_fit_inspection():
                 assert attr_name != "fit_transform", (
                     f"AST anti-fit inspection failed: found substantive call '.fit_transform()' at line {node.lineno}"
                 )
-            # Check direct calls like FairBiasMitigation()
             elif isinstance(node.func, ast.Name):
                 func_name = node.func.id
                 assert func_name != "FairBiasMitigation", (
                     f"AST anti-fit inspection failed: found constructor call 'FairBiasMitigation()' at line {node.lineno}"
                 )
+
+
+# -----------------------------------------------------------------------------
+# 55-68. Production-Wiring Synthetic Tests (Section 20 & 21)
+# -----------------------------------------------------------------------------
+class SyntheticTestAdapter:
+    """Deterministic synthetic adapter matching NHISStudyAdapter interface."""
+
+    def __init__(self, arm_states: Dict[str, FrozenArmState]) -> None:
+        self.arm_states = arm_states
+        # Create a mock preprocessor with the exact expected preprocessing hash
+        self.preprocessor = MagicMock()
+        prep_record = json.loads(
+            (_REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609" / "preprocessing_provenance.json").read_text()
+        )
+        self.preprocessor.fitted_record.to_dict.return_value = prep_record
+
+        # Feature family lists
+        feat_reg = json.loads((_REPO_ROOT / "configs" / "nhis" / "features.json").read_text())
+        cats = feat_reg["feature_lists"]["primary_categorical_features"]
+        nums = feat_reg["feature_lists"]["primary_numerical_features"]
+        self.preprocessor.get_feature_family_lists.return_value = (cats, nums)
+
+    def get_cohort(self, year: int, outcome: str, protected_attribute: str, feature_set: str, disability_arm: str):
+        # Determine arm_id
+        arm_id = None
+        for a_id, attr in ARM_PROTECTED_ATTRIBUTES.items():
+            if attr == protected_attribute and ARM_DISABILITY_POLICIES[a_id] == disability_arm:
+                arm_id = a_id
+                break
+        assert arm_id is not None
+
+        arm_state = self.arm_states[arm_id]
+        cols = arm_state.baseline_scaler.feature_order
+        n_samples = 100
+
+        # Synthetic X with valid features
+        rng = np.random.RandomState(year + int(arm_id[-1]))
+        data = rng.uniform(0.0, 1.0, size=(n_samples, len(cols)))
+        X = pd.DataFrame(data, columns=cols)
+        y = pd.Series(rng.binomial(1, 0.3, size=n_samples))
+        a = pd.Series(rng.choice(range(1, 8 if arm_id == "D6_ARM_002" else 3), size=n_samples))
+        w = np.ones(n_samples)
+        meta = {"year": year, "arm_id": arm_id}
+        return X, y, a, w, meta
+
+
+def test_55_preconditions_before_mkdir(tmp_path):
+    """Release manager must fail before directory creation if git precondition fails."""
+    rel_manager = D7TerminalMechanismReleaseManager(
+        repo_root=_REPO_ROOT,
+        releases_parent_dir=tmp_path / "releases",
+    )
+    bad_head = "0000000000000000000000000000000000000000"
+    target_dir = tmp_path / "releases" / "TEST_RELEASE_P1"
+
+    with pytest.raises(ValueError, match="Git HEAD mismatch"):
+        rel_manager.execute_release(
+            release_id="TEST_RELEASE_P1",
+            expected_execution_head=bad_head,
+        )
+    assert not target_dir.exists()
+
+
+def test_56_lazy_adapter_construction(poison_real_nhis_adapter):
+    """Runtime must not construct adapter in __init__."""
+    runtime = ProductionD7TerminalMechanismRuntime(repo_root=_REPO_ROOT)
+    assert runtime.adapter is None
+
+
+def test_57_scored_cohort_structural_binding(mock_arm_states):
+    """Scored cohorts must derive reproduction metrics directly from baseline_probs and fairbias_probs."""
+    X = pd.DataFrame(np.zeros((10, 21)), columns=mock_arm_states["D6_ARM_001"].baseline_scaler.feature_order)
+    probs_base = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95])
+    probs_fb = np.array([0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.92, 0.96])
+    y = pd.Series([0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    a = pd.Series([1] * 10)
+
+    scored = FrozenScoredCohort(
+        year=2024,
+        arm_id="D6_ARM_001",
+        X_original=X,
+        X_terminal=X,
+        X_baseline_scaled=X.to_numpy(),
+        X_fairbias_scaled=X.to_numpy(),
+        y=y,
+        a=a,
+        baseline_logits=np.zeros(10),
+        baseline_probs=probs_base,
+        fairbias_logits=np.zeros(10),
+        fairbias_probs=probs_fb,
+        source_row_digest="test_digest",
+    )
+
+    metrics = compute_cohort_utility_metrics(np.asarray(y), scored.baseline_probs)
+    assert metrics["count_predicted_positive"] == 6
+    assert abs(metrics["selection_rate"] - 0.6) < 1e-12
+    assert metrics["auroc"] > 0.9
+
+
+def test_58_score_perturbation_causes_reproduction_failure(mock_observed_perfect_metrics):
+    """Perturbing a probability causes reproduction failure and blocks diagnostics."""
+    tv_dir = _REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609"
+    t_dir = _REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7"
+
+    corrupted = copy.deepcopy(mock_observed_perfect_metrics)
+    corrupted[2024]["D6_ARM_001"]["baseline"]["auroc"] += 1e-5
+
+    with pytest.raises(ScoringReproductionBarrierError):
+        verify_scoring_reproduction_barrier(corrupted, tv_dir, t_dir)
+
+
+def test_59_no_arbitrary_nmi_thresholds_or_automatic_hypothesis_booleans():
+    """Mechanism arm summary must output PI_REVIEW_REQUIRED and no hardcoded hypothesis booleans."""
+    summary = compute_mechanism_arm_summary(
+        arm_id="D6_ARM_001",
+        changed_dict={"agep_a": "dropped"},
+        family1_records=[
+            {
+                "record_type": "feature_summary",
+                "arm_id": "D6_ARM_001",
+                "year": 2024,
+                "feature": "agep_a",
+                "transform_type": "feature_drop",
+                "delta_nmi_y": -0.05,
+                "delta_nmi_a": -0.02,
+            }
+        ],
+        family2_records=[],
+        score_dist_records=[],
+        logit_contrib_records=[],
+    )
+    assert summary["hypothesis_adjudication"] == "PI_REVIEW_REQUIRED"
+    assert "evidence_consistent_with_H1" not in summary
+    assert "evidence_consistent_with_H2" not in summary
+    assert "empirical_information_destruction_demonstrated" not in summary
+    assert summary["causal_claim_made"] is False
+
+
+def test_60_logit_contribution_missing_feature_explicit_semantics():
+    """Features dropped in FairBias must have fairbias_present=False and absence_equivalent_zero_contribution=True."""
+    state = {
+        "feature_order": ["x1"],
+        "classes_": [0, 1],
+        "coef_": [[1.5]],
+        "intercept_": [0.0],
+        "n_features_in_": 1,
+        "solver": "lbfgs",
+        "max_iter": 1000,
+        "random_state": 0,
+    }
+    lr = FrozenLogisticRegression(state)
+    records = compute_logit_contribution_diagnostics(
+        X_scaled=np.array([[0.5], [0.5]]),
+        y_true=pd.Series([0, 1]),
+        lr=lr,
+        arm_id="D6_ARM_001",
+        year=2024,
+        model_name="fairbias",
+        changed_dict={"dropped_col": "dropped"},
+        all_baseline_features=["x1", "dropped_col"],
+    )
+
+    rec_x1 = next(r for r in records if r["feature"] == "x1")
+    assert rec_x1["fairbias_present"] is True
+    assert rec_x1["absence_equivalent_zero_contribution"] is False
+
+    rec_drop = next(r for r in records if r["feature"] == "dropped_col")
+    assert rec_drop["fairbias_present"] is False
+    assert rec_drop["absence_equivalent_zero_contribution"] is True
+    assert rec_drop["comparison_type"] == "dropped_from_fairbias_representation"
+    assert rec_drop["beta_j"] is None
+
+
+def test_61_release_manager_collision_fails_closed(tmp_path):
+    """Release manager must fail closed if target release directory already exists."""
+    rel_dir = tmp_path / "releases" / "EXISTING_RELEASE"
+    rel_dir.mkdir(parents=True)
+
+    manager = D7TerminalMechanismReleaseManager(
+        repo_root=_REPO_ROOT,
+        releases_parent_dir=tmp_path / "releases",
+    )
+
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    with patch("nhis_fairbias.d7_terminal_mechanism.verify_git_execution_preconditions"):
+        with pytest.raises(FileExistsError, match="Release directory collision"):
+            manager.execute_release("EXISTING_RELEASE", expected_execution_head=head)
+
+
+def test_62_failed_release_preserves_directory_with_failed_state(tmp_path):
+    """Failed execution must preserve release directory and write FAILED state."""
+    releases_dir = tmp_path / "releases"
+    manager = D7TerminalMechanismReleaseManager(
+        repo_root=_REPO_ROOT,
+        releases_parent_dir=releases_dir,
+    )
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
+
+    # Force failure by patching build_and_score_all_cohorts to fail
+    with patch("nhis_fairbias.d7_terminal_mechanism.verify_git_execution_preconditions"), \
+         patch.object(ProductionD7TerminalMechanismRuntime, "build_and_score_all_cohorts", side_effect=RuntimeError("Intentional test failure")):
+        with pytest.raises(RuntimeError, match="Intentional test failure"):
+            manager.execute_release("FAIL_RELEASE", expected_execution_head=head)
+
+    rel_path = releases_dir / "FAIL_RELEASE"
+    assert rel_path.is_dir()
+    state_file = rel_path / "release_state.json"
+    assert state_file.is_file()
+    state_data = json.loads(state_file.read_text())
+    assert state_data["status"] == "FAILED"
+    assert "Intentional test failure" in state_data["error"]
+
+
+def test_63_archive_verification_rejects_mutated_artifact(tmp_path):
+    """Mutating any manifest-tracked artifact must fail archive verification."""
+    # Copy train/val release to tmp_path and corrupt one file
+    import shutil
+    copy_dir = tmp_path / "docs" / "releases"
+    copy_dir.mkdir(parents=True)
+    shutil.copytree(_REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609", copy_dir / "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609")
+    shutil.copytree(_REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7", copy_dir / "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7")
+
+    # Corrupt one artifact
+    target = copy_dir / "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609" / "D6_ARM_001" / "arm_config.json"
+    target.write_text('{"corrupted": true}', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="artifact hash mismatch"):
+        verify_frozen_archives(tmp_path)
+
+
+def test_64_archive_verification_rejects_wrong_tag_object():
+    """Wrong tag object must fail git tag provenance verification."""
+    with patch("subprocess.run") as mock_run:
+        res1 = MagicMock()
+        res1.stdout = "wrong_tag_obj\n"
+        mock_run.return_value = res1
+
+        with pytest.raises(ValueError, match="tag provenance mismatch"):
+            verify_git_tag_provenance(_REPO_ROOT)
+
+
+def test_65_d5_macro_context_transformation_summary():
+    """Macro context must extract D5 terminal transformation summaries."""
+    macro = build_macro_context(_REPO_ROOT)
+    d5_summary = macro.get("d5_weighted_terminal_transformation_summary", {})
+    assert "D6_ARM_001" in d5_summary
+    assert "drops" in d5_summary["D6_ARM_001"]
+    assert "powers" in d5_summary["D6_ARM_001"]
+    assert "merges" in d5_summary["D6_ARM_001"]
+
+
+def test_66_synthetic_release_manager_end_to_end(tmp_path, mock_arm_states, mock_observed_perfect_metrics):
+    """End-to-end synthetic execution of D7TerminalMechanismReleaseManager producing all 11 files."""
+    releases_dir = tmp_path / "releases"
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
+
+    # Synthetic adapter factory
+    def make_adapter():
+        return SyntheticTestAdapter(mock_arm_states)
+
+    manager = D7TerminalMechanismReleaseManager(
+        repo_root=_REPO_ROOT,
+        releases_parent_dir=releases_dir,
+        adapter_factory=make_adapter,
+    )
+
+    # Patch digests and scoring reproduction to test full artifact persistence and manifest generation
+    created_runtimes = []
+    orig_init = ProductionD7TerminalMechanismRuntime.__init__
+    def mock_init(self_runtime, *args, **kwargs):
+        orig_init(self_runtime, *args, **kwargs)
+        self_runtime.arm_states = mock_arm_states
+        created_runtimes.append(self_runtime)
+
+    with patch("nhis_fairbias.d7_terminal_mechanism.verify_git_execution_preconditions"), \
+         patch.object(ProductionD7TerminalMechanismRuntime, "__init__", mock_init), \
+         patch.object(ProductionD7TerminalMechanismRuntime, "build_and_score_all_cohorts") as mock_score, \
+         patch.object(ProductionD7TerminalMechanismRuntime, "compute_diagnostics") as mock_diag:
+
+        # Set up mock scoring result
+        scored_cohorts = {2022: {}, 2023: {}, 2024: {}}
+        for year in TEMPORAL_YEARS:
+            for arm_id in D6_ARM_IDS:
+                cols = mock_arm_states[arm_id].baseline_scaler.feature_order
+                X = pd.DataFrame(np.zeros((10, len(cols))), columns=cols)
+                y = pd.Series([0] * 5 + [1] * 5)
+                a = pd.Series([1] * 10)
+                scored_cohorts[year][arm_id] = FrozenScoredCohort(
+                    year=year,
+                    arm_id=arm_id,
+                    X_original=X,
+                    X_terminal=X,
+                    X_baseline_scaled=X.to_numpy(),
+                    X_fairbias_scaled=X.to_numpy(),
+                    y=y,
+                    a=a,
+                    baseline_logits=np.zeros(10),
+                    baseline_probs=np.linspace(0.1, 0.9, 10),
+                    fairbias_logits=np.zeros(10),
+                    fairbias_probs=np.linspace(0.1, 0.9, 10),
+                    source_row_digest="test_digest",
+                )
+
+        def run_score(*args, **kwargs):
+            if created_runtimes:
+                created_runtimes[-1].scored_cohorts = scored_cohorts
+            return scored_cohorts
+
+        mock_score.side_effect = run_score
+
+        mock_diag.return_value = {
+            "family1_records": [
+                {
+                    "record_type": "feature_summary",
+                    "year": 2024,
+                    "arm_id": "D6_ARM_001",
+                    "feature": "agep_a",
+                    "transform_family": "Family_I",
+                    "transform_type": "feature_drop",
+                    "original_cardinality": 85,
+                    "terminal_cardinality": 1,
+                    "cardinality_reduction": 84,
+                    "nmi_y_before": 0.05,
+                    "nmi_y_after": 0.0,
+                    "delta_nmi_y": -0.05,
+                    "nmi_a_before": 0.02,
+                    "nmi_a_after": 0.0,
+                    "delta_nmi_a": -0.02,
+                    "post_state": "dropped_constant_equivalent",
+                }
+            ],
+            "family2_records": [
+                {
+                    "year": 2024,
+                    "arm_id": "D6_ARM_001",
+                    "feature": "pcnt18uptc",
+                    "transform_family": "Family_II",
+                    "transform_type": "power_reparameterization",
+                    "power_exponent": 5.0,
+                    "information_preserving_reparameterization": True,
+                }
+            ],
+            "score_distribution_records": [
+                {
+                    "year": 2024,
+                    "arm_id": "D6_ARM_001",
+                    "model": "baseline",
+                    "auroc": 0.85,
+                    "auprc": 0.45,
+                    "ks_statistic": 0.55,
+                    "ks_pvalue": 1e-10,
+                    "overall": {"n": 100, "median": 0.5, "fraction_ge_0_5": 0.4},
+                }
+            ],
+            "protected_group_records": [
+                {
+                    "year": 2024,
+                    "arm_id": "D6_ARM_001",
+                    "model": "baseline",
+                    "group": 1,
+                    "outcome_stratum": "all",
+                    "n": 50,
+                    "median": 0.45,
+                    "fraction_ge_0_5": 0.35,
+                }
+            ],
+            "logit_contribution_records": [
+                {
+                    "year": 2024,
+                    "arm_id": "D6_ARM_001",
+                    "model": "baseline",
+                    "feature": "educp_a",
+                    "intercept": -1.5,
+                    "beta_j": 0.4,
+                    "mean_scaled_X_j_Y0": 0.3,
+                    "mean_scaled_X_j_Y1": 0.7,
+                    "class_separation_contribution": 0.16,
+                    "baseline_present": True,
+                    "fairbias_present": True,
+                    "comparison_type": "shared_feature_same_name",
+                    "absence_equivalent_zero_contribution": False,
+                    "interpretation_status": "descriptive decomposition of the fitted terminal linear scoring function",
+                }
+            ],
+            "arm_summaries": {
+                "D6_ARM_001": {
+                    "arm_id": "D6_ARM_001",
+                    "hypothesis_adjudication": "PI_REVIEW_REQUIRED",
+                    "causal_claim_made": False,
+                }
+            },
+        }
+
+        res = manager.execute_release("D7_SYNTHETIC_TEST_V1", expected_execution_head=head)
+        assert res["status"] == "COMPLETE"
+        rel_dir = Path(res["release_dir"])
+
+        # Check all 11 files exist
+        for fname in D7_ALL_RELEASE_FILES:
+            assert (rel_dir / fname).is_file(), f"Missing release file {fname}"
+
+        # Check manifest tracks exactly 9 artifacts
+        manifest = json.loads((rel_dir / "d7_terminal_mechanism_manifest.json").read_text())
+        assert len(manifest["artifacts"]) == 9
+        for fname in D7_MANIFEST_TRACKED_ARTIFACTS:
+            assert fname in manifest["artifacts"]
+
+        # Check release_state.json
+        state_data = json.loads((rel_dir / "release_state.json").read_text())
+        assert state_data["status"] == "COMPLETE"
+        assert state_data["manifest_sha256"] == res["manifest_sha256"]

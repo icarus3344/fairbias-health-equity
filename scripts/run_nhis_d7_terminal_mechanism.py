@@ -2,7 +2,14 @@
 """Execution script for NHIS FairBias Gate D7 Terminal Mechanism Audit.
 
 Usage:
-    python scripts/run_nhis_d7_terminal_mechanism.py --audit-only
+    Audit-only (Default):
+        python scripts/run_nhis_d7_terminal_mechanism.py --audit-only
+
+    Future Substantive Execution (Authorized only after PI freeze):
+        python scripts/run_nhis_d7_terminal_mechanism.py \
+            --execute-terminal-mechanism \
+            --release-id <PI_FROZEN_RELEASE_ID> \
+            --expected-execution-head <PI_REVIEWED_SHA>
 """
 
 from __future__ import annotations
@@ -19,8 +26,8 @@ if str(_REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from nhis_fairbias.d7_terminal_mechanism import (
+    D7TerminalMechanismReleaseManager,
     NHISD7TerminalMechanismHarness,
-    verify_git_execution_preconditions,
 )
 
 
@@ -38,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--execute-terminal-mechanism",
         action="store_true",
         default=False,
-        help="Execute future substantive terminal mechanism analysis (unauthorized in D7.1a).",
+        help="Execute future substantive terminal mechanism analysis (requires reviewed HEAD & release ID).",
     )
     parser.add_argument(
         "--release-id",
@@ -59,7 +66,7 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    # Reject substantive execution if unauthorized or lacking mandatory parameters
+    # Substantive execution route
     if args.execute_terminal_mechanism:
         if not args.release_id or not args.expected_execution_head:
             sys.stderr.write(
@@ -67,19 +74,19 @@ def main() -> int:
             )
             return 1
 
+        manager = D7TerminalMechanismReleaseManager(repo_root=_REPO_ROOT)
         try:
-            verify_git_execution_preconditions(
-                repo_root=_REPO_ROOT,
-                expected_sha=args.expected_execution_head,
+            res = manager.execute_release(
+                release_id=args.release_id,
+                expected_execution_head=args.expected_execution_head,
             )
+            print(f"RELEASE COMPLETE: {res['release_id']}")
+            print(f"RELEASE DIRECTORY: {res['release_dir']}")
+            print(f"MANIFEST SHA-256: {res['manifest_sha256']}")
+            return 0
         except Exception as exc:
-            sys.stderr.write(f"PRECONDITION FAILURE: {exc}\n")
+            sys.stderr.write(f"EXECUTION FAILED: {exc}\n")
             return 2
-
-        sys.stderr.write(
-            "ERROR: Gate D7.1a authorizes audit-only mode; substantive analysis is not authorized.\n"
-        )
-        return 3
 
     # Audit-only execution
     harness = NHISD7TerminalMechanismHarness(repo_root=_REPO_ROOT)
