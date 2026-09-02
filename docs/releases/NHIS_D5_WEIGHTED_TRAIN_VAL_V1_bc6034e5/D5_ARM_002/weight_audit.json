@@ -1,0 +1,167 @@
+{
+  "arm_id": "D5_ARM_002",
+  "train": {
+    "N": 57018,
+    "distinct_weights_count": 56601,
+    "group_diagnostics": [
+      {
+        "N": 8273,
+        "group": 1,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 35754.944,
+        "weight_min": 593.884,
+        "weight_sum": 85431493.868
+      },
+      {
+        "N": 37833,
+        "group": 2,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 43112.878,
+        "weight_min": 265.078,
+        "weight_sum": 303027722.786
+      },
+      {
+        "N": 6119,
+        "group": 3,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 39487.166,
+        "weight_min": 511.21,
+        "weight_sum": 58128637.736
+      },
+      {
+        "N": 3329,
+        "group": 4,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 33954.014,
+        "weight_min": 599.964,
+        "weight_sum": 30757499.535
+      },
+      {
+        "N": 381,
+        "group": 5,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 35386.485,
+        "weight_min": 756.147,
+        "weight_sum": 3149887.239
+      },
+      {
+        "N": 423,
+        "group": 6,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 32523.065,
+        "weight_min": 343.952,
+        "weight_sum": 3197475.286
+      },
+      {
+        "N": 660,
+        "group": 7,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 38617.036,
+        "weight_min": 809.311,
+        "weight_sum": 6515351.977
+      }
+    ],
+    "index_aligned": true,
+    "max": 43112.878,
+    "median": 7228.3315,
+    "min": 265.078,
+    "missing_count": 0,
+    "negative_count": 0,
+    "non_finite_count": 0,
+    "non_numeric_count": 0,
+    "partition": "train",
+    "record_id_aligned": true,
+    "sum": 490208068.42700005,
+    "weight_N": 57018,
+    "zero_count": 0
+  },
+  "val": {
+    "N": 14254,
+    "distinct_weights_count": 14225,
+    "group_diagnostics": [
+      {
+        "N": 2083,
+        "group": 1,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 33857.953,
+        "weight_min": 831.697,
+        "weight_sum": 21621222.698
+      },
+      {
+        "N": 9495,
+        "group": 2,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 42935.084,
+        "weight_min": 431.016,
+        "weight_sum": 76404108.455
+      },
+      {
+        "N": 1462,
+        "group": 3,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 38765.667,
+        "weight_min": 1089.825,
+        "weight_sum": 13702265.92
+      },
+      {
+        "N": 825,
+        "group": 4,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 33013.945,
+        "weight_min": 903.723,
+        "weight_sum": 7717055.112
+      },
+      {
+        "N": 108,
+        "group": 5,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 30602.195,
+        "weight_min": 971.218,
+        "weight_sum": 898739.5219999999
+      },
+      {
+        "N": 105,
+        "group": 6,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 33651.374,
+        "weight_min": 706.841,
+        "weight_sum": 861582.836
+      },
+      {
+        "N": 176,
+        "group": 7,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 33387.863,
+        "weight_min": 1083.099,
+        "weight_sum": 1899855.0070000002
+      }
+    ],
+    "index_aligned": true,
+    "max": 42935.084,
+    "median": 7307.21,
+    "min": 431.016,
+    "missing_count": 0,
+    "negative_count": 0,
+    "non_finite_count": 0,
+    "non_numeric_count": 0,
+    "partition": "val",
+    "record_id_aligned": true,
+    "sum": 123104829.55000001,
+    "weight_N": 14254,
+    "zero_count": 0
+  }
+}

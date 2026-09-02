@@ -1,0 +1,94 @@
+{
+  "fairness_gaps": {
+    "defined_groups": {
+      "fpr": [
+        1,
+        2
+      ],
+      "ppv": [
+        1,
+        2
+      ],
+      "selection_rate": [
+        1,
+        2
+      ],
+      "tpr": [
+        1,
+        2
+      ]
+    },
+    "demographic_parity_gap": 0.0003606358823406961,
+    "equal_opportunity_gap": 0.00333889816360601,
+    "equalized_odds_max_gap": 0.00333889816360601,
+    "fpr_gap": 0.00011450525287972336,
+    "group_ppv_values": {
+      "1": 0.0,
+      "2": 0.5
+    }
+  },
+  "group_coverage": {
+    "diagnostics": null,
+    "expected_group_count": 2,
+    "expected_pair_count": 1,
+    "group_coverage_complete": true,
+    "observed_group_count": 2,
+    "observed_groups": [
+      1,
+      2
+    ],
+    "observed_pair_count": 1
+  },
+  "group_metrics": [
+    {
+      "fn_count": 401,
+      "fp_count": 1,
+      "fpr": 0.0001644736842105263,
+      "fpr_denominator": 6080,
+      "group": 1,
+      "n": 6481,
+      "outcome_negative_count": 6080,
+      "outcome_positive_count": 401,
+      "ppv": 0.0,
+      "ppv_denominator": 1,
+      "predicted_negative_count": 6480,
+      "predicted_positive_count": 1,
+      "prevalence": 0.06187316772103071,
+      "selection_rate": 0.00015429717636167257,
+      "tn_count": 6079,
+      "tp_count": 0,
+      "tpr": 0.0,
+      "tpr_denominator": 401,
+      "undefined_reasons": {}
+    },
+    {
+      "fn_count": 597,
+      "fp_count": 2,
+      "fpr": 0.0002789789370902497,
+      "fpr_denominator": 7169,
+      "group": 2,
+      "n": 7768,
+      "outcome_negative_count": 7169,
+      "outcome_positive_count": 599,
+      "ppv": 0.5,
+      "ppv_denominator": 4,
+      "predicted_negative_count": 7764,
+      "predicted_positive_count": 4,
+      "prevalence": 0.07711122554067971,
+      "selection_rate": 0.0005149330587023687,
+      "tn_count": 7167,
+      "tp_count": 2,
+      "tpr": 0.00333889816360601,
+      "tpr_denominator": 599,
+      "undefined_reasons": {}
+    }
+  ],
+  "utility": {
+    "accuracy": 0.9297494561021826,
+    "auprc": 0.14922139035291726,
+    "auroc": 0.7158294588270814,
+    "balanced_accuracy": 0.5008867839082195,
+    "f1": 0.003980099502487562,
+    "undefined_reasons": {}
+  }
+}

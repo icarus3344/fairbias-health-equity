@@ -1,0 +1,176 @@
+{
+  "arms": [
+    "D5_ARM_001",
+    "D5_ARM_002",
+    "D5_ARM_003",
+    "D5_ARM_004"
+  ],
+  "artifacts": {
+    "D5_ARM_001/arm_config.json": {
+      "sha256": "801badcfafb0f09068d48d4689a6163a7df03040f24347fb0a40bc492057aab2"
+    },
+    "D5_ARM_001/final_weighted_dphi.json": {
+      "sha256": "eebe2be9cd85806e8fde349a6cea124d131c4eb2f5914b2b48ff1d8ff9b47554"
+    },
+    "D5_ARM_001/initial_weighted_dphi.json": {
+      "sha256": "a4af62d05d68409f2f41923118a4689efbac6c1d52ed3bdc4c0e0caa38680011"
+    },
+    "D5_ARM_001/input_provenance.json": {
+      "sha256": "e8cb29e7e504a1be65aa1322dd91da0836c08b8437511c84d5f4e1cae562ec96"
+    },
+    "D5_ARM_001/validation_comparison.json": {
+      "sha256": "aa892028c38ca62e40a970738ca17de31b6b2765b7a075ef8fe0c356fd6a4383"
+    },
+    "D5_ARM_001/validation_group_metrics_baseline.csv": {
+      "sha256": "77db1af98e0bb47057e7c111aaaf2199716cfc9833e6258dda7056b140eb3a9a"
+    },
+    "D5_ARM_001/validation_group_metrics_weighted_fairbias.csv": {
+      "sha256": "77b8c9d1ecc88672d618754ff296f99f2e944f2a0b0e4eb33f9ca666c947095b"
+    },
+    "D5_ARM_001/validation_metrics_baseline.json": {
+      "sha256": "b1bd508f5307edefffc77513da9fa7d853253477183a875d51662ed96a8bcc2b"
+    },
+    "D5_ARM_001/validation_metrics_weighted_fairbias.json": {
+      "sha256": "22a36b2b8479fa6bde7a76b01a76c081112cb1ea517467d8f20b5c529e32e080"
+    },
+    "D5_ARM_001/weight_audit.json": {
+      "sha256": "98fb5282e37c2a267ecd6a91c3aa94d4ef4dbdc59d5215ed1429c63a40b54936"
+    },
+    "D5_ARM_001/weighted_changed_dict.json": {
+      "sha256": "62ffbcffd73a8db0f50d0484d1d3f7fe035e401e2d17894e18e5ee9422ed01d5"
+    },
+    "D5_ARM_001/weighted_transform_trace.json": {
+      "sha256": "e82055603207564c3f7ee9e210195dc1b20e2d8d545836f5f545653c4b38bd9a"
+    },
+    "D5_ARM_002/arm_config.json": {
+      "sha256": "63c6c44c7a24a45c1258245d2fb3bc77a7e34ba365382e9ec61638d833e0e5d8"
+    },
+    "D5_ARM_002/final_weighted_dphi.json": {
+      "sha256": "bb9c24646b62b5bc8147e79f13e5b0dda7951f81000bc9cad0ca03584739a384"
+    },
+    "D5_ARM_002/initial_weighted_dphi.json": {
+      "sha256": "91759ee5d3394962c4da8682fb2e00f1e296b76d18ca0532a0b6acf2c92203cd"
+    },
+    "D5_ARM_002/input_provenance.json": {
+      "sha256": "8a4a80cbde7f40811d0062467065d58bac25cc083c6dbca1b473be1e7fcd7a85"
+    },
+    "D5_ARM_002/validation_comparison.json": {
+      "sha256": "333385f813c991aa852527a0ffd038ab16d603c26647a5d226c97d1bfb968ba3"
+    },
+    "D5_ARM_002/validation_group_metrics_baseline.csv": {
+      "sha256": "7e33d3a8ff10f25b80fdff81b1415bdfcf4d110cab03ae8a6e3bb4bccd8b8664"
+    },
+    "D5_ARM_002/validation_group_metrics_weighted_fairbias.csv": {
+      "sha256": "d458d1b8e73b3a92e96dbd8119587b12cd6e013c57d3441095fd76ee2a0b71fe"
+    },
+    "D5_ARM_002/validation_metrics_baseline.json": {
+      "sha256": "fcb8ff739178c96e83b8ce30b9d0788cb22ea911b631f65e39d016aaceb2c056"
+    },
+    "D5_ARM_002/validation_metrics_weighted_fairbias.json": {
+      "sha256": "1864ac6625d5c5311ccf08028371866fc75775b9cf2163095ea3134f14b20d5f"
+    },
+    "D5_ARM_002/weight_audit.json": {
+      "sha256": "13ce2a22a5e6bd8e0bbc9561f248cef98145fefcb9d9ee3be8a73a6052d6470b"
+    },
+    "D5_ARM_002/weighted_changed_dict.json": {
+      "sha256": "aa3f4afafada1b7ca9b4e051485e326c558c4168015317fd0f4522be0a73a7dc"
+    },
+    "D5_ARM_002/weighted_transform_trace.json": {
+      "sha256": "0179ae6906fb6dabf39fda696c815b2fda1cb6020652a1f6ec219ecd24d3174b"
+    },
+    "D5_ARM_003/arm_config.json": {
+      "sha256": "cd7d102a89f77a3490e55509269911b8a2c71a1a99fc22af43726bb7ebf5db29"
+    },
+    "D5_ARM_003/final_weighted_dphi.json": {
+      "sha256": "81da3fef58715039617ae876550c1b9bb269d56c07ff43a42af0f67c31b9d152"
+    },
+    "D5_ARM_003/initial_weighted_dphi.json": {
+      "sha256": "bf0a16215fb0be61064c5b493a8cca689a8ce7ae05f219a200b65027c68ccb28"
+    },
+    "D5_ARM_003/input_provenance.json": {
+      "sha256": "4acaaff68b0507a70e8318be6793bbbbe77f41ab9846edc18010eabda40f8d51"
+    },
+    "D5_ARM_003/validation_comparison.json": {
+      "sha256": "bdf48224779be945c2eb796fac209c4e23e8355f1b1695bcb6dec3d5f76f7be7"
+    },
+    "D5_ARM_003/validation_group_metrics_baseline.csv": {
+      "sha256": "99d4b9daf37a9f9e457b4469fb86ecbeb9277517d5a677dac5fe71b6d97ff666"
+    },
+    "D5_ARM_003/validation_group_metrics_weighted_fairbias.csv": {
+      "sha256": "91c8a793c5d9b0d0bcf47198a53922ae45caf3d19375b587ebff98a556086c1b"
+    },
+    "D5_ARM_003/validation_metrics_baseline.json": {
+      "sha256": "675cc14de795a758c65e7e599aa76586272a2ea65ede2b7954d74936f19b5fd2"
+    },
+    "D5_ARM_003/validation_metrics_weighted_fairbias.json": {
+      "sha256": "b20c17358b9ae9b8374b033a5eb85c60b87c871f0806835f663da49a317c486b"
+    },
+    "D5_ARM_003/weight_audit.json": {
+      "sha256": "9f6c2a6951e706586208206aaf28e428bff22c08efb7a1a7e50054c78c640e50"
+    },
+    "D5_ARM_003/weighted_changed_dict.json": {
+      "sha256": "84489acf8e6f72964c74d9a9fc5719eec35d70a61e32880eca7439ddcefdde63"
+    },
+    "D5_ARM_003/weighted_transform_trace.json": {
+      "sha256": "99c09cae5833f6381f333b74b866968dae6744ad00f99a58f9afe4acb95cdc3c"
+    },
+    "D5_ARM_004/arm_config.json": {
+      "sha256": "5fc601a50b7c8138f636ff5195058cb6c79c20f75af4d628ca78b3415a812e62"
+    },
+    "D5_ARM_004/final_weighted_dphi.json": {
+      "sha256": "96a11b06c305e90880d20994fb17687524bdb9189a9947c238f2d8c9f4d60c10"
+    },
+    "D5_ARM_004/initial_weighted_dphi.json": {
+      "sha256": "8f95956982b2832dc411d80ca2c27901b24f48aca52cf07a95542339e93d9a50"
+    },
+    "D5_ARM_004/input_provenance.json": {
+      "sha256": "5d815d861946ef8e95f7d9df7fa5f3d98928cc47d6b8b9d5a76a2e76b0d5d3f4"
+    },
+    "D5_ARM_004/validation_comparison.json": {
+      "sha256": "002656f5cb85ce23bca03b907652b56c02c6b7606a7ae17beec08c6e87eea770"
+    },
+    "D5_ARM_004/validation_group_metrics_baseline.csv": {
+      "sha256": "48178e2dbd3130bfdbb8d98a5a03f05c7345dc7062a099c56ccdc9fb278c68fd"
+    },
+    "D5_ARM_004/validation_group_metrics_weighted_fairbias.csv": {
+      "sha256": "782d92d39b7fcd8134625e584d6a8ac83225db4b65292b23f180fcbdd407bb4f"
+    },
+    "D5_ARM_004/validation_metrics_baseline.json": {
+      "sha256": "4e66e549f4c5c2c74d3950cfe6601bc5523ff6e6d34b6f7b426b7395d3809d38"
+    },
+    "D5_ARM_004/validation_metrics_weighted_fairbias.json": {
+      "sha256": "fd72c90dba73177dd9b256495c2d72ff42a941490650e158ad00a73db59194d7"
+    },
+    "D5_ARM_004/weight_audit.json": {
+      "sha256": "9a01fba63d52dbafc043d0d1b62a407cf809128b5ab47bffbe70421af2be1124"
+    },
+    "D5_ARM_004/weighted_changed_dict.json": {
+      "sha256": "89ffec2eae7f9fac7d3a2e99a40fd3439b3ac86343f17674ead45298170eaed0"
+    },
+    "D5_ARM_004/weighted_transform_trace.json": {
+      "sha256": "bf1e2329a8689082f87407712089c567bebd498cb90599062f2d075346bce730"
+    }
+  },
+  "classifier_weighted": false,
+  "complex_survey_inference": false,
+  "evaluation_weighted": false,
+  "gate": "D5.1c execution protocol",
+  "outcome": "MEDDL12M_A",
+  "primary_test_replacement": false,
+  "random_seed": 0,
+  "regime": "pooled_2022_2024_train_validation",
+  "release_harness_commit": "7c2d0f4b5f437ad19692da6922bb3a995b86b81c",
+  "release_id": "NHIS_D5_WEIGHTED_TRAIN_VAL_V1_bc6034e5",
+  "scientific_base_is_ancestor": true,
+  "scientific_code_diff_clean": true,
+  "scientific_execution_base_commit": "bc6034e530d6e92bbfa82feadc0cf783302cb30f",
+  "secondary_analysis": true,
+  "status": "COMPLETE",
+  "survey_weight_extension": "geometry_only",
+  "test_cohort_materialized": false,
+  "test_evaluated": false,
+  "test_partition_requested": false,
+  "threshold": 0.5,
+  "timestamp_utc": "2026-09-02T03:10:38Z",
+  "validation_used_for_mitigation": false
+}

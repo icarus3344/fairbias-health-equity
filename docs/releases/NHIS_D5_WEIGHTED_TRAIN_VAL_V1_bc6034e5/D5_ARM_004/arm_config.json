@@ -1,0 +1,31 @@
+{
+  "PPSU_used_for_variance": false,
+  "PSTRAT_used_for_variance": false,
+  "arm_id": "D5_ARM_004",
+  "base_algorithm": "tang2024_paper_faithful",
+  "classifier": "LogisticRegression",
+  "classifier_weighted": false,
+  "complex_survey_inference": false,
+  "d4_reference_arm": "ARM_D3_004",
+  "d4_reference_hashes": {
+    "final_changed_dict_sha256": "2b0f3138b2ac93d6d3dbe39f23849d46b94ac36d8db3f4f35e64af260883cb27",
+    "manifest_sha256": "030a6f1f825b3075e35a01a133988043e40698384330c1521e3a0b44498225c1",
+    "reference_d4_arm": "ARM_D3_004",
+    "run_id": "20260901T152529Z-44d2d5a4cc",
+    "train_fairbias_trace_sha256": "34ca358545b7b9b4b08dd6cccfc1f5d0d32927d5d2eb85afcd023514b21eb511",
+    "validation_comparison_sha256": "737b4a931ec2b141e88093ff32210cf8736c17f7e7146a9064f9cf9dc6a8ab0c",
+    "validation_metrics_baseline_sha256": "4e66e549f4c5c2c74d3950cfe6601bc5523ff6e6d34b6f7b426b7395d3809d38",
+    "validation_metrics_fairbias_sha256": "0bf4cc6000ee0b398c7182c5bc022f9bca55059eb0ab66c81f9813bd0e82f7fe"
+  },
+  "d4_reference_run_id": "20260901T152529Z-44d2d5a4cc",
+  "disability_arm": "exclude_disability_components",
+  "evaluation_weighted": false,
+  "extension": "survey_weighted_geometry",
+  "feature_set": "PRIMARY_CORE",
+  "outcome": "MEDDL12M_A",
+  "prediction_threshold": 0.5,
+  "predictor_count": 15,
+  "protected_attribute": "DISAB3_A",
+  "random_seed": 0,
+  "survey_weight_variable": "WTFA_A"
+}

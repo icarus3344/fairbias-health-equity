@@ -1,0 +1,3 @@
+group,n,outcome_positive_count,outcome_negative_count,predicted_positive_count,predicted_negative_count,tp_count,fp_count,tn_count,fn_count,prevalence,selection_rate,tpr,fpr,ppv,tpr_denominator,fpr_denominator,ppv_denominator,undefined_reasons
+1,1572,160,1412,6,1566,3,3,1409,157,0.10178117048346055,0.003816793893129771,0.01875,0.002124645892351275,0.5,160,1412,6,{}
+2,12680,842,11838,33,12647,4,29,11809,838,0.06640378548895899,0.0026025236593059937,0.004750593824228029,0.002449738131441122,0.12121212121212122,842,11838,33,{}

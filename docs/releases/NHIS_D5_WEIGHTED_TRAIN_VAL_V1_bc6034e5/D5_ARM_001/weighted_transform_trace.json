@@ -1,0 +1,504 @@
+{
+  "accepted_transformations": [
+    {
+      "accepted_transformation": "dropped",
+      "categorical_merge_mapping": null,
+      "iteration": 1,
+      "numerical_exponent": null,
+      "selected_feature": "empwrkft1_a"
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "iteration": 2,
+      "numerical_exponent": null,
+      "selected_feature": "empwrklsw1_a"
+    },
+    {
+      "accepted_transformation": {
+        "1": 2
+      },
+      "categorical_merge_mapping": {
+        "1": "2"
+      },
+      "iteration": 3,
+      "numerical_exponent": null,
+      "selected_feature": "usualpl_a"
+    },
+    {
+      "accepted_transformation": {
+        "power": 5.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 4,
+      "numerical_exponent": 5.0,
+      "selected_feature": "pcnt18uptc"
+    },
+    {
+      "accepted_transformation": {
+        "power": 3.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 5,
+      "numerical_exponent": 3.0,
+      "selected_feature": "pcntlt18tc"
+    },
+    {
+      "accepted_transformation": {
+        "power": 7.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 6,
+      "numerical_exponent": 7.0,
+      "selected_feature": "agep_a"
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "iteration": 7,
+      "numerical_exponent": null,
+      "selected_feature": "diff_a"
+    },
+    {
+      "accepted_transformation": {
+        "power": 7.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 8,
+      "numerical_exponent": 7.0,
+      "selected_feature": "pcnt18uptc"
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "iteration": 9,
+      "numerical_exponent": null,
+      "selected_feature": "notcov_a"
+    },
+    {
+      "accepted_transformation": {
+        "power": 9.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 10,
+      "numerical_exponent": 9.0,
+      "selected_feature": "agep_a"
+    },
+    {
+      "accepted_transformation": "dropped",
+      "categorical_merge_mapping": null,
+      "iteration": 11,
+      "numerical_exponent": null,
+      "selected_feature": "pcnt18uptc"
+    },
+    {
+      "accepted_transformation": {
+        "1": 2
+      },
+      "categorical_merge_mapping": {
+        "1": "2"
+      },
+      "iteration": 12,
+      "numerical_exponent": null,
+      "selected_feature": "asev_a"
+    },
+    {
+      "accepted_transformation": {
+        "power": 5.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 13,
+      "numerical_exponent": 5.0,
+      "selected_feature": "pcntlt18tc"
+    },
+    {
+      "accepted_transformation": {
+        "power": 13.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 14,
+      "numerical_exponent": 13.0,
+      "selected_feature": "agep_a"
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "iteration": 15,
+      "numerical_exponent": null,
+      "selected_feature": "cogmemdff_a"
+    },
+    {
+      "accepted_transformation": {
+        "power": 15.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 16,
+      "numerical_exponent": 15.0,
+      "selected_feature": "agep_a"
+    },
+    {
+      "accepted_transformation": {
+        "power": 7.0
+      },
+      "categorical_merge_mapping": null,
+      "iteration": 17,
+      "numerical_exponent": 7.0,
+      "selected_feature": "pcntlt18tc"
+    }
+  ],
+  "algorithm_mode": "survey_weighted_geometry",
+  "epsilon_threshold": 0.0005,
+  "final_max_dphi": 0.00045123347467022077,
+  "final_status": "CONVERGED",
+  "protected_attribute": "SEX_A",
+  "selected_feature_sequence": [
+    "empwrkft1_a",
+    "empwrklsw1_a",
+    "usualpl_a",
+    "pcnt18uptc",
+    "pcntlt18tc",
+    "agep_a",
+    "diff_a",
+    "pcnt18uptc",
+    "notcov_a",
+    "agep_a",
+    "pcnt18uptc",
+    "asev_a",
+    "pcntlt18tc",
+    "agep_a",
+    "cogmemdff_a",
+    "agep_a",
+    "pcntlt18tc"
+  ],
+  "steps": [
+    {
+      "accepted_transformation": "dropped",
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0,
+      "d_phi_before": 0.005450264067557614,
+      "dropped": true,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "categorical",
+      "iteration": 1,
+      "numerical_exponent": null,
+      "proposed_transformation": "dropped",
+      "selected_feature": "empwrkft1_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "d_phi_after": 0.00046374375275446637,
+      "d_phi_before": 0.006178374852446982,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "categorical",
+      "iteration": 2,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "2": 1
+      },
+      "selected_feature": "empwrklsw1_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "1": 2
+      },
+      "categorical_merge_mapping": {
+        "1": "2"
+      },
+      "d_phi_after": 0.00040567858127274286,
+      "d_phi_before": 0.0013605062714501374,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "categorical",
+      "iteration": 3,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "1": 2
+      },
+      "selected_feature": "usualpl_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 5.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.00042817704818490053,
+      "d_phi_before": 0.0010750854316532465,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 4,
+      "numerical_exponent": 5.0,
+      "proposed_transformation": {
+        "power": 5.0
+      },
+      "selected_feature": "pcnt18uptc",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 3.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.00026705830717266966,
+      "d_phi_before": 0.0010551661073406166,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 5,
+      "numerical_exponent": 3.0,
+      "proposed_transformation": {
+        "power": 3.0
+      },
+      "selected_feature": "pcntlt18tc",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 7.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0004215506969418337,
+      "d_phi_before": 0.0007439296607095416,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 6,
+      "numerical_exponent": 7.0,
+      "proposed_transformation": {
+        "power": 7.0
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "d_phi_after": 0.00017551782137606382,
+      "d_phi_before": 0.0007296473340909156,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "categorical",
+      "iteration": 7,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "2": 1
+      },
+      "selected_feature": "diff_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 7.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0004947060861036547,
+      "d_phi_before": 0.0006124415742677602,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 8,
+      "numerical_exponent": 7.0,
+      "proposed_transformation": {
+        "power": 7.0
+      },
+      "selected_feature": "pcnt18uptc",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "d_phi_after": 0.00031549996546389975,
+      "d_phi_before": 0.0005961598828401358,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "categorical",
+      "iteration": 9,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "2": 1
+      },
+      "selected_feature": "notcov_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 9.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0004482966827677495,
+      "d_phi_before": 0.0006038016468097243,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 10,
+      "numerical_exponent": 9.0,
+      "proposed_transformation": {
+        "power": 9.0
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": "dropped",
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0,
+      "d_phi_before": 0.0006006185542360789,
+      "dropped": true,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 11,
+      "numerical_exponent": null,
+      "proposed_transformation": "dropped",
+      "selected_feature": "pcnt18uptc",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "1": 2
+      },
+      "categorical_merge_mapping": {
+        "1": "2"
+      },
+      "d_phi_after": 0.0002978709167141491,
+      "d_phi_before": 0.0005888514740928185,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "categorical",
+      "iteration": 12,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "1": 2
+      },
+      "selected_feature": "asev_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 5.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0004007814007126217,
+      "d_phi_before": 0.0006559482185466166,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 13,
+      "numerical_exponent": 5.0,
+      "proposed_transformation": {
+        "power": 5.0
+      },
+      "selected_feature": "pcntlt18tc",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 13.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0004296072664412188,
+      "d_phi_before": 0.0006677169833423938,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 14,
+      "numerical_exponent": 13.0,
+      "proposed_transformation": {
+        "power": 13.0
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "d_phi_after": 0.00022458217544966174,
+      "d_phi_before": 0.0006329741292650328,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "categorical",
+      "iteration": 15,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "2": 1
+      },
+      "selected_feature": "cogmemdff_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 15.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0004404460711487181,
+      "d_phi_before": 0.0005223416266631748,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 16,
+      "numerical_exponent": 15.0,
+      "proposed_transformation": {
+        "power": 15.0
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 7.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0004253916376709116,
+      "d_phi_before": 0.0005257754340452017,
+      "dropped": false,
+      "epsilon": 0.0005,
+      "feature_semantic_type": "numerical",
+      "iteration": 17,
+      "numerical_exponent": 7.0,
+      "proposed_transformation": {
+        "power": 7.0
+      },
+      "selected_feature": "pcntlt18tc",
+      "stopped_reason": null
+    }
+  ],
+  "total_accepted_transforms": 17,
+  "total_attempted_steps": 17,
+  "total_steps": 17
+}

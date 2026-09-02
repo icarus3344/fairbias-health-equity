@@ -1,0 +1,77 @@
+{
+  "arm_id": "D5_ARM_001",
+  "train": {
+    "N": 57010,
+    "distinct_weights_count": 56593,
+    "group_diagnostics": [
+      {
+        "N": 25982,
+        "group": 1,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 40004.158,
+        "weight_min": 266.031,
+        "weight_sum": 238877436.626
+      },
+      {
+        "N": 31028,
+        "group": 2,
+        "missing_or_nonpositive_count": 0,
+        "partition": "train",
+        "weight_max": 43112.878,
+        "weight_min": 265.078,
+        "weight_sum": 251249934.32299998
+      }
+    ],
+    "index_aligned": true,
+    "max": 43112.878,
+    "median": 7228.3315,
+    "min": 265.078,
+    "missing_count": 0,
+    "negative_count": 0,
+    "non_finite_count": 0,
+    "non_numeric_count": 0,
+    "partition": "train",
+    "record_id_aligned": true,
+    "sum": 490127370.949,
+    "weight_N": 57010,
+    "zero_count": 0
+  },
+  "val": {
+    "N": 14249,
+    "distinct_weights_count": 14221,
+    "group_diagnostics": [
+      {
+        "N": 6481,
+        "group": 1,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 39725.608,
+        "weight_min": 434.0,
+        "weight_sum": 59489541.578999996
+      },
+      {
+        "N": 7768,
+        "group": 2,
+        "missing_or_nonpositive_count": 0,
+        "partition": "val",
+        "weight_max": 42935.084,
+        "weight_min": 431.016,
+        "weight_sum": 63555481.798999995
+      }
+    ],
+    "index_aligned": true,
+    "max": 42935.084,
+    "median": 7307.443,
+    "min": 431.016,
+    "missing_count": 0,
+    "negative_count": 0,
+    "non_finite_count": 0,
+    "non_numeric_count": 0,
+    "partition": "val",
+    "record_id_aligned": true,
+    "sum": 123045023.378,
+    "weight_N": 14249,
+    "zero_count": 0
+  }
+}

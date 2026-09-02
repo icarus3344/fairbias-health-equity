@@ -1,0 +1,10 @@
+{
+  "completed_at_utc": "2026-09-02T03:10:38Z",
+  "manifest_sha256": "4d893120d46eddc8595168df8dc38e750c4c12c3b99b7faf0a2dd03789837ac4",
+  "release_harness_commit": "7c2d0f4b5f437ad19692da6922bb3a995b86b81c",
+  "release_id": "NHIS_D5_WEIGHTED_TRAIN_VAL_V1_bc6034e5",
+  "scientific_execution_base_commit": "bc6034e530d6e92bbfa82feadc0cf783302cb30f",
+  "started_at_utc": "2026-09-02T03:04:48Z",
+  "status": "COMPLETE",
+  "updated_at_utc": "2026-09-02T03:10:38Z"
+}
