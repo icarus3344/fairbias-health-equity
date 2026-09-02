@@ -10,8 +10,14 @@ Enforces:
 from __future__ import annotations
 
 import argparse
+import pathlib
 import sys
 from typing import Sequence
+
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+_SRC_DIR = str(_REPO_ROOT / "src")
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
 
 from nhis_fairbias.d5_weighted_release import (
     CANONICAL_D5_RELEASE_ID,
