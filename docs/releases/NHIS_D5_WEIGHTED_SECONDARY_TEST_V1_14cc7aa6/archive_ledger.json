@@ -1,0 +1,170 @@
+{
+  "archive_gate": "D5.2c",
+  "release_id": "NHIS_D5_WEIGHTED_SECONDARY_TEST_V1_14cc7aa6",
+  "canonical_source_path": "runs/nhis_d5_weighted/test_releases/NHIS_D5_WEIGHTED_SECONDARY_TEST_V1_14cc7aa6",
+  "archive_path": "docs/releases/NHIS_D5_WEIGHTED_SECONDARY_TEST_V1_14cc7aa6",
+  "raw_file_count": 34,
+  "per_arm_artifact_count": 32,
+  "source_manifest_sha256": "ca0ac38f27099b0b752a68ca211aaf08706ea078c60e067e22845d471d44e1c4",
+  "archived_manifest_sha256": "ca0ac38f27099b0b752a68ca211aaf08706ea078c60e067e22845d471d44e1c4",
+  "release_harness_commit": "8208975d4a3cab838b8311bba12d99febf1e1275",
+  "test_evaluation_base_commit": "14cc7aa629e20b326773621c164f69e3ef3acfdb",
+  "scientific_execution_base_commit": "bc6034e530d6e92bbfa82feadc0cf783302cb30f",
+  "secondary_analysis": true,
+  "primary_analysis": false,
+  "primary_test_replacement": false,
+  "pooled_test_globally_untouched": false,
+  "canonical_execution_count": 1,
+  "test_rerun": false,
+  "post_result_tuning": false,
+  "fairbias_relearned": false,
+  "validation_rescored": false,
+  "secondary_analysis_disclosure": "This survey-weighted extension was predeclared before the primary TEST release, but is evaluated after that primary TEST release. Therefore the pooled TEST partition is not an untouched primary holdout for this secondary analysis.",
+  "report_reconciliation": {
+    "arm_id": "D5_ARM_002",
+    "issue": "human-readable D5.2b report stated TRAIN N = 57013",
+    "canonical_train_n": 57018,
+    "canonical_test_n": 17819,
+    "canonical_train_record_id_digest": "aca6ceb659149a2c60c60e85240e02d248a66d19a68a1363afac9cae6e6ec770",
+    "verdict": "REPORT TYPO",
+    "canonical_release_modified": false
+  },
+  "raw_files": [
+    {
+      "relative_path": "D5_ARM_001/arm_config.json",
+      "sha256": "7845d2f27dd57fb6dc7147eb0733f70d5a6b946421db14696803ddb7c9cfc9bf"
+    },
+    {
+      "relative_path": "D5_ARM_001/frozen_changed_dict.json",
+      "sha256": "62ffbcffd73a8db0f50d0484d1d3f7fe035e401e2d17894e18e5ee9422ed01d5"
+    },
+    {
+      "relative_path": "D5_ARM_001/input_provenance.json",
+      "sha256": "78ff58b020d06b0415bcf4972098b79ce38e8b79c13486a89e2571063ab92e71"
+    },
+    {
+      "relative_path": "D5_ARM_001/test_comparison.json",
+      "sha256": "3449af134ada9c6f9581665ba92774db0ffd0e269eec01efcb9ca1b223014ed1"
+    },
+    {
+      "relative_path": "D5_ARM_001/test_group_metrics_baseline.csv",
+      "sha256": "b439bbce01dc958965f9014d183bef4230ec9ff0741ed7ea38f6a3138a0d257e"
+    },
+    {
+      "relative_path": "D5_ARM_001/test_group_metrics_weighted_fairbias.csv",
+      "sha256": "b8b22ad42a89ebbbd0fcc3b2e39c1a1ca47b07562912cfc7a7fef5f3da02dc70"
+    },
+    {
+      "relative_path": "D5_ARM_001/test_metrics_baseline.json",
+      "sha256": "8324f2ccea8a297606c24ec2c0b326ba5545c5e01f0117b8d45873255abd76c6"
+    },
+    {
+      "relative_path": "D5_ARM_001/test_metrics_weighted_fairbias.json",
+      "sha256": "f2e7e467207f8e7c045f788f14017357b2f62f2cfce74cd51cab5ca6add84e52"
+    },
+    {
+      "relative_path": "D5_ARM_002/arm_config.json",
+      "sha256": "c9fd296e064688ef1171d962867d5802c68e1a3e5b2933c7585bd2c018d8cf37"
+    },
+    {
+      "relative_path": "D5_ARM_002/frozen_changed_dict.json",
+      "sha256": "aa3f4afafada1b7ca9b4e051485e326c558c4168015317fd0f4522be0a73a7dc"
+    },
+    {
+      "relative_path": "D5_ARM_002/input_provenance.json",
+      "sha256": "62c7d9103bb9d87a6574a9865ab2f592ee2bf96d48ed496a54b9577d1f45abad"
+    },
+    {
+      "relative_path": "D5_ARM_002/test_comparison.json",
+      "sha256": "2e2c0aa65a10dc697eb96a9c1038e885523baec829849ee2d8aeb966956e2849"
+    },
+    {
+      "relative_path": "D5_ARM_002/test_group_metrics_baseline.csv",
+      "sha256": "4016a10ac44cc5e18fd557f1d5594abafba575df3c8d5579f68ef89519c0a398"
+    },
+    {
+      "relative_path": "D5_ARM_002/test_group_metrics_weighted_fairbias.csv",
+      "sha256": "4f07bc9e0b62ba4814e4c303af23cda77b66cc43d1710104d1ea227ea904c28f"
+    },
+    {
+      "relative_path": "D5_ARM_002/test_metrics_baseline.json",
+      "sha256": "de0d5d5391437095595d88a21fc872d9a6645096c3fc4c02cca278067e89553e"
+    },
+    {
+      "relative_path": "D5_ARM_002/test_metrics_weighted_fairbias.json",
+      "sha256": "82d8d5468eaede9258ec90283de38541e7b68dcbe9cb868d319a477eb5478080"
+    },
+    {
+      "relative_path": "D5_ARM_003/arm_config.json",
+      "sha256": "8d77bedc7f3929f92ad7e8a43abf2dfe56c2a643b5dd25eae348d8d16d07c96f"
+    },
+    {
+      "relative_path": "D5_ARM_003/frozen_changed_dict.json",
+      "sha256": "84489acf8e6f72964c74d9a9fc5719eec35d70a61e32880eca7439ddcefdde63"
+    },
+    {
+      "relative_path": "D5_ARM_003/input_provenance.json",
+      "sha256": "a52bb69ba011c4787ad7f2b36502d713bad669cd7b673c1a1962e5107f9564b2"
+    },
+    {
+      "relative_path": "D5_ARM_003/test_comparison.json",
+      "sha256": "f594018b3e8255071e025cae91c68fab61be6f5489ff1569d0f85b73c50f83a4"
+    },
+    {
+      "relative_path": "D5_ARM_003/test_group_metrics_baseline.csv",
+      "sha256": "e1d38c0233bfbf8f79ba96ebe543d4275733b05925233e261dfce73408c120e2"
+    },
+    {
+      "relative_path": "D5_ARM_003/test_group_metrics_weighted_fairbias.csv",
+      "sha256": "16bb77b83b2d23194658b0cf4573636b166512a98d95334c88f4bb46463a4f5d"
+    },
+    {
+      "relative_path": "D5_ARM_003/test_metrics_baseline.json",
+      "sha256": "ea63ae160befc902f401763adf228ee8f1cb8897fd2e95d40ad24fc9a221b3f7"
+    },
+    {
+      "relative_path": "D5_ARM_003/test_metrics_weighted_fairbias.json",
+      "sha256": "fd000b71f123a991f9f051d4e01ebc299d4993e374dbadc6a624f116063c2a0f"
+    },
+    {
+      "relative_path": "D5_ARM_004/arm_config.json",
+      "sha256": "973f4c96fc5cacd4f4a617f7b5d3be1cf1aa674207a0f8a33f65de315c0bfe36"
+    },
+    {
+      "relative_path": "D5_ARM_004/frozen_changed_dict.json",
+      "sha256": "89ffec2eae7f9fac7d3a2e99a40fd3439b3ac86343f17674ead45298170eaed0"
+    },
+    {
+      "relative_path": "D5_ARM_004/input_provenance.json",
+      "sha256": "cd9f92316b4d9c2680f9c6987a14fa13083653ed3289f48f53866a795e51c4c3"
+    },
+    {
+      "relative_path": "D5_ARM_004/test_comparison.json",
+      "sha256": "ed819c9a184ed09165076e2c7e5e375d85e1d70074e78f411cff3717fcc16f9d"
+    },
+    {
+      "relative_path": "D5_ARM_004/test_group_metrics_baseline.csv",
+      "sha256": "8404246301048c95119c21e662d8fb56fc1f0f83c2569f8f09be50401d235896"
+    },
+    {
+      "relative_path": "D5_ARM_004/test_group_metrics_weighted_fairbias.csv",
+      "sha256": "ca0f0c55f87c5fdc11b3b75ea5d24b9a70ea871de1e09e33ac7265c36d2fa3ec"
+    },
+    {
+      "relative_path": "D5_ARM_004/test_metrics_baseline.json",
+      "sha256": "090e1d2cfc2be0556b97a8f86e685a667fef5513e783c67920ffb6130e258287"
+    },
+    {
+      "relative_path": "D5_ARM_004/test_metrics_weighted_fairbias.json",
+      "sha256": "56c63f5ce964748328512820f81fd9dfffe4707c3382598d561cc2c0a795e76b"
+    },
+    {
+      "relative_path": "d5_weighted_secondary_test_manifest.json",
+      "sha256": "ca0ac38f27099b0b752a68ca211aaf08706ea078c60e067e22845d471d44e1c4"
+    },
+    {
+      "relative_path": "release_state.json",
+      "sha256": "d3668be4a586207e1434b29fc7d8b815b0c2c7a20f1a5cefa17c1c79f28dda11"
+    }
+  ]
+}

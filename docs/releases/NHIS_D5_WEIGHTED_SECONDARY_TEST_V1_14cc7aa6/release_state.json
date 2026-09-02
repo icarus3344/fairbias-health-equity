@@ -1,0 +1,11 @@
+{
+  "completed_at_utc": "2026-09-02T03:45:48Z",
+  "manifest_sha256": "ca0ac38f27099b0b752a68ca211aaf08706ea078c60e067e22845d471d44e1c4",
+  "release_harness_commit": "8208975d4a3cab838b8311bba12d99febf1e1275",
+  "release_id": "NHIS_D5_WEIGHTED_SECONDARY_TEST_V1_14cc7aa6",
+  "scientific_execution_base_commit": "bc6034e530d6e92bbfa82feadc0cf783302cb30f",
+  "started_at_utc": "2026-09-02T03:45:47Z",
+  "status": "COMPLETE",
+  "test_evaluation_base_commit": "14cc7aa629e20b326773621c164f69e3ef3acfdb",
+  "updated_at_utc": "2026-09-02T03:45:48Z"
+}

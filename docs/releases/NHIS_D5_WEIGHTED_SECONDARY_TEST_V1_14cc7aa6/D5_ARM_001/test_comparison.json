@@ -1,0 +1,70 @@
+{
+  "arm_id": "D5_ARM_001",
+  "baseline_predicted_positive_count": 69,
+  "baseline_selection_rate": 0.003872488494780559,
+  "baseline_summary": {
+    "fairness_gaps": {
+      "demographic_parity_gap": 9.982438003233035e-06,
+      "equal_opportunity_gap": 0.0044441979846631605,
+      "equalized_odds_max_gap": 0.0044441979846631605,
+      "fpr_gap": 0.0006058082225664048
+    },
+    "utility": {
+      "accuracy": 0.9283870243573914,
+      "auprc": 0.2128497458037033,
+      "auroc": 0.7729592172266789,
+      "balanced_accuracy": 0.5077895032001675,
+      "f1": 0.03479576399394856
+    }
+  },
+  "d5_validation_reference": {
+    "release_id": "NHIS_D5_WEIGHTED_TRAIN_VAL_V1_bc6034e5",
+    "validation_comparison_sha256": "aa892028c38ca62e40a970738ca17de31b6b2765b7a075ef8fe0c356fd6a4383"
+  },
+  "fairbias_summary": {
+    "fairness_gaps": {
+      "demographic_parity_gap": 5.4599375373011276e-05,
+      "equal_opportunity_gap": 0.0006205505207343091,
+      "equalized_odds_max_gap": 0.0006205505207343091,
+      "fpr_gap": 8.176112616677225e-05
+    },
+    "utility": {
+      "accuracy": 0.9295094847906611,
+      "auprc": 0.1519667997400316,
+      "auroc": 0.7224982047312227,
+      "balanced_accuracy": 0.5006471639812111,
+      "f1": 0.0031746031746031746
+    }
+  },
+  "fairness_gap_deltas": {
+    "demographic_parity_gap": 4.461693736977824e-05,
+    "equal_opportunity_gap": -0.0038236474639288514,
+    "equalized_odds_max_gap": -0.0038236474639288514,
+    "fpr_gap": -0.0005240470963996326
+  },
+  "group_deltas": {
+    "1": {
+      "fpr": -0.002841275991217874,
+      "ppv": 0.08333333333333331,
+      "selection_rate": -0.0035142995637421235,
+      "tpr": -0.013752455795677798
+    },
+    "2": {
+      "fpr": -0.0021537066424846974,
+      "ppv": -0.15540540540540543,
+      "selection_rate": -0.003449717750365879,
+      "tpr": -0.01881720430107527
+    }
+  },
+  "predicted_positive_count_delta": -62,
+  "selection_rate_delta": -0.0034796273431361544,
+  "utility_deltas": {
+    "accuracy": 0.0011224604332696897,
+    "auprc": -0.0608829460636717,
+    "auroc": -0.0504610124954562,
+    "balanced_accuracy": -0.007142339218956351,
+    "f1": -0.031621160819345386
+  },
+  "weighted_fairbias_predicted_positive_count": 7,
+  "weighted_fairbias_selection_rate": 0.00039286115164440454
+}

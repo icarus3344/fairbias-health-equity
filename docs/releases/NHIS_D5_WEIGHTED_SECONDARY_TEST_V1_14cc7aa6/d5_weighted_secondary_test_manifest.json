@@ -1,0 +1,132 @@
+{
+  "arms": [
+    "D5_ARM_001",
+    "D5_ARM_002",
+    "D5_ARM_003",
+    "D5_ARM_004"
+  ],
+  "artifacts": {
+    "D5_ARM_001/arm_config.json": {
+      "sha256": "7845d2f27dd57fb6dc7147eb0733f70d5a6b946421db14696803ddb7c9cfc9bf"
+    },
+    "D5_ARM_001/frozen_changed_dict.json": {
+      "sha256": "62ffbcffd73a8db0f50d0484d1d3f7fe035e401e2d17894e18e5ee9422ed01d5"
+    },
+    "D5_ARM_001/input_provenance.json": {
+      "sha256": "78ff58b020d06b0415bcf4972098b79ce38e8b79c13486a89e2571063ab92e71"
+    },
+    "D5_ARM_001/test_comparison.json": {
+      "sha256": "3449af134ada9c6f9581665ba92774db0ffd0e269eec01efcb9ca1b223014ed1"
+    },
+    "D5_ARM_001/test_group_metrics_baseline.csv": {
+      "sha256": "b439bbce01dc958965f9014d183bef4230ec9ff0741ed7ea38f6a3138a0d257e"
+    },
+    "D5_ARM_001/test_group_metrics_weighted_fairbias.csv": {
+      "sha256": "b8b22ad42a89ebbbd0fcc3b2e39c1a1ca47b07562912cfc7a7fef5f3da02dc70"
+    },
+    "D5_ARM_001/test_metrics_baseline.json": {
+      "sha256": "8324f2ccea8a297606c24ec2c0b326ba5545c5e01f0117b8d45873255abd76c6"
+    },
+    "D5_ARM_001/test_metrics_weighted_fairbias.json": {
+      "sha256": "f2e7e467207f8e7c045f788f14017357b2f62f2cfce74cd51cab5ca6add84e52"
+    },
+    "D5_ARM_002/arm_config.json": {
+      "sha256": "c9fd296e064688ef1171d962867d5802c68e1a3e5b2933c7585bd2c018d8cf37"
+    },
+    "D5_ARM_002/frozen_changed_dict.json": {
+      "sha256": "aa3f4afafada1b7ca9b4e051485e326c558c4168015317fd0f4522be0a73a7dc"
+    },
+    "D5_ARM_002/input_provenance.json": {
+      "sha256": "62c7d9103bb9d87a6574a9865ab2f592ee2bf96d48ed496a54b9577d1f45abad"
+    },
+    "D5_ARM_002/test_comparison.json": {
+      "sha256": "2e2c0aa65a10dc697eb96a9c1038e885523baec829849ee2d8aeb966956e2849"
+    },
+    "D5_ARM_002/test_group_metrics_baseline.csv": {
+      "sha256": "4016a10ac44cc5e18fd557f1d5594abafba575df3c8d5579f68ef89519c0a398"
+    },
+    "D5_ARM_002/test_group_metrics_weighted_fairbias.csv": {
+      "sha256": "4f07bc9e0b62ba4814e4c303af23cda77b66cc43d1710104d1ea227ea904c28f"
+    },
+    "D5_ARM_002/test_metrics_baseline.json": {
+      "sha256": "de0d5d5391437095595d88a21fc872d9a6645096c3fc4c02cca278067e89553e"
+    },
+    "D5_ARM_002/test_metrics_weighted_fairbias.json": {
+      "sha256": "82d8d5468eaede9258ec90283de38541e7b68dcbe9cb868d319a477eb5478080"
+    },
+    "D5_ARM_003/arm_config.json": {
+      "sha256": "8d77bedc7f3929f92ad7e8a43abf2dfe56c2a643b5dd25eae348d8d16d07c96f"
+    },
+    "D5_ARM_003/frozen_changed_dict.json": {
+      "sha256": "84489acf8e6f72964c74d9a9fc5719eec35d70a61e32880eca7439ddcefdde63"
+    },
+    "D5_ARM_003/input_provenance.json": {
+      "sha256": "a52bb69ba011c4787ad7f2b36502d713bad669cd7b673c1a1962e5107f9564b2"
+    },
+    "D5_ARM_003/test_comparison.json": {
+      "sha256": "f594018b3e8255071e025cae91c68fab61be6f5489ff1569d0f85b73c50f83a4"
+    },
+    "D5_ARM_003/test_group_metrics_baseline.csv": {
+      "sha256": "e1d38c0233bfbf8f79ba96ebe543d4275733b05925233e261dfce73408c120e2"
+    },
+    "D5_ARM_003/test_group_metrics_weighted_fairbias.csv": {
+      "sha256": "16bb77b83b2d23194658b0cf4573636b166512a98d95334c88f4bb46463a4f5d"
+    },
+    "D5_ARM_003/test_metrics_baseline.json": {
+      "sha256": "ea63ae160befc902f401763adf228ee8f1cb8897fd2e95d40ad24fc9a221b3f7"
+    },
+    "D5_ARM_003/test_metrics_weighted_fairbias.json": {
+      "sha256": "fd000b71f123a991f9f051d4e01ebc299d4993e374dbadc6a624f116063c2a0f"
+    },
+    "D5_ARM_004/arm_config.json": {
+      "sha256": "973f4c96fc5cacd4f4a617f7b5d3be1cf1aa674207a0f8a33f65de315c0bfe36"
+    },
+    "D5_ARM_004/frozen_changed_dict.json": {
+      "sha256": "89ffec2eae7f9fac7d3a2e99a40fd3439b3ac86343f17674ead45298170eaed0"
+    },
+    "D5_ARM_004/input_provenance.json": {
+      "sha256": "cd9f92316b4d9c2680f9c6987a14fa13083653ed3289f48f53866a795e51c4c3"
+    },
+    "D5_ARM_004/test_comparison.json": {
+      "sha256": "ed819c9a184ed09165076e2c7e5e375d85e1d70074e78f411cff3717fcc16f9d"
+    },
+    "D5_ARM_004/test_group_metrics_baseline.csv": {
+      "sha256": "8404246301048c95119c21e662d8fb56fc1f0f83c2569f8f09be50401d235896"
+    },
+    "D5_ARM_004/test_group_metrics_weighted_fairbias.csv": {
+      "sha256": "ca0f0c55f87c5fdc11b3b75ea5d24b9a70ea871de1e09e33ac7265c36d2fa3ec"
+    },
+    "D5_ARM_004/test_metrics_baseline.json": {
+      "sha256": "090e1d2cfc2be0556b97a8f86e685a667fef5513e783c67920ffb6130e258287"
+    },
+    "D5_ARM_004/test_metrics_weighted_fairbias.json": {
+      "sha256": "56c63f5ce964748328512820f81fd9dfffe4707c3382598d561cc2c0a795e76b"
+    }
+  },
+  "classifier_weighted": false,
+  "complex_survey_inference": false,
+  "d4_test_release_tag": "nhis-d4-primary-test-v1",
+  "d5_validation_archive_tag": "nhis-d5-weighted-train-val-v1",
+  "d5_validation_manifest_sha256": "4d893120d46eddc8595168df8dc38e750c4c12c3b99b7faf0a2dd03789837ac4",
+  "d5_validation_release_id": "NHIS_D5_WEIGHTED_TRAIN_VAL_V1_bc6034e5",
+  "disclosure": "This survey-weighted extension was predeclared before the primary TEST release, but is evaluated after that primary TEST release. Therefore the pooled TEST partition is not an untouched primary holdout for this secondary analysis.",
+  "evaluation_weighted": false,
+  "features_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+  "gate": "D5.2 secondary test release protocol",
+  "pooled_test_globally_untouched": false,
+  "primary_analysis": false,
+  "primary_test_replacement": false,
+  "random_seed": 0,
+  "release_harness_commit": "8208975d4a3cab838b8311bba12d99febf1e1275",
+  "release_id": "NHIS_D5_WEIGHTED_SECONDARY_TEST_V1_14cc7aa6",
+  "release_status": "COMPLETE",
+  "schema_version": "nhis-fairbias-d5-weighted-secondary-test-1.0",
+  "scientific_base_is_ancestor": true,
+  "scientific_code_diff_clean": true,
+  "scientific_execution_base_commit": "bc6034e530d6e92bbfa82feadc0cf783302cb30f",
+  "secondary_analysis": true,
+  "split_manifest_sha256": "6874a56f5484186dffdd5faeb7871c3bef85042ccfdf8d1e375fdde75a3ee9f5",
+  "test_evaluation_base_commit": "14cc7aa629e20b326773621c164f69e3ef3acfdb",
+  "threshold": 0.5,
+  "timestamp_utc": "2026-09-02T03:45:48Z"
+}

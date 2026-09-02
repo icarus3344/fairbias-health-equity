@@ -1,0 +1,16 @@
+{
+  "agep_a": {
+    "power": 7.0
+  },
+  "hypev_a": {
+    "2": 1
+  },
+  "notcov_a": {
+    "2": 1
+  },
+  "pcnt18uptc": "dropped",
+  "pcntlt18tc": {
+    "power": 3.0
+  },
+  "region": "dropped"
+}

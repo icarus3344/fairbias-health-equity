@@ -1,0 +1,61 @@
+{
+  "archived_trace_sha256": "0179ae6906fb6dabf39fda696c815b2fda1cb6020652a1f6ec219ecd24d3174b",
+  "archived_validation_comparison_sha256": "333385f813c991aa852527a0ffd038ab16d603c26647a5d226c97d1bfb968ba3",
+  "arm_id": "D5_ARM_002",
+  "categorical_count": 18,
+  "categorical_features": [
+    "educp_a",
+    "region",
+    "ratcat_a",
+    "empwrklsw1_a",
+    "empwrkft1_a",
+    "notcov_a",
+    "phstat_a",
+    "hypev_a",
+    "chlev_a",
+    "dibev_a",
+    "asev_a",
+    "visiondf_a",
+    "hearingdf_a",
+    "diff_a",
+    "comdiff_a",
+    "uppslfcr_a",
+    "cogmemdff_a",
+    "usualpl_a"
+  ],
+  "classifier": {
+    "max_iter": 1000,
+    "random_state": 0,
+    "sample_weight": null,
+    "solver": "lbfgs",
+    "type": "LogisticRegression"
+  },
+  "disability_arm": "full_feature",
+  "eval_norm": "min-max",
+  "expected_changed_dict_sha256": "aa3f4afafada1b7ca9b4e051485e326c558c4168015317fd0f4522be0a73a7dc",
+  "expected_group_count": 7,
+  "expected_groups": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "expected_pair_count": 21,
+  "expected_predictors": 21,
+  "feature_set": "PRIMARY_CORE",
+  "numerical_count": 3,
+  "numerical_features": [
+    "agep_a",
+    "pcnt18uptc",
+    "pcntlt18tc"
+  ],
+  "outcome": "MEDDL12M_A",
+  "prediction_threshold": 0.5,
+  "predictor_count": 21,
+  "protected_attribute": "HISPALLP_A",
+  "test_cohort_n": 17819,
+  "train_cohort_n": 57018
+}

@@ -1,0 +1,28 @@
+{
+  "agep_a": {
+    "power": 15.0
+  },
+  "asev_a": {
+    "1": 2
+  },
+  "cogmemdff_a": {
+    "2": 1
+  },
+  "diff_a": {
+    "2": 1
+  },
+  "empwrkft1_a": "dropped",
+  "empwrklsw1_a": {
+    "2": 1
+  },
+  "notcov_a": {
+    "2": 1
+  },
+  "pcnt18uptc": "dropped",
+  "pcntlt18tc": {
+    "power": 7.0
+  },
+  "usualpl_a": {
+    "1": 2
+  }
+}

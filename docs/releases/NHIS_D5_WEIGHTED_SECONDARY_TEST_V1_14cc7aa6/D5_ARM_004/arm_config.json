@@ -1,0 +1,50 @@
+{
+  "archived_trace_sha256": "bf1e2329a8689082f87407712089c567bebd498cb90599062f2d075346bce730",
+  "archived_validation_comparison_sha256": "002656f5cb85ce23bca03b907652b56c02c6b7606a7ae17beec08c6e87eea770",
+  "arm_id": "D5_ARM_004",
+  "categorical_count": 12,
+  "categorical_features": [
+    "educp_a",
+    "region",
+    "ratcat_a",
+    "empwrklsw1_a",
+    "empwrkft1_a",
+    "notcov_a",
+    "phstat_a",
+    "hypev_a",
+    "chlev_a",
+    "dibev_a",
+    "asev_a",
+    "usualpl_a"
+  ],
+  "classifier": {
+    "max_iter": 1000,
+    "random_state": 0,
+    "sample_weight": null,
+    "solver": "lbfgs",
+    "type": "LogisticRegression"
+  },
+  "disability_arm": "exclude_disability_components",
+  "eval_norm": "min-max",
+  "expected_changed_dict_sha256": "89ffec2eae7f9fac7d3a2e99a40fd3439b3ac86343f17674ead45298170eaed0",
+  "expected_group_count": 2,
+  "expected_groups": [
+    1,
+    2
+  ],
+  "expected_pair_count": 1,
+  "expected_predictors": 15,
+  "feature_set": "PRIMARY_CORE",
+  "numerical_count": 3,
+  "numerical_features": [
+    "agep_a",
+    "pcnt18uptc",
+    "pcntlt18tc"
+  ],
+  "outcome": "MEDDL12M_A",
+  "prediction_threshold": 0.5,
+  "predictor_count": 15,
+  "protected_attribute": "DISAB3_A",
+  "test_cohort_n": 17818,
+  "train_cohort_n": 57017
+}
