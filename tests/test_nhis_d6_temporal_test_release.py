@@ -1,8 +1,8 @@
-"""Dynamic Gate D6.1a tests.
+"""Dynamic Gate D6.1a.1 tests.
 
 The tests use the real immutable D6.0c JSON/CSV archive for static verification,
 but every cohort request is handled by an in-memory synthetic adapter.  No real
-NHIS cohort, model, FairBias implementation, or canonical TEST release is used.
+NHIS cohort, real parquet materialization, or canonical D6.1b release is used.
 """
 
 from __future__ import annotations
@@ -15,8 +15,11 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import types
 from typing import Any, Dict, Mapping
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import nhis_fairbias.d6_temporal_test_release as harness
@@ -49,6 +52,9 @@ from nhis_fairbias.d6_temporal_test_release import (
     NHISD6TemporalTestReleaseManager,
     PREDICTION_THRESHOLD,
     PREPROCESSING_STATE_SHA256,
+    ProductionD6TemporalArtifactWriter,
+    ProductionD6TemporalRuntime,
+    ReproducedArmState,
     ReleaseCollisionError,
     TEMPORAL_2024_DISCLOSURE,
     TEMPORAL_TEST_YEAR,
@@ -365,10 +371,13 @@ def test_22_cli_audit_only_exact_semantic_markers() -> None:
         "4 / 4 LOADED",
         "20 / 20 LOADED",
         "2023 — ACCESS PROHIBITED",
-        "GLOBAL TRAINING-STATE REPRODUCTION BARRIER:\nENFORCED",
+        "PRODUCTION 2022 REPRODUCER:\nIMPLEMENTED",
+        "PRODUCTION 2024 SCORER:\nIMPLEMENTED",
+        "PRODUCTION ARTIFACT WRITER:\nIMPLEMENTED",
+        "GLOBAL BARRIER:\nENFORCED",
         "REAL 2022 STATE REPRODUCTION EXECUTED:\nFALSE",
         "2024 TEST EVALUATED:\nFALSE",
-        "D6.1a AUDIT:\nPASS",
+        "D6.1a.1 AUDIT:\nPASS",
     ):
         assert marker in result.stdout
 
@@ -385,7 +394,7 @@ def test_23_cli_substantive_flag_fails_closed() -> None:
         check=False,
     )
     assert result.returncode == 2
-    assert "reserved for D6.1b" in result.stderr
+    assert "requires both --release-id and --expected-execution-head" in result.stderr
 
 
 def test_24_cli_rejects_validation_flag() -> None:
@@ -929,3 +938,470 @@ def test_66_archive_constants_are_not_repurposed_for_d61() -> None:
     assert D6_TRAIN_VAL_RELEASE_ID.endswith("fa8eb609")
     assert "2024" in TEMPORAL_2024_DISCLOSURE
     assert TEMPORAL_TEST_YEAR == 2024
+
+
+class _LiveObject:
+    def __init__(self, state: Mapping[str, Any]) -> None:
+        self.state = copy.deepcopy(dict(state))
+
+
+class _StateOnlyRunner:
+    compute_canonical_json_sha256 = staticmethod(compute_canonical_json_sha256)
+
+    @staticmethod
+    def extract_minmax_scaler_state(obj: _LiveObject, feature_order: list[str]) -> Dict[str, Any]:
+        return {"kind": "scaler", "features": list(feature_order), "state": copy.deepcopy(obj.state)}
+
+    @staticmethod
+    def extract_logistic_regression_state(obj: _LiveObject, feature_order: list[str]) -> Dict[str, Any]:
+        return {"kind": "lr", "features": list(feature_order), "state": copy.deepcopy(obj.state)}
+
+
+def _production_digest(arm_id: str) -> str:
+    return compute_canonical_json_sha256({"synthetic_production_train": arm_id})
+
+
+def _production_hashes(arm_id: str) -> Dict[str, str]:
+    return {
+        logical_name: compute_canonical_json_sha256(
+            {"synthetic_production_state": logical_name, "arm_id": arm_id}
+        )
+        for logical_name in EXPECTED_TRAINING_STATE_ANCHORS[arm_id]
+    }
+
+
+class _ProductionArchiveLoader:
+    """Synthetic expected-value provider; production runtime never receives it."""
+
+    def __init__(self) -> None:
+        self.digests = {arm_id: _production_digest(arm_id) for arm_id in FROZEN_D6_ARM_IDS}
+        self.anchors = {arm_id: _production_hashes(arm_id) for arm_id in FROZEN_D6_ARM_IDS}
+
+    def verify(self) -> Dict[str, Any]:
+        return {"status": "PASS", "synthetic": True}
+
+    def expected_train_digests(self) -> Dict[str, str]:
+        return copy.deepcopy(self.digests)
+
+    def expected_state_anchors(self) -> Dict[str, Dict[str, str]]:
+        return copy.deepcopy(self.anchors)
+
+
+class _SyntheticProductionRuntime(ProductionD6TemporalRuntime):
+    """Exercises the production manager/writer route without real data or parquet."""
+
+    def __init__(self, preprocessing_state: Mapping[str, Any], summary_path: pathlib.Path | None = None) -> None:
+        self.preprocessing_state = copy.deepcopy(dict(preprocessing_state))
+        self.summary_path = summary_path
+        self.calls: list[dict[str, Any]] = []
+        self.reproduction_calls: list[str] = []
+        self.score_calls: list[str] = []
+        self.reproduced_states: Dict[str, ReproducedArmState] = {}
+        self.mutated_arm: str | None = None
+        self.authorize_error: Exception | None = None
+
+    def authorize(self, expected_execution_head: str) -> Dict[str, Any]:
+        if self.authorize_error is not None:
+            raise self.authorize_error
+        assert len(expected_execution_head) == 40
+        return {"expected_execution_head": expected_execution_head, "synthetic": True}
+
+    def get_cohort(self, year: int, **kwargs: Any) -> Mapping[str, Any]:
+        year_int = int(year)
+        if year_int == 2023:
+            raise AssertionError("FATAL: D6.1 attempted to access frozen 2023 validation cohort")
+        if year_int == 2024 and self.summary_path is not None and not self.summary_path.is_file():
+            raise AssertionError("FATAL: 2024 request occurred before training summary was frozen")
+        self.calls.append({"year": year_int, **kwargs})
+        return {"synthetic": True, "year": year_int}
+
+    def reproduce_training_state(
+        self, *, arm_id: str, arm_config: Mapping[str, Any], cohort: Any, **_unused: Any
+    ) -> Dict[str, Any]:
+        assert cohort["year"] == 2022
+        self.reproduction_calls.append(arm_id)
+        observed = _production_hashes(arm_id)
+        if arm_id == self.mutated_arm:
+            observed = dict(observed)
+            observed["baseline_LR"] = compute_canonical_json_sha256({"mutated": arm_id})
+        changed_dict = {"synthetic": arm_id}
+        state = ReproducedArmState(
+            arm_id=arm_id,
+            arm_config=copy.deepcopy(dict(arm_config)),
+            train_source_row_digest=_production_digest(arm_id),
+            preprocessing_state=copy.deepcopy(self.preprocessing_state),
+            preprocessing_state_hash=compute_canonical_json_sha256(self.preprocessing_state),
+            frozen_changed_dict=changed_dict,
+            transformer=_LiveObject({"transform": arm_id}),
+            evaluator=_LiveObject({"evaluator": arm_id}),
+            categorical_features=["cat"],
+            numerical_features=["num"],
+            epsilon_threshold=0.1,
+            baseline_scaler=_LiveObject({"baseline_scaler": arm_id}),
+            baseline_model=_LiveObject({"baseline_lr": arm_id}),
+            fairbias_scaler=_LiveObject({"fairbias_scaler": arm_id}),
+            fairbias_model=_LiveObject({"fairbias_lr": arm_id}),
+            baseline_feature_order=["cat", "num"],
+            fairbias_feature_order=["cat", "num"],
+            train_dphi_before_after={"diagnostic_only": True},
+            observed_state_hashes=observed,
+        )
+        self.reproduced_states[arm_id] = state
+        return {
+            "observed_train_source_row_digest": _production_digest(arm_id),
+            "preprocessing_state": copy.deepcopy(self.preprocessing_state),
+            "state_hashes": observed,
+        }
+
+    def score_temporal_test(
+        self, *, arm_id: str, cohort: Any, prediction_threshold: float, **_unused: Any
+    ) -> Dict[str, Any]:
+        assert cohort["year"] == 2024
+        assert prediction_threshold == 0.5
+        assert arm_id in self.reproduced_states
+        self.score_calls.append(arm_id)
+        hashes = copy.deepcopy(self.reproduced_states[arm_id].observed_state_hashes)
+        metrics = {
+            "utility": {"accuracy": 0.5, "auroc": 0.5, "auprc": 0.5, "balanced_accuracy": 0.5, "f1": 0.5},
+            "fairness_gaps": {"demographic_parity_gap": 0.0, "equal_opportunity_gap": 0.0, "fpr_gap": 0.0, "equalized_odds_max_gap": 0.0},
+            "group_metrics": [{"group": 1, "n": 2, "selection_rate": 0.5, "tpr": 0.5, "fpr": 0.5, "ppv": 0.5}],
+        }
+        return {
+            "arm_id": arm_id,
+            "test_year": 2024,
+            "prediction_threshold": 0.5,
+            "diagnostic_only": True,
+            "test_source_row_digest": compute_canonical_json_sha256({"synthetic_test": arm_id}),
+            "test_n": 2,
+            "test_outcome_positive_count": 1,
+            "test_prevalence": 0.5,
+            "test_group_counts": {"1": 2},
+            "test_dphi_before_after": {"diagnostic_only": True, "dphi_relearned": False},
+            "test_metrics_baseline": copy.deepcopy(metrics),
+            "test_metrics_fairbias": copy.deepcopy(metrics),
+            "test_comparison": {"diagnostic_only": True},
+            "test_group_metrics_baseline": copy.deepcopy(metrics["group_metrics"]),
+            "test_group_metrics_fairbias": copy.deepcopy(metrics["group_metrics"]),
+            "pre_score_state_hashes": hashes,
+            "post_score_state_hashes": hashes,
+        }
+
+
+def _production_manager(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> tuple[NHISD6TemporalTestReleaseManager, _ProductionArchiveLoader, _SyntheticProductionRuntime, pathlib.Path]:
+    release_root = tmp_path / "production_releases"
+    release_id = "SYNTHETIC_D6_TEMPORAL_TEST"
+    target = release_root / release_id
+    fake_loader = _ProductionArchiveLoader()
+    runtime = _SyntheticProductionRuntime(
+        archive_loader.load_preprocessing_state(),
+        summary_path=target / "training_state_reproduction_summary.json",
+    )
+    manager = NHISD6TemporalTestReleaseManager(archive_loader=fake_loader)
+    return manager, fake_loader, runtime, release_root
+
+
+def test_67_production_runtime_is_lazy_and_2023_is_poison() -> None:
+    constructed: list[bool] = []
+
+    def poison_adapter(**_kwargs: Any) -> Any:
+        constructed.append(True)
+        raise AssertionError("FATAL: real NHIS adapter construction is forbidden in D6.1a.1 tests")
+
+    runtime = ProductionD6TemporalRuntime(adapter_factory=poison_adapter)
+    with pytest.raises(AssertionError, match="frozen 2023 validation cohort"):
+        runtime.get_cohort(2023)
+    assert constructed == []
+
+
+def test_68_production_runtime_head_mismatch_precedes_adapter_or_parquet_access(tmp_path: pathlib.Path) -> None:
+    constructed: list[bool] = []
+
+    def poison_adapter(**_kwargs: Any) -> Any:
+        constructed.append(True)
+        raise AssertionError("adapter must not be constructed")
+
+    runtime = ProductionD6TemporalRuntime(
+        features_parquet_path=tmp_path / "never-read.parquet",
+        adapter_factory=poison_adapter,
+    )
+    with pytest.raises(harness.D6HarnessError, match="HEAD mismatch"):
+        runtime.authorize("0" * 40)
+    assert constructed == []
+    assert not (tmp_path / "never-read.parquet").exists()
+
+
+def test_69_live_object_hashes_are_independent_of_expected_archive_values() -> None:
+    state = ReproducedArmState(
+        arm_id="D6_ARM_001",
+        arm_config=copy.deepcopy(FROZEN_D6_ARMS["D6_ARM_001"]),
+        train_source_row_digest="x",
+        preprocessing_state={},
+        preprocessing_state_hash="x",
+        frozen_changed_dict={"a": 1},
+        transformer=None,
+        evaluator=None,
+        categorical_features=["cat"],
+        numerical_features=["num"],
+        epsilon_threshold=0.1,
+        baseline_scaler=_LiveObject({"v": 1}),
+        baseline_model=_LiveObject({"v": 1}),
+        fairbias_scaler=_LiveObject({"v": 1}),
+        fairbias_model=_LiveObject({"v": 1}),
+        baseline_feature_order=["cat", "num"],
+        fairbias_feature_order=["cat", "num"],
+        train_dphi_before_after={},
+        observed_state_hashes={},
+    )
+    before = state.recompute_state_hashes(_StateOnlyRunner)
+    state.baseline_model.state["v"] = 2
+    after = state.recompute_state_hashes(_StateOnlyRunner)
+    assert before["baseline_LR"] != after["baseline_LR"]
+    assert EXPECTED_TRAINING_STATE_ANCHORS["D6_ARM_001"]["baseline_LR"] != after["baseline_LR"]
+
+
+def test_70_production_runtime_reproducer_does_not_read_expected_anchors() -> None:
+    source = inspect.getsource(ProductionD6TemporalRuntime.reproduce_training_state)
+    assert "expected_state_anchors" not in source
+    assert "expected_train_source_row_digest" not in source
+    assert "EXPECTED_TRAINING_STATE_ANCHORS" not in source
+
+
+def test_70a_actual_production_reproducer_and_scorer_run_on_only_synthetic_state(
+    archive_loader: FrozenD6ArchiveLoader,
+) -> None:
+    """Exercise the concrete A--M/2024 methods with fake FairBias and synthetic frames."""
+    from nhis_fairbias import d6_temporal_runner as frozen_runner
+
+    constructed: list[Any] = []
+    preprocessing_state = archive_loader.load_preprocessing_state()
+    columns = [f"cat_{index}" for index in range(18)] + ["num_0", "num_1", "num_2"]
+    index = pd.Index(range(100, 108), name="synthetic_row")
+    X_train = pd.DataFrame(
+        {
+            column: np.array([(row + column_index) % 3 for row in range(8)], dtype=float)
+            for column_index, column in enumerate(columns)
+        },
+        index=index,
+    )
+    y_train = pd.Series([0, 1, 0, 1, 0, 1, 0, 1], index=index)
+    o_train = pd.Series([1, 2, 1, 2, 1, 2, 1, 2], index=index)
+
+    class FakeFitRecord:
+        def to_dict(self) -> Dict[str, Any]:
+            return copy.deepcopy(preprocessing_state)
+
+    class FakePreprocessor:
+        fitted_record = FakeFitRecord()
+
+        @staticmethod
+        def get_feature_family_lists(_feature_set: str) -> tuple[list[str], list[str]]:
+            return columns[:18], columns[18:]
+
+    class FakeAdapter:
+        def __init__(self, **_kwargs: Any) -> None:
+            constructed.append(True)
+            self.preprocessor = FakePreprocessor()
+
+    class FakeConfig:
+        def __init__(self, **kwargs: Any) -> None:
+            self.__dict__.update(kwargs)
+            self.transform_n_bins = 10
+            self.transform_log_epsilon = 1e-12
+            self.transform_x_max = 10.0
+            self.phi_threshold = 0.0
+            self.transform_poly_exponents = [1]
+
+        def resolved(self) -> "FakeConfig":
+            return self
+
+    class FakeEvaluator:
+        def __init__(self, *, label_O: list[str], **_kwargs: Any) -> None:
+            self.protected = label_O[0]
+
+        def calculate_epsilon(self, X: pd.DataFrame, _o: pd.DataFrame, *, sample_weight: Any, **_kwargs: Any) -> Dict[str, Any]:
+            assert sample_weight is None
+            return {self.protected: {str(X.columns[0]): 0.0}}
+
+        @staticmethod
+        def compute_threshold(_epsilon: Mapping[str, Any]) -> float:
+            return 0.0
+
+    class FakeTransform:
+        def __init__(self, **_kwargs: Any) -> None:
+            pass
+
+        @staticmethod
+        def transform_data(X: pd.DataFrame, _changed: Mapping[str, Any], *_args: Any) -> pd.DataFrame:
+            return X.copy()
+
+    class FakeMitigation:
+        def __init__(self, **_kwargs: Any) -> None:
+            pass
+
+    fake_runner = types.SimpleNamespace(
+        NHISStudyAdapter=FakeAdapter,
+        FairBiasConfig=FakeConfig,
+        ALGORITHM_MODE_PAPER_FAITHFUL="tang2024_paper_faithful",
+        FairEvaluator=FakeEvaluator,
+        FairTransform=FakeTransform,
+        FairBiasMitigation=FakeMitigation,
+        calculate_nmi_dict=lambda *_args: {},
+        MinMaxScaler=frozen_runner.MinMaxScaler,
+        get_classifier=frozen_runner.get_classifier,
+        pd=pd,
+        np=np,
+        verify_cohort_alignment_and_uniqueness=frozen_runner.verify_cohort_alignment_and_uniqueness,
+        compute_cohort_source_row_digest=frozen_runner.compute_cohort_source_row_digest,
+        compute_canonical_json_sha256=frozen_runner.compute_canonical_json_sha256,
+        extract_minmax_scaler_state=frozen_runner.extract_minmax_scaler_state,
+        extract_logistic_regression_state=frozen_runner.extract_logistic_regression_state,
+        evaluate_predictions=frozen_runner.evaluate_predictions,
+        compute_evaluation_comparison=frozen_runner.compute_evaluation_comparison,
+    )
+    runtime = ProductionD6TemporalRuntime(adapter_factory=FakeAdapter, runner_module=fake_runner)
+    runtime._authorized = True  # Synthetic-only unit wiring; no real adapter or parquet is available.
+    observed = runtime.reproduce_training_state(
+        arm_id="D6_ARM_001",
+        arm_config=FROZEN_D6_ARMS["D6_ARM_001"],
+        cohort=(X_train, y_train, o_train, pd.Series(1.0, index=index), pd.DataFrame(index=index)),
+    )
+    assert constructed == [True]
+    assert observed["preprocessing_state"] == preprocessing_state
+    state = runtime.reproduced_states["D6_ARM_001"]
+    pre_score_hashes = copy.deepcopy(state.observed_state_hashes)
+    score = runtime.score_temporal_test(
+        arm_id="D6_ARM_001",
+        cohort=(X_train.copy(), y_train.copy(), o_train.copy(), pd.Series(1.0, index=index), pd.DataFrame(index=index)),
+        prediction_threshold=0.5,
+    )
+    assert score["diagnostic_only"] is True
+    assert score["pre_score_state_hashes"] == score["post_score_state_hashes"] == pre_score_hashes
+    state.baseline_model.coef_[0, 0] += 0.01
+    assert state.recompute_state_hashes(fake_runner)["baseline_LR"] != pre_score_hashes["baseline_LR"]
+
+
+def test_71_production_route_successfully_writes_40_41_43_schema(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    result = manager.execute_production_release(
+        root,
+        release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+        expected_execution_head="a" * 40,
+        runtime=runtime,
+    )
+    target = pathlib.Path(result["release_dir"])
+    assert result["status"] == "COMPLETE"
+    assert [call["year"] for call in runtime.calls] == [2022, 2022, 2022, 2022, 2024, 2024, 2024, 2024]
+    assert runtime.reproduction_calls == list(FROZEN_D6_ARM_IDS)
+    assert runtime.score_calls == list(FROZEN_D6_ARM_IDS)
+    assert len([path for path in target.rglob("*") if path.is_file()]) == 43
+    manifest = json.loads((target / "d6_temporal_test_manifest.json").read_text(encoding="utf-8"))
+    assert len(manifest["artifacts"]) == 41
+    for rel_path, metadata in manifest["artifacts"].items():
+        artifact = target / rel_path
+        assert metadata["sha256"] == compute_file_sha256(artifact)
+        assert metadata["size_bytes"] == artifact.stat().st_size
+    state = json.loads((target / "release_state.json").read_text(encoding="utf-8"))
+    assert state["manifest_sha256"] == compute_file_sha256(target / "d6_temporal_test_manifest.json")
+    assert manifest["disclosure_2024"] == TEMPORAL_2024_DISCLOSURE
+
+
+def test_72_production_route_global_event_order_and_summary_freeze(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    result = manager.execute_production_release(
+        root,
+        release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+        expected_execution_head="b" * 40,
+        runtime=runtime,
+    )
+    events = result["events"]
+    barrier = events.index("ALL_D6_TRAINING_STATE_ANCHORS_VERIFIED")
+    first_2024 = next(index for index, event in enumerate(events) if event.startswith("request_2024_"))
+    assert barrier < first_2024
+    assert sum(event.startswith("request_2022_") for event in events[:barrier]) == 4
+    assert all(call["year"] != 2023 for call in runtime.calls)
+
+
+def test_73_expected_anchor_mutation_blocks_production_2024(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    expected.anchors["D6_ARM_004"]["FairBias_LR"] = "0" * 64
+    with pytest.raises(GlobalBarrierError):
+        manager.execute_production_release(
+            root,
+            release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+            expected_execution_head="c" * 40,
+            runtime=runtime,
+        )
+    assert [call["year"] for call in runtime.calls] == [2022, 2022, 2022, 2022]
+    assert runtime.reproduced_states["D6_ARM_004"].observed_state_hashes["FairBias_LR"] != "0" * 64
+
+
+def test_74_actual_object_hash_mutation_blocks_production_2024(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    runtime.mutated_arm = "D6_ARM_004"
+    with pytest.raises(GlobalBarrierError):
+        manager.execute_production_release(
+            root,
+            release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+            expected_execution_head="d" * 40,
+            runtime=runtime,
+        )
+    assert [call["year"] for call in runtime.calls] == [2022, 2022, 2022, 2022]
+
+
+def test_75_production_precondition_failure_creates_no_release(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    runtime.authorize_error = harness.D6HarnessError("synthetic reviewed HEAD mismatch")
+    with pytest.raises(harness.D6HarnessError, match="reviewed HEAD mismatch"):
+        manager.execute_production_release(
+            root,
+            release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+            expected_execution_head="e" * 40,
+            runtime=runtime,
+        )
+    assert not root.exists()
+    assert runtime.calls == []
+
+
+def test_76_production_collision_fails_before_adapter_access(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    (root / "SYNTHETIC_D6_TEMPORAL_TEST").mkdir(parents=True)
+    with pytest.raises(ReleaseCollisionError):
+        manager.execute_production_release(
+            root,
+            release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+            expected_execution_head="f" * 40,
+            runtime=runtime,
+        )
+    assert runtime.calls == []
+
+
+def test_77_production_release_state_preserves_failure_without_2024(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    runtime.mutated_arm = "D6_ARM_002"
+    with pytest.raises(GlobalBarrierError):
+        manager.execute_production_release(
+            root,
+            release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+            expected_execution_head="1" * 40,
+            runtime=runtime,
+        )
+    state = json.loads((root / "SYNTHETIC_D6_TEMPORAL_TEST" / "release_state.json").read_text(encoding="utf-8"))
+    assert state["status"] == "FAILED"
+    assert state["2023_request_count"] == 0
+    assert state["2024_request_count"] == 0

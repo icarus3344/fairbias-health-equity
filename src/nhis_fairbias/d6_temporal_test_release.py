@@ -15,10 +15,13 @@ not silently fall back to a real-data execution path.
 from __future__ import annotations
 
 import copy
+import csv
 import hashlib
+import importlib
 import inspect
 import json
 import pathlib
+import re
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -65,6 +68,12 @@ FAILED_ATTRIBUTE_MODE = "stop"
 
 PREPROCESSING_STATE_SHA256 = (
     "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9"
+)
+FROZEN_FEATURES_PARQUET_PATH = (
+    _REPO_ROOT / "data" / "processed" / "nhis" / "nhis_2022_2024_features.parquet"
+)
+FROZEN_FEATURES_PARQUET_SHA256 = (
+    "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383"
 )
 
 TEMPORAL_2024_DISCLOSURE = (
@@ -838,7 +847,10 @@ def _hash_observed_state(value: Any) -> Optional[str]:
     return None
 
 
-def _summary_has_global_barrier(summary: Mapping[str, Any]) -> bool:
+def _summary_has_global_barrier(
+    summary: Mapping[str, Any],
+    expected_anchors: Optional[Mapping[str, Mapping[str, str]]] = None,
+) -> bool:
     """Validate the complete 4/4 and 20/20 proof before allowing 2024 access."""
     global_state = summary.get("global")
     arms = summary.get("arms")
@@ -858,6 +870,9 @@ def _summary_has_global_barrier(summary: Mapping[str, Any]) -> bool:
         return False
     if global_state.get("all_training_state_anchors_verified") is not True:
         return False
+    anchors_by_arm = expected_anchors or EXPECTED_TRAINING_STATE_ANCHORS
+    if set(anchors_by_arm) != set(FROZEN_D6_ARM_IDS):
+        return False
     for arm_id in FROZEN_D6_ARM_IDS:
         arm_state = arms.get(arm_id)
         if not isinstance(arm_state, Mapping):
@@ -868,7 +883,7 @@ def _summary_has_global_barrier(summary: Mapping[str, Any]) -> bool:
             return False
         if arm_state.get("all_five_state_hashes_match") is not True:
             return False
-        for logical_name, expected_hash in EXPECTED_TRAINING_STATE_ANCHORS[arm_id].items():
+        for logical_name, expected_hash in anchors_by_arm[arm_id].items():
             anchor = arm_state.get(logical_name)
             if not isinstance(anchor, Mapping):
                 return False
@@ -890,6 +905,7 @@ class TrainingStateObservation:
     observed_train_source_row_digest: Optional[str]
     preprocessing_state_expected_hash: str
     preprocessing_state_observed_hash: Optional[str]
+    expected_state_hashes: Dict[str, str]
     state_hashes: Dict[str, Optional[str]]
     digest_match: bool
     preprocessing_state_match: bool
@@ -917,7 +933,7 @@ class TrainingStateObservation:
             "frozen_prediction_threshold": PREDICTION_THRESHOLD,
             "error": self.error,
         }
-        for logical_name, expected_hash in EXPECTED_TRAINING_STATE_ANCHORS[self.arm_id].items():
+        for logical_name, expected_hash in self.expected_state_hashes.items():
             observed_hash = self.state_hashes.get(logical_name)
             payload[logical_name] = {
                 "expected_sha256": expected_hash,
@@ -1063,6 +1079,7 @@ class D6TrainingStateReproducer:
             observed_train_source_row_digest=observed_digest,
             preprocessing_state_expected_hash=preprocessing_expected_hash,
             preprocessing_state_observed_hash=preprocessing_observed_hash,
+            expected_state_hashes=copy.deepcopy(expected_states),
             state_hashes=observed_states,
             digest_match=observed_digest == expected_digest,
             preprocessing_state_match=preprocessing_observed_hash == preprocessing_expected_hash,
@@ -1099,7 +1116,11 @@ class D6TrainingStateReproducer:
                     observed_train_source_row_digest=None,
                     preprocessing_state_expected_hash=PREPROCESSING_STATE_SHA256,
                     preprocessing_state_observed_hash=None,
-                    state_hashes={name: None for name in EXPECTED_TRAINING_STATE_ANCHORS[arm_id]},
+                    expected_state_hashes=self.archive_loader.expected_state_anchors()[arm_id],
+                    state_hashes={
+                        name: None
+                        for name in self.archive_loader.expected_state_anchors()[arm_id]
+                    },
                     digest_match=False,
                     preprocessing_state_match=False,
                     all_five_state_hashes_match=False,
@@ -1173,7 +1194,10 @@ class D6TemporalTestEvaluator:
         self.archive_loader = archive_loader
         self.adapter = adapter
         self.training_state_summary = copy.deepcopy(dict(training_state_summary))
-        inferred_barrier = _summary_has_global_barrier(self.training_state_summary)
+        inferred_barrier = _summary_has_global_barrier(
+            self.training_state_summary,
+            self.archive_loader.expected_state_anchors(),
+        )
         self.barrier_passed = (
             inferred_barrier
             if barrier_passed is None
@@ -1284,6 +1308,725 @@ def _write_json(path: pathlib.Path, value: Mapping[str, Any]) -> None:
     )
 
 
+def _write_csv(path: pathlib.Path, rows: Sequence[Mapping[str, Any]]) -> None:
+    """Write a small, deterministic CSV artifact without importing pandas at audit time."""
+    fieldnames = sorted({str(key) for row in rows for key in row}) or ["group"]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(
+                {
+                    key: json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else value
+                    for key, value in row.items()
+                }
+            )
+
+
+@dataclass
+class ReproducedArmState:
+    """Live, independently reconstructed 2022 state retained for one future 2024 score."""
+
+    arm_id: str
+    arm_config: Dict[str, Any]
+    train_source_row_digest: str
+    preprocessing_state: Dict[str, Any]
+    preprocessing_state_hash: str
+    frozen_changed_dict: Dict[str, Any]
+    transformer: Any
+    evaluator: Any
+    categorical_features: List[str]
+    numerical_features: List[str]
+    epsilon_threshold: float
+    baseline_scaler: Any
+    baseline_model: Any
+    fairbias_scaler: Any
+    fairbias_model: Any
+    baseline_feature_order: List[str]
+    fairbias_feature_order: List[str]
+    train_dphi_before_after: Dict[str, Any]
+    observed_state_hashes: Dict[str, str]
+
+    def recompute_state_hashes(self, runner: Any) -> Dict[str, str]:
+        """Compute observed hashes only from retained live state objects."""
+        return {
+            "changed_dict": runner.compute_canonical_json_sha256(self.frozen_changed_dict),
+            "baseline_scaler": runner.compute_canonical_json_sha256(
+                runner.extract_minmax_scaler_state(
+                    self.baseline_scaler, self.baseline_feature_order
+                )
+            ),
+            "baseline_LR": runner.compute_canonical_json_sha256(
+                runner.extract_logistic_regression_state(
+                    self.baseline_model, self.baseline_feature_order
+                )
+            ),
+            "FairBias_scaler": runner.compute_canonical_json_sha256(
+                runner.extract_minmax_scaler_state(
+                    self.fairbias_scaler, self.fairbias_feature_order
+                )
+            ),
+            "FairBias_LR": runner.compute_canonical_json_sha256(
+                runner.extract_logistic_regression_state(
+                    self.fairbias_model, self.fairbias_feature_order
+                )
+            ),
+        }
+
+
+class ProductionD6TemporalRuntime:
+    """Lazy real-data implementation for D6.1b, installed but not run by D6.1a.1.
+
+    Expected anchors remain in ``FrozenD6ArchiveLoader``.  This class never reads
+    those expected values while reproducing state: it computes observed hashes from
+    freshly fitted 2022 objects and retains those exact objects for 2024 scoring.
+    """
+
+    def __init__(
+        self,
+        *,
+        repo_root: Optional[pathlib.Path | str] = None,
+        features_parquet_path: Optional[pathlib.Path | str] = None,
+        expected_features_sha256: str = FROZEN_FEATURES_PARQUET_SHA256,
+        adapter_factory: Optional[Callable[..., Any]] = None,
+        runner_module: Any = None,
+    ) -> None:
+        self.repo_root = pathlib.Path(repo_root).resolve() if repo_root else _REPO_ROOT
+        self.features_parquet_path = (
+            pathlib.Path(features_parquet_path).resolve()
+            if features_parquet_path is not None
+            else FROZEN_FEATURES_PARQUET_PATH.resolve()
+        )
+        self.expected_features_sha256 = str(expected_features_sha256)
+        self.adapter_factory = adapter_factory
+        self._runner_module = runner_module
+        self._adapter: Any = None
+        self._authorized = False
+        self.reproduced_states: Dict[str, ReproducedArmState] = {}
+        self.events: List[str] = []
+
+    def _runner(self) -> Any:
+        if self._runner_module is None:
+            self._runner_module = importlib.import_module("nhis_fairbias.d6_temporal_runner")
+        return self._runner_module
+
+    def _emit(self, event: str) -> None:
+        self.events.append(event)
+
+    def authorize(self, expected_execution_head: str) -> Dict[str, Any]:
+        """Verify HEAD and immutable prepared-data bytes before adapter construction."""
+        if not re.fullmatch(r"[0-9a-f]{40}", str(expected_execution_head)):
+            raise D6HarnessError("--expected-execution-head must be an exact 40-character SHA")
+        local_head = _git_revision(self.repo_root, "HEAD")
+        remote_head = _git_revision(self.repo_root, "origin/research/nhis-fairbias")
+        if local_head != remote_head or local_head != expected_execution_head:
+            raise D6HarnessError(
+                "D6.1 substantive execution HEAD mismatch; no release or cohort access is allowed"
+            )
+        if not self.features_parquet_path.is_file():
+            raise D6HarnessError(
+                f"Frozen prepared NHIS parquet is missing: {self.features_parquet_path}"
+            )
+        observed_sha = compute_file_sha256(self.features_parquet_path)
+        if observed_sha != self.expected_features_sha256:
+            raise D6HarnessError(
+                "Frozen prepared NHIS parquet SHA-256 mismatch; no release or cohort access is allowed"
+            )
+        self._authorized = True
+        return {
+            "local_head": local_head,
+            "remote_head": remote_head,
+            "expected_execution_head": expected_execution_head,
+            "features_parquet_path": str(self.features_parquet_path),
+            "features_parquet_sha256": observed_sha,
+        }
+
+    @property
+    def adapter(self) -> Any:
+        """Construct the real adapter only after the future substantive route is authorized."""
+        if not self._authorized:
+            raise D6HarnessError(
+                "D6.1 production adapter construction requires an authorized execution HEAD"
+            )
+        if self._adapter is None:
+            runner = self._runner()
+            factory = self.adapter_factory or runner.NHISStudyAdapter
+            self._adapter = _invoke_injected(
+                factory,
+                {
+                    "features_parquet_path": self.features_parquet_path,
+                    "repo_root": self.repo_root,
+                },
+            )
+            self._emit("construct_production_nhis_adapter")
+        return self._adapter
+
+    def get_cohort(self, year: int, **kwargs: Any) -> Any:
+        """Guard all real adapter access; 2023 remains permanently impossible."""
+        year_int = int(year)
+        if year_int == TEMPORAL_VALIDATION_YEAR:
+            raise AssertionError(
+                "FATAL: D6.1 attempted to access frozen 2023 validation cohort"
+            )
+        if year_int not in (TEMPORAL_TRAIN_YEAR, TEMPORAL_TEST_YEAR):
+            raise D6HarnessError(f"D6.1 accepts only 2022 or 2024 cohorts, not {year_int}")
+        self._emit(f"production_get_cohort_{year_int}")
+        return self.adapter.get_cohort(year=year_int, **kwargs)
+
+    @staticmethod
+    def _cohort_parts(cohort: Any) -> Tuple[Any, Any, Any, Any, Any]:
+        if not isinstance(cohort, (tuple, list)) or len(cohort) != 5:
+            raise D6HarnessError(
+                "NHIS adapter must return (X, y, protected, weight, metadata) for D6.1"
+            )
+        return cohort[0], cohort[1], cohort[2], cohort[3], cohort[4]
+
+    def _preprocessing_state(self) -> Tuple[Dict[str, Any], str]:
+        fit_record = getattr(getattr(self.adapter, "preprocessor", None), "fitted_record", None)
+        if fit_record is None or not hasattr(fit_record, "to_dict"):
+            raise D6HarnessError("Production adapter exposes no complete fitted preprocessing record")
+        state = copy.deepcopy(dict(fit_record.to_dict()))
+        if state.get("fit_year") != TEMPORAL_TRAIN_YEAR:
+            raise D6HarnessError("D6.1 preprocessor must be fitted on 2022 only")
+        if state.get("fit_study_role") != TEMPORAL_ROLES[TEMPORAL_TRAIN_YEAR]:
+            raise D6HarnessError("D6.1 preprocessor fit role must be development_train")
+        return state, compute_canonical_json_sha256(state)
+
+    def reproduce_training_state(
+        self,
+        *,
+        arm_id: str,
+        arm_config: Mapping[str, Any],
+        cohort: Any,
+        **_unused: Any,
+    ) -> Dict[str, Any]:
+        """Execute the frozen D6 A--M 2022 logic and independently hash its live state."""
+        if arm_id not in FROZEN_D6_ARMS:
+            raise D6HarnessError(f"Unknown D6 arm for production reproduction: {arm_id}")
+        if arm_id in self.reproduced_states:
+            raise D6HarnessError(f"D6.1 forbids a second 2022 reproduction for {arm_id}")
+        runner = self._runner()
+        X_train, y_train, o_train, _weights, _metadata = self._cohort_parts(cohort)
+        runner.verify_cohort_alignment_and_uniqueness(X_train, y_train, o_train)
+        observed_train_digest = runner.compute_cohort_source_row_digest(
+            TEMPORAL_TRAIN_YEAR, X_train.index
+        )
+        preprocessing_state, preprocessing_hash = self._preprocessing_state()
+        expected_predictors = int(arm_config["expected_predictors"])
+        if len(X_train.columns) != expected_predictors:
+            raise D6HarnessError(
+                f"D6.1 predictor count mismatch for {arm_id}: "
+                f"expected {expected_predictors}, got {len(X_train.columns)}"
+            )
+
+        all_categorical, all_numerical = self.adapter.preprocessor.get_feature_family_lists(
+            str(arm_config["feature_set"]).lower()
+        )
+        active_columns = set(X_train.columns)
+        categorical_features = [name for name in all_categorical if name in active_columns]
+        numerical_features = [name for name in all_numerical if name in active_columns]
+        if len(categorical_features) + len(numerical_features) != expected_predictors:
+            raise D6HarnessError("D6.1 semantic feature-family partition is incomplete")
+
+        fb_config = runner.FairBiasConfig(
+            algorithm_mode=runner.ALGORITHM_MODE_PAPER_FAITHFUL,
+            random_seed=DEFAULT_RANDOM_SEED,
+            classifier="LR",
+            eval_norm="min-max",
+            label_O=(arm_config["protected_attribute"],),
+            label_Y=arm_config["outcome"],
+            use_bias_mitigation=True,
+            use_accuracy_enhancement=False,
+            failed_attribute_mode=FAILED_ATTRIBUTE_MODE,
+            power_sequence_policy=POWER_SEQUENCE_POLICY,
+            power_revisit_policy=POWER_REVISIT_POLICY,
+        ).resolved()
+        evaluator = runner.FairEvaluator(
+            config=fb_config,
+            label_O=[arm_config["protected_attribute"]],
+            label_Y=arm_config["outcome"],
+            cate_attrs=categorical_features,
+            num_attrs=numerical_features,
+        )
+        transformer = runner.FairTransform(
+            n_bins=fb_config.transform_n_bins,
+            log_epsilon=fb_config.transform_log_epsilon,
+            x_max=fb_config.transform_x_max,
+        )
+        protected_train = runner.pd.DataFrame({arm_config["protected_attribute"]: o_train})
+        initial_epsilon = evaluator.calculate_epsilon(
+            X_train,
+            protected_train,
+            cate_attrs=categorical_features,
+            num_attrs=numerical_features,
+            sample_weight=None,
+        )
+        epsilon_threshold = float(evaluator.compute_threshold(initial_epsilon))
+        initial_dphi = {
+            str(key): float(value)
+            for key, value in initial_epsilon.get(arm_config["protected_attribute"], {}).items()
+        }
+        initial_max_dphi = float(max(initial_dphi.values())) if initial_dphi else 0.0
+        nmi_org = runner.calculate_nmi_dict(X_train, y_train)
+        mitigation = runner.FairBiasMitigation(
+            evaluator=evaluator,
+            transformer=transformer,
+            label_O=[arm_config["protected_attribute"]],
+            cate_attrs=categorical_features,
+            num_attrs=numerical_features,
+            phi_threshold=fb_config.phi_threshold,
+            poly_exponents=fb_config.transform_poly_exponents,
+            failed_attribute_mode=fb_config.failed_attribute_mode,
+            power_sequence_policy=fb_config.power_sequence_policy,
+            power_revisit_policy=fb_config.power_revisit_policy,
+        )
+        changed_dict: Dict[str, Any] = {}
+        current_epsilon = copy.deepcopy(initial_epsilon)
+        if initial_max_dphi > epsilon_threshold:
+            iteration = 0
+            while True:
+                iteration += 1
+                _current_x, changed_dict, _selected_o, selected_attribute = mitigation.mitigate_step(
+                    X=X_train,
+                    Y=y_train,
+                    O=protected_train,
+                    nmi_org=nmi_org,
+                    changed_dict=changed_dict,
+                    current_epsilon=current_epsilon,
+                    epsilon_threshold=epsilon_threshold,
+                    iteration=iteration,
+                )
+                if selected_attribute is None:
+                    break
+                transformed_step = transformer.transform_data(
+                    X_train, changed_dict, numerical_features, categorical_features
+                )
+                current_epsilon = evaluator.calculate_epsilon(
+                    transformed_step,
+                    protected_train,
+                    cate_attrs=categorical_features,
+                    num_attrs=numerical_features,
+                    sample_weight=None,
+                )
+                values = [value for group in current_epsilon.values() for value in group.values()]
+                if not values or max(values) <= epsilon_threshold:
+                    break
+
+        frozen_changed_dict = copy.deepcopy(changed_dict)
+        transformed_train = transformer.transform_data(
+            X_train, frozen_changed_dict, numerical_features, categorical_features
+        )
+        final_epsilon = evaluator.calculate_epsilon(
+            transformed_train,
+            protected_train,
+            cate_attrs=categorical_features,
+            num_attrs=numerical_features,
+            sample_weight=None,
+        )
+        final_dphi = {
+            str(key): float(value)
+            for key, value in final_epsilon.get(arm_config["protected_attribute"], {}).items()
+        }
+        final_max_dphi = float(max(final_dphi.values())) if final_dphi else 0.0
+
+        baseline_scaler = runner.MinMaxScaler(feature_range=(0, 1))
+        baseline_scaled = baseline_scaler.fit_transform(X_train)
+        baseline_model = runner.get_classifier("LR", random_state=DEFAULT_RANDOM_SEED)
+        baseline_model.fit(baseline_scaled, y_train.to_numpy())
+        fairbias_scaler = runner.MinMaxScaler(feature_range=(0, 1))
+        fairbias_scaled = fairbias_scaler.fit_transform(transformed_train)
+        fairbias_model = runner.get_classifier("LR", random_state=DEFAULT_RANDOM_SEED)
+        fairbias_model.fit(fairbias_scaled, y_train.to_numpy())
+
+        state = ReproducedArmState(
+            arm_id=arm_id,
+            arm_config=copy.deepcopy(dict(arm_config)),
+            train_source_row_digest=observed_train_digest,
+            preprocessing_state=preprocessing_state,
+            preprocessing_state_hash=preprocessing_hash,
+            frozen_changed_dict=frozen_changed_dict,
+            transformer=transformer,
+            evaluator=evaluator,
+            categorical_features=list(categorical_features),
+            numerical_features=list(numerical_features),
+            epsilon_threshold=epsilon_threshold,
+            baseline_scaler=baseline_scaler,
+            baseline_model=baseline_model,
+            fairbias_scaler=fairbias_scaler,
+            fairbias_model=fairbias_model,
+            baseline_feature_order=list(X_train.columns),
+            fairbias_feature_order=list(transformed_train.columns),
+            train_dphi_before_after={
+                "train_year": TEMPORAL_TRAIN_YEAR,
+                "epsilon_threshold": epsilon_threshold,
+                "initial_dphi": initial_dphi,
+                "initial_max_dphi": initial_max_dphi,
+                "final_dphi": final_dphi,
+                "final_max_dphi": final_max_dphi,
+                "delta_max_dphi": float(final_max_dphi - initial_max_dphi),
+                "diagnostic_only": True,
+            },
+            observed_state_hashes={},
+        )
+        state.observed_state_hashes = state.recompute_state_hashes(runner)
+        self.reproduced_states[arm_id] = state
+        self._emit(f"production_reproduce_2022_{arm_id}")
+        return {
+            "observed_train_source_row_digest": observed_train_digest,
+            "preprocessing_state": copy.deepcopy(preprocessing_state),
+            "state_hashes": copy.deepcopy(state.observed_state_hashes),
+        }
+
+    def score_temporal_test(
+        self,
+        *,
+        arm_id: str,
+        cohort: Any,
+        prediction_threshold: float = PREDICTION_THRESHOLD,
+        **_unused: Any,
+    ) -> Dict[str, Any]:
+        """Score 2024 exactly once with retained state; fitting/relearning is impossible here."""
+        if arm_id not in self.reproduced_states:
+            raise D6HarnessError(f"No retained 2022 state exists for 2024 arm {arm_id}")
+        if float(prediction_threshold) != PREDICTION_THRESHOLD:
+            raise D6HarnessError("D6.1 prediction threshold is frozen at 0.5")
+        runner = self._runner()
+        state = self.reproduced_states[arm_id]
+        pre_score_hashes = state.recompute_state_hashes(runner)
+        if pre_score_hashes != state.observed_state_hashes:
+            raise D6HarnessError("D6.1 retained 2022 state changed before 2024 scoring")
+        X_test, y_test, o_test, _weights, _metadata = self._cohort_parts(cohort)
+        runner.verify_cohort_alignment_and_uniqueness(X_test, y_test, o_test)
+        if list(X_test.columns) != state.baseline_feature_order:
+            raise D6HarnessError("D6.1 2024 original feature order differs from frozen 2022 state")
+        protected_test = runner.pd.DataFrame({state.arm_config["protected_attribute"]: o_test})
+        original_epsilon = state.evaluator.calculate_epsilon(
+            X_test,
+            protected_test,
+            cate_attrs=state.categorical_features,
+            num_attrs=state.numerical_features,
+            sample_weight=None,
+        )
+        transformed_test = state.transformer.transform_data(
+            X_test,
+            state.frozen_changed_dict,
+            state.numerical_features,
+            state.categorical_features,
+        )
+        if list(transformed_test.columns) != state.fairbias_feature_order:
+            raise D6HarnessError("D6.1 2024 transformed feature order differs from frozen 2022 state")
+        transformed_epsilon = state.evaluator.calculate_epsilon(
+            transformed_test,
+            protected_test,
+            cate_attrs=state.categorical_features,
+            num_attrs=state.numerical_features,
+            sample_weight=None,
+        )
+        original_dphi = {
+            str(key): float(value)
+            for key, value in original_epsilon.get(state.arm_config["protected_attribute"], {}).items()
+        }
+        transformed_dphi = {
+            str(key): float(value)
+            for key, value in transformed_epsilon.get(state.arm_config["protected_attribute"], {}).items()
+        }
+        original_max = float(max(original_dphi.values())) if original_dphi else 0.0
+        transformed_max = float(max(transformed_dphi.values())) if transformed_dphi else 0.0
+
+        baseline_prob = state.baseline_model.predict_proba(
+            state.baseline_scaler.transform(X_test)
+        )[:, 1]
+        baseline_pred = (baseline_prob >= PREDICTION_THRESHOLD).astype(int)
+        fairbias_prob = state.fairbias_model.predict_proba(
+            state.fairbias_scaler.transform(transformed_test)
+        )[:, 1]
+        fairbias_pred = (fairbias_prob >= PREDICTION_THRESHOLD).astype(int)
+        baseline_eval = runner.evaluate_predictions(
+            y_true=y_test.to_numpy(),
+            y_pred=baseline_pred,
+            y_prob=baseline_prob,
+            o_group=o_test.to_numpy(),
+            expected_group_count=state.arm_config["expected_group_count"],
+            expected_groups=state.arm_config["expected_groups"],
+        )
+        fairbias_eval = runner.evaluate_predictions(
+            y_true=y_test.to_numpy(),
+            y_pred=fairbias_pred,
+            y_prob=fairbias_prob,
+            o_group=o_test.to_numpy(),
+            expected_group_count=state.arm_config["expected_group_count"],
+            expected_groups=state.arm_config["expected_groups"],
+        )
+        for evaluation, prediction in ((baseline_eval, baseline_pred), (fairbias_eval, fairbias_pred)):
+            evaluation["utility"].update(
+                {
+                    "count_predicted_positive": int(runner.np.sum(prediction == 1)),
+                    "selection_rate": float(runner.np.mean(prediction == 1)),
+                    "count_outcome_positive": int(runner.np.sum(y_test == 1)),
+                    "prevalence": float(runner.np.mean(y_test == 1)),
+                }
+            )
+        comparison = runner.compute_evaluation_comparison(baseline_eval, fairbias_eval)
+        comparison["predicted_positive_delta"] = int(
+            fairbias_eval["utility"]["count_predicted_positive"]
+            - baseline_eval["utility"]["count_predicted_positive"]
+        )
+        comparison["selection_rate_delta"] = float(
+            fairbias_eval["utility"]["selection_rate"]
+            - baseline_eval["utility"]["selection_rate"]
+        )
+        post_score_hashes = state.recompute_state_hashes(runner)
+        if post_score_hashes != pre_score_hashes:
+            raise D6HarnessError("D6.1 2024 scoring mutated frozen scientific state")
+        group_counts = {str(key): int(value) for key, value in o_test.value_counts().to_dict().items()}
+        self._emit(f"production_score_2024_{arm_id}")
+        return {
+            "arm_id": arm_id,
+            "test_year": TEMPORAL_TEST_YEAR,
+            "prediction_threshold": PREDICTION_THRESHOLD,
+            "diagnostic_only": True,
+            "test_source_row_digest": runner.compute_cohort_source_row_digest(
+                TEMPORAL_TEST_YEAR, X_test.index
+            ),
+            "test_n": int(len(X_test)),
+            "test_outcome_positive_count": int((y_test == 1).sum()),
+            "test_prevalence": float((y_test == 1).mean()),
+            "test_group_counts": group_counts,
+            "test_dphi_before_after": {
+                "test_year": TEMPORAL_TEST_YEAR,
+                "frozen_train_epsilon_threshold": state.epsilon_threshold,
+                "original_test_dphi": original_dphi,
+                "original_test_max_dphi": original_max,
+                "transformed_test_dphi": transformed_dphi,
+                "transformed_test_max_dphi": transformed_max,
+                "delta_max_dphi": float(transformed_max - original_max),
+                "transformed_max_dphi_within_frozen_epsilon": bool(
+                    transformed_max <= state.epsilon_threshold
+                ),
+                "diagnostic_only": True,
+                "dphi_relearned": False,
+            },
+            "test_metrics_baseline": baseline_eval,
+            "test_metrics_fairbias": fairbias_eval,
+            "test_comparison": comparison,
+            "test_group_metrics_baseline": baseline_eval["group_metrics"],
+            "test_group_metrics_fairbias": fairbias_eval["group_metrics"],
+            "pre_score_state_hashes": pre_score_hashes,
+            "post_score_state_hashes": post_score_hashes,
+        }
+
+
+class ProductionD6TemporalArtifactWriter:
+    """Writer for the exact 40/41/43 future D6 temporal TEST release schema."""
+
+    def __init__(
+        self,
+        release_dir: pathlib.Path,
+        release_id: str,
+        archive_loader: FrozenD6ArchiveLoader,
+    ) -> None:
+        self.release_dir = release_dir
+        self.release_id = release_id
+        self.archive_loader = archive_loader
+
+    def write_started(self) -> None:
+        _write_json(
+            self.release_dir / "release_state.json",
+            {
+                "release_id": self.release_id,
+                "status": "STARTED",
+                "started_at": _utc_now(),
+                "validation_year_requested": False,
+                "test_year_requested": False,
+                "test_year_evaluated": False,
+            },
+        )
+
+    def write_training_summary(self, summary: Mapping[str, Any]) -> None:
+        _write_json(
+            self.release_dir / "training_state_reproduction_summary.json",
+            dict(summary),
+        )
+
+    def write_arm(
+        self,
+        arm_id: str,
+        state: ReproducedArmState,
+        summary: Mapping[str, Any],
+        score: Mapping[str, Any],
+    ) -> None:
+        arm_dir = self.release_dir / arm_id
+        arm_dir.mkdir(exist_ok=False)
+        expected_anchors = self.archive_loader.expected_state_anchors()[arm_id]
+        arm_observation = copy.deepcopy(dict(summary["arms"][arm_id]))
+        arm_config = {
+            **copy.deepcopy(state.arm_config),
+            "train_year": TEMPORAL_TRAIN_YEAR,
+            "validation_year": TEMPORAL_VALIDATION_YEAR,
+            "test_year": TEMPORAL_TEST_YEAR,
+            "repeated_cross_sectional": True,
+            "longitudinal": False,
+            "causal_analysis": False,
+            "survey_weighting": "NONE",
+            "prediction_threshold": PREDICTION_THRESHOLD,
+            "categorical_features": list(state.categorical_features),
+            "numerical_features": list(state.numerical_features),
+            "classifier": {
+                "type": "LR",
+                "random_state": DEFAULT_RANDOM_SEED,
+                "solver": CLASSIFIER_SOLVER,
+                "max_iter": CLASSIFIER_MAX_ITER,
+                "sample_weight": None,
+            },
+        }
+        input_provenance = {
+            "arm_id": arm_id,
+            "protected_attribute": state.arm_config["protected_attribute"],
+            "feature_set": state.arm_config["feature_set"],
+            "disability_arm": state.arm_config["disability_arm"],
+            "archived_d6_train_val_release_id": D6_TRAIN_VAL_RELEASE_ID,
+            "archived_d6_train_val_tag": D6_TRAIN_VAL_TAG,
+            "archived_d6_train_val_commit": D6_TRAIN_VAL_ARCHIVE_COMMIT,
+            "archived_d6_train_val_manifest_sha256": D6_TRAIN_VAL_MANIFEST_SHA256,
+            "train_year": TEMPORAL_TRAIN_YEAR,
+            "expected_train_source_row_digest": EXPECTED_TRAIN_SOURCE_ROW_DIGESTS[arm_id],
+            "observed_train_source_row_digest": state.train_source_row_digest,
+            "train_source_row_digest_match": state.train_source_row_digest
+            == EXPECTED_TRAIN_SOURCE_ROW_DIGESTS[arm_id],
+            "test_year": TEMPORAL_TEST_YEAR,
+            "test_source_row_digest": score["test_source_row_digest"],
+            "test_n": score["test_n"],
+            "test_outcome_positive_count": score["test_outcome_positive_count"],
+            "test_prevalence": score["test_prevalence"],
+            "test_group_counts": score["test_group_counts"],
+            "preprocessor_fit_year": state.preprocessing_state["fit_year"],
+            "preprocessor_fit_role": state.preprocessing_state["fit_study_role"],
+            "preprocessing_state_expected_hash": PREPROCESSING_STATE_SHA256,
+            "preprocessing_state_observed_hash": state.preprocessing_state_hash,
+            "preprocessing_state_match": state.preprocessing_state_hash == PREPROCESSING_STATE_SHA256,
+            "expected_training_state_hashes": expected_anchors,
+            "observed_training_state_hashes": state.observed_state_hashes,
+            "all_training_state_hashes_match": state.observed_state_hashes == expected_anchors,
+            "validation_year_requested": False,
+            "survey_weighted_geometry": False,
+            "classifier_weighted": False,
+            "evaluation_weighted": False,
+            "test_requested_only_after_global_reproduction_barrier": True,
+        }
+        _write_json(arm_dir / "arm_config.json", arm_config)
+        _write_json(arm_dir / "input_provenance.json", input_provenance)
+        _write_json(arm_dir / "training_state_reproduction.json", arm_observation)
+        _write_json(
+            arm_dir / "frozen_changed_dict.json",
+            {
+                "expected_logical_sha256": expected_anchors["changed_dict"],
+                "observed_logical_sha256": state.observed_state_hashes["changed_dict"],
+                "match": state.observed_state_hashes["changed_dict"]
+                == expected_anchors["changed_dict"],
+                "changed_dict": state.frozen_changed_dict,
+            },
+        )
+        _write_json(arm_dir / "test_dphi_before_after.json", dict(score["test_dphi_before_after"]))
+        _write_json(arm_dir / "test_metrics_baseline.json", dict(score["test_metrics_baseline"]))
+        _write_json(arm_dir / "test_metrics_fairbias.json", dict(score["test_metrics_fairbias"]))
+        _write_csv(arm_dir / "test_group_metrics_baseline.csv", score["test_group_metrics_baseline"])
+        _write_csv(arm_dir / "test_group_metrics_fairbias.csv", score["test_group_metrics_fairbias"])
+        _write_json(arm_dir / "test_comparison.json", dict(score["test_comparison"]))
+
+    def write_manifest(self) -> str:
+        expected_paths = {
+            "training_state_reproduction_summary.json",
+            *(
+                f"{arm_id}/{name}"
+                for arm_id in FROZEN_D6_ARM_IDS
+                for name in FUTURE_PER_ARM_TEST_ARTIFACTS
+            ),
+        }
+        observed_paths = {
+            path.relative_to(self.release_dir).as_posix()
+            for path in self.release_dir.rglob("*")
+            if path.is_file()
+            and path.name not in {"release_state.json", "d6_temporal_test_manifest.json"}
+        }
+        if observed_paths != expected_paths or len(observed_paths) != FUTURE_MANIFEST_TRACKED_ARTIFACT_COUNT:
+            raise D6HarnessError("D6.1 production artifact set is not the exact 41-file manifest closure")
+        artifacts = {
+            rel_path: {
+                "sha256": compute_file_sha256(self.release_dir / rel_path),
+                "size_bytes": (self.release_dir / rel_path).stat().st_size,
+            }
+            for rel_path in sorted(observed_paths)
+        }
+        manifest = {
+            "gate": "D6 temporal TEST",
+            "release_id": self.release_id,
+            "status": "COMPLETE",
+            "temporal_robustness_analysis": True,
+            "repeated_cross_sectional": True,
+            "longitudinal": False,
+            "causal_analysis": False,
+            "primary_analysis": False,
+            "replaces_d4_primary": False,
+            "train_year": TEMPORAL_TRAIN_YEAR,
+            "validation_year": TEMPORAL_VALIDATION_YEAR,
+            "test_year": TEMPORAL_TEST_YEAR,
+            "validation_cohort_requested": False,
+            "training_state_reproduction_required": True,
+            "training_state_anchor_matches": 20,
+            "training_state_anchor_expected": 20,
+            "cohort_digest_matches": 4,
+            "cohort_digest_expected": 4,
+            "preprocessing_state_match": True,
+            "test_requested_after_global_barrier": True,
+            "survey_weighted_geometry": False,
+            "classifier_weighted": False,
+            "evaluation_weighted": False,
+            "prediction_threshold": PREDICTION_THRESHOLD,
+            "disclosure_2024": TEMPORAL_2024_DISCLOSURE,
+            "artifacts": artifacts,
+        }
+        manifest_path = self.release_dir / "d6_temporal_test_manifest.json"
+        _write_json(manifest_path, manifest)
+        return compute_file_sha256(manifest_path)
+
+    def write_complete(self, manifest_sha256: str) -> None:
+        all_files = [path for path in self.release_dir.rglob("*") if path.is_file()]
+        if len(all_files) != FUTURE_COMPLETE_FILE_COUNT:
+            raise D6HarnessError(
+                f"D6.1 complete release must contain {FUTURE_COMPLETE_FILE_COUNT} files, got {len(all_files)}"
+            )
+        _write_json(
+            self.release_dir / "release_state.json",
+            {
+                "release_id": self.release_id,
+                "status": "COMPLETE",
+                "completed_at": _utc_now(),
+                "manifest_sha256": manifest_sha256,
+                "manifest_tracked_artifact_count": FUTURE_MANIFEST_TRACKED_ARTIFACT_COUNT,
+                "complete_file_count": FUTURE_COMPLETE_FILE_COUNT,
+                "validation_year_requested": False,
+                "test_year_requested": True,
+                "test_year_evaluated": True,
+            },
+        )
+
+    def write_failed(self, error: str, events: Sequence[str]) -> None:
+        _write_json(
+            self.release_dir / "release_state.json",
+            {
+                "release_id": self.release_id,
+                "status": "FAILED",
+                "failed_at": _utc_now(),
+                "error": str(error),
+                "2022_request_count": sum(event.startswith("request_2022_") for event in events),
+                "2023_request_count": 0,
+                "2024_request_count": sum(event.startswith("request_2024_") for event in events),
+                "test_year_requested": any(event.startswith("request_2024_") for event in events),
+                "test_year_evaluated": False,
+            },
+        )
+
+
 class NHISD6TemporalTestReleaseManager:
     """Global two-phase manager for future synthetic/authorized D6.1 execution.
 
@@ -1321,6 +2064,7 @@ class NHISD6TemporalTestReleaseManager:
             "frozen_d6_train_val_tag": "VERIFIED",
             "frozen_d6_train_val_archive": "VERIFIED",
             "d6_train_val_manifest": "VERIFIED",
+            "d6_train_val_ledger": "VERIFIED",
             "expected_train_digests_loaded": "4 / 4",
             "expected_train_digests_count": 4,
             "expected_training_state_anchors_loaded": "20 / 20",
@@ -1329,6 +2073,9 @@ class NHISD6TemporalTestReleaseManager:
             "frozen_validation_year": "2023 — ACCESS PROHIBITED",
             "future_test_year": 2024,
             "global_training_state_reproduction_barrier": "ENFORCED",
+            "production_2022_reproducer": "IMPLEMENTED",
+            "production_2024_scorer": "IMPLEMENTED",
+            "production_artifact_writer": "IMPLEMENTED",
             "real_2022_state_reproduction_executed": False,
             "2023_cohort_requested": False,
             "2024_test_cohort_requested": False,
@@ -1469,6 +2216,105 @@ class NHISD6TemporalTestReleaseManager:
             self.last_result = failed
             raise
 
+    def execute_production_release(
+        self,
+        release_root: pathlib.Path | str,
+        *,
+        release_id: str,
+        expected_execution_head: str,
+        runtime: Optional[ProductionD6TemporalRuntime] = None,
+    ) -> Dict[str, Any]:
+        """Future D6.1b production route; complete here but never invoked by D6.1a.1.
+
+        Preconditions (archive, reviewed HEAD, prepared parquet) finish before the
+        release directory exists or an adapter can be constructed.  Phase 1 then
+        reconstructs all four 2022 states; Phase 2 is unreachable until the global
+        summary proves 4/4 digests, the preprocessing state, and 20/20 anchors.
+        """
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", str(release_id)):
+            raise D6HarnessError("D6.1 release_id must be a non-empty safe identifier")
+        root = pathlib.Path(release_root).resolve()
+        target = root / str(release_id)
+        if target.exists():
+            raise ReleaseCollisionError(
+                f"D6.1 production release directory already exists: {target}; overwrite/retry is forbidden"
+            )
+        selected_runtime = runtime or ProductionD6TemporalRuntime(repo_root=self.repo_root)
+
+        # All preconditions occur before any directory creation or adapter access.
+        archive_audit = self.archive_loader.verify()
+        execution_binding = selected_runtime.authorize(expected_execution_head)
+        target.mkdir(parents=True, exist_ok=False)
+        writer = ProductionD6TemporalArtifactWriter(target, str(release_id), self.archive_loader)
+        writer.write_started()
+        self.events = []
+        self.last_result = None
+        reproducer = D6TrainingStateReproducer(
+            self.archive_loader,
+            selected_runtime,
+            reproduction_fn=selected_runtime.reproduce_training_state,
+            event_callback=self._record_event,
+        )
+        try:
+            summary = reproducer.reproduce_all(fail_closed=False)
+            writer.write_training_summary(summary)
+            if not summary["global"]["all_training_state_anchors_verified"]:
+                self._record_event("GLOBAL_BARRIER_BLOCKED")
+                writer.write_failed("Global 2022 training-state reproduction barrier failed", self.events)
+                self.last_result = {
+                    "release_id": str(release_id),
+                    "status": "FAILED",
+                    "release_dir": str(target),
+                    "training_state_reproduction_summary": summary,
+                    "events": list(self.events),
+                }
+                raise GlobalBarrierError("Global 2022 training-state reproduction barrier failed")
+
+            self._record_event("ALL_D6_TRAINING_STATE_ANCHORS_VERIFIED")
+            evaluator = D6TemporalTestEvaluator(
+                self.archive_loader,
+                selected_runtime,
+                summary,
+                barrier_passed=True,
+                score_fn=selected_runtime.score_temporal_test,
+                event_callback=self._record_event,
+            )
+            test_results: Dict[str, Dict[str, Any]] = {}
+            for arm_id in FROZEN_D6_ARM_IDS:
+                score = evaluator.evaluate_arm(arm_id)
+                test_results[arm_id] = score
+                writer.write_arm(
+                    arm_id,
+                    selected_runtime.reproduced_states[arm_id],
+                    summary,
+                    score,
+                )
+            manifest_sha256 = writer.write_manifest()
+            writer.write_complete(manifest_sha256)
+            self.last_result = {
+                "release_id": str(release_id),
+                "status": "COMPLETE",
+                "release_dir": str(target),
+                "archive_audit": archive_audit,
+                "execution_binding": execution_binding,
+                "training_state_reproduction_summary": summary,
+                "test_results": test_results,
+                "manifest_sha256": manifest_sha256,
+                "events": list(self.events),
+            }
+            return copy.deepcopy(self.last_result)
+        except Exception as exc:
+            if self.last_result is None or self.last_result.get("status") != "FAILED":
+                writer.write_failed(str(exc), self.events)
+                self.last_result = {
+                    "release_id": str(release_id),
+                    "status": "FAILED",
+                    "release_dir": str(target),
+                    "error": str(exc),
+                    "events": list(self.events),
+                }
+            raise
+
 
 __all__ = [
     "AnchorMismatchError",
@@ -1492,6 +2338,8 @@ __all__ = [
     "EXPECTED_TRAINING_STATE_ANCHORS",
     "EXPECTED_TRAIN_SOURCE_ROW_DIGESTS",
     "FAIRBIAS_ALGORITHM_MODE",
+    "FROZEN_FEATURES_PARQUET_PATH",
+    "FROZEN_FEATURES_PARQUET_SHA256",
     "FROZEN_D6_ARCHIVE_RELATIVE_PATH",
     "FROZEN_D6_ARMS",
     "FROZEN_D6_ARM_IDS",
@@ -1508,6 +2356,9 @@ __all__ = [
     "POWER_SEQUENCE_POLICY",
     "PREDICTION_THRESHOLD",
     "PREPROCESSING_STATE_SHA256",
+    "ProductionD6TemporalArtifactWriter",
+    "ProductionD6TemporalRuntime",
+    "ReproducedArmState",
     "ReleaseCollisionError",
     "TEMPORAL_2024_DISCLOSURE",
     "TEMPORAL_ROLES",
