@@ -1,0 +1,401 @@
+{
+  "arm_id": "D6_ARM_004",
+  "features_parquet_path": "/Users/lkc/Downloads/code_v_0_3/data/processed/nhis/nhis_2022_2024_features.parquet",
+  "features_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+  "frozen_2022_training_state": {
+    "baseline_logistic_regression": {
+      "sha256": "d050dc2a3ba59b2ea1f1767342dbb468680175cc182e94d2143d0ea01563bc3d",
+      "state": {
+        "C": 1.0,
+        "classes_": [
+          0,
+          1
+        ],
+        "coef_": [
+          [
+            -1.2827138429585958,
+            -0.08781567688310245,
+            0.266176379108538,
+            -0.24165355608799566,
+            -0.07173974514199863,
+            -0.9194463781711607,
+            -0.42931524864445647,
+            0.5292439850715911,
+            -3.178282037617721,
+            2.7074381354157686,
+            -0.015355370429584096,
+            0.028355505475386802,
+            0.05607576545075598,
+            -0.7698761152359231,
+            1.6179945543870025
+          ]
+        ],
+        "feature_order": [
+          "agep_a",
+          "educp_a",
+          "region",
+          "pcnt18uptc",
+          "pcntlt18tc",
+          "ratcat_a",
+          "empwrklsw1_a",
+          "empwrkft1_a",
+          "notcov_a",
+          "phstat_a",
+          "hypev_a",
+          "chlev_a",
+          "dibev_a",
+          "asev_a",
+          "usualpl_a"
+        ],
+        "fit_intercept": true,
+        "intercept_": [
+          -0.32554798207685065
+        ],
+        "max_iter": 1000,
+        "n_features_in_": 15,
+        "n_iter_": [
+          26
+        ],
+        "penalty": "l2",
+        "random_state": 0,
+        "solver": "lbfgs"
+      }
+    },
+    "baseline_scaler": {
+      "sha256": "f59d3f21087ae95c2accbc70e0edf9a5e055abe97e2a69d5279aa691688f07a1",
+      "state": {
+        "data_max_": [
+          85.0,
+          10.0,
+          4.0,
+          3.0,
+          3.0,
+          14.0,
+          2.0,
+          2.0,
+          2.0,
+          5.0,
+          2.0,
+          2.0,
+          2.0,
+          2.0,
+          3.0
+        ],
+        "data_min_": [
+          18.0,
+          -1.0,
+          1.0,
+          1.0,
+          0.0,
+          1.0,
+          -1.0,
+          -2.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0
+        ],
+        "data_range_": [
+          67.0,
+          11.0,
+          3.0,
+          2.0,
+          3.0,
+          13.0,
+          3.0,
+          4.0,
+          3.0,
+          6.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          4.0
+        ],
+        "feature_order": [
+          "agep_a",
+          "educp_a",
+          "region",
+          "pcnt18uptc",
+          "pcntlt18tc",
+          "ratcat_a",
+          "empwrklsw1_a",
+          "empwrkft1_a",
+          "notcov_a",
+          "phstat_a",
+          "hypev_a",
+          "chlev_a",
+          "dibev_a",
+          "asev_a",
+          "usualpl_a"
+        ],
+        "feature_range": [
+          0.0,
+          1.0
+        ],
+        "min_": [
+          -0.26865671641791045,
+          0.09090909090909091,
+          -0.3333333333333333,
+          -0.5,
+          0.0,
+          -0.07692307692307693,
+          0.3333333333333333,
+          0.5,
+          0.3333333333333333,
+          0.16666666666666666,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.25
+        ],
+        "n_features_in_": 15,
+        "scale_": [
+          0.014925373134328358,
+          0.09090909090909091,
+          0.3333333333333333,
+          0.5,
+          0.3333333333333333,
+          0.07692307692307693,
+          0.3333333333333333,
+          0.25,
+          0.3333333333333333,
+          0.16666666666666666,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.25
+        ]
+      }
+    },
+    "changed_dict_sha256": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568",
+    "documentation": "These frozen training-state fingerprints allow the future D6.1 temporal TEST harness to refit deterministically from the same frozen 2022 cohort and verify exact scaler/model/representation state reproduction before requesting the 2024 cohort.",
+    "fairbias_logistic_regression": {
+      "sha256": "cb0e9a360d68b1705bc1b3b54d508afe80803648fdb22aafc468e245b6045bca",
+      "state": {
+        "C": 1.0,
+        "classes_": [
+          0,
+          1
+        ],
+        "coef_": [
+          [
+            -0.15167782057687734,
+            0.2841988461916283,
+            -0.056552013073862276,
+            0.0604569491875026,
+            -1.13875362603502,
+            -0.2613698815693852,
+            0.2622073791679064,
+            -3.2966774292545873,
+            0.48800088668900055,
+            0.22027706104195505,
+            0.40644511116015036,
+            0.1164023904186169,
+            -1.2405522136876,
+            2.046530226451969
+          ]
+        ],
+        "feature_order": [
+          "educp_a",
+          "region",
+          "pcnt18uptc",
+          "pcntlt18tc",
+          "ratcat_a",
+          "empwrklsw1_a",
+          "empwrkft1_a",
+          "notcov_a",
+          "phstat_a",
+          "hypev_a",
+          "chlev_a",
+          "dibev_a",
+          "asev_a",
+          "usualpl_a"
+        ],
+        "fit_intercept": true,
+        "intercept_": [
+          0.07771434752878432
+        ],
+        "max_iter": 1000,
+        "n_features_in_": 14,
+        "n_iter_": [
+          24
+        ],
+        "penalty": "l2",
+        "random_state": 0,
+        "solver": "lbfgs"
+      }
+    },
+    "fairbias_scaler": {
+      "sha256": "42236586cddc6dd9bf36d46d3209ef40e830c03493a3f041bb429aedc5d4856c",
+      "state": {
+        "data_max_": [
+          10.0,
+          4.0,
+          3.0,
+          27.0,
+          14.0,
+          1.0,
+          2.0,
+          2.0,
+          3.0,
+          2.0,
+          2.0,
+          2.0,
+          2.0,
+          3.0
+        ],
+        "data_min_": [
+          -1.0,
+          1.0,
+          1.0,
+          0.0,
+          1.0,
+          -1.0,
+          -2.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -1.0
+        ],
+        "data_range_": [
+          11.0,
+          3.0,
+          2.0,
+          27.0,
+          13.0,
+          2.0,
+          4.0,
+          3.0,
+          4.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          4.0
+        ],
+        "feature_order": [
+          "educp_a",
+          "region",
+          "pcnt18uptc",
+          "pcntlt18tc",
+          "ratcat_a",
+          "empwrklsw1_a",
+          "empwrkft1_a",
+          "notcov_a",
+          "phstat_a",
+          "hypev_a",
+          "chlev_a",
+          "dibev_a",
+          "asev_a",
+          "usualpl_a"
+        ],
+        "feature_range": [
+          0.0,
+          1.0
+        ],
+        "min_": [
+          0.09090909090909091,
+          -0.3333333333333333,
+          -0.5,
+          0.0,
+          -0.07692307692307693,
+          0.5,
+          0.5,
+          0.3333333333333333,
+          0.25,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.25
+        ],
+        "n_features_in_": 14,
+        "scale_": [
+          0.09090909090909091,
+          0.3333333333333333,
+          0.5,
+          0.037037037037037035,
+          0.07692307692307693,
+          0.5,
+          0.25,
+          0.3333333333333333,
+          0.25,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.3333333333333333,
+          0.25
+        ]
+      }
+    }
+  },
+  "predictor_names": [
+    "agep_a",
+    "educp_a",
+    "region",
+    "pcnt18uptc",
+    "pcntlt18tc",
+    "ratcat_a",
+    "empwrklsw1_a",
+    "empwrkft1_a",
+    "notcov_a",
+    "phstat_a",
+    "hypev_a",
+    "chlev_a",
+    "dibev_a",
+    "asev_a",
+    "usualpl_a"
+  ],
+  "preprocessor_fit_role": "development_train",
+  "preprocessor_fit_year": 2022,
+  "protected_attribute": "DISAB3_A",
+  "survey_weight_used_for_classifier": false,
+  "survey_weight_used_for_evaluation": false,
+  "survey_weight_used_for_geometry": false,
+  "test_year_evaluated": false,
+  "test_year_requested": false,
+  "train_group_counts": {
+    "1": 2846,
+    "2": 24605
+  },
+  "train_group_positive_counts": {
+    "1": 314,
+    "2": 1456
+  },
+  "train_group_prevalences": {
+    "1": 0.11033028812368235,
+    "2": 0.059174964438122334
+  },
+  "train_n": 27451,
+  "train_outcome_positive_count": 1770,
+  "train_prevalence": 0.06447852537248187,
+  "train_source_row_digest": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+  "train_year": 2022,
+  "validation_group_counts": {
+    "1": 3123,
+    "2": 26159
+  },
+  "validation_group_positive_counts": {
+    "1": 351,
+    "2": 1580
+  },
+  "validation_group_prevalences": {
+    "1": 0.11239193083573487,
+    "2": 0.0603998623800604
+  },
+  "validation_n": 29282,
+  "validation_outcome_positive_count": 1931,
+  "validation_prevalence": 0.06594494911549757,
+  "validation_source_row_digest": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+  "validation_used_for_selection": false,
+  "validation_year": 2023
+}

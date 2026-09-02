@@ -1,0 +1,233 @@
+{
+  "algorithm_mode": "tang2024_paper_faithful",
+  "epsilon_threshold": 0.002,
+  "final_max_dphi": 0.0018873614190330987,
+  "final_status": "CONVERGED",
+  "protected_attribute": "HISPALLP_A",
+  "steps": [
+    {
+      "accepted_transformation": {
+        "3": 2,
+        "4": 2
+      },
+      "categorical_merge_mapping": {
+        "3": "2",
+        "4": "2"
+      },
+      "d_phi_after": 0.0018822692246854363,
+      "d_phi_before": 0.005221647220420581,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "categorical",
+      "iteration": 1,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "3": 2,
+        "4": 2
+      },
+      "selected_feature": "region",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 5.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0018234202787803836,
+      "d_phi_before": 0.003805019183202293,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "numerical",
+      "iteration": 2,
+      "numerical_exponent": 5.0,
+      "proposed_transformation": {
+        "power": 5.0
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": "dropped",
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0,
+      "d_phi_before": 0.0035210546015994226,
+      "dropped": true,
+      "epsilon": 0.002,
+      "feature_semantic_type": "numerical",
+      "iteration": 3,
+      "numerical_exponent": null,
+      "proposed_transformation": "dropped",
+      "selected_feature": "pcnt18uptc",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "d_phi_after": 0.001412638549831732,
+      "d_phi_before": 0.003455654016694639,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "categorical",
+      "iteration": 4,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "2": 1
+      },
+      "selected_feature": "hypev_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "d_phi_after": 0.001165314911641011,
+      "d_phi_before": 0.0036570878748005283,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "categorical",
+      "iteration": 5,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "2": 1
+      },
+      "selected_feature": "empwrklsw1_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 7.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.001807601492318635,
+      "d_phi_before": 0.002788411639731834,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "numerical",
+      "iteration": 6,
+      "numerical_exponent": 7.0,
+      "proposed_transformation": {
+        "power": 7.0
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "-1": 1
+      },
+      "categorical_merge_mapping": {
+        "-1": "1"
+      },
+      "d_phi_after": 0.0010412575187064828,
+      "d_phi_before": 0.0022408634760145707,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "categorical",
+      "iteration": 7,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "-1": 1
+      },
+      "selected_feature": "empwrkft1_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": "dropped",
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0,
+      "d_phi_before": 0.0021599448955084235,
+      "dropped": true,
+      "epsilon": 0.002,
+      "feature_semantic_type": "categorical",
+      "iteration": 8,
+      "numerical_exponent": null,
+      "proposed_transformation": "dropped",
+      "selected_feature": "region",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 3.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.001203931219552741,
+      "d_phi_before": 0.0022502632387112727,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "numerical",
+      "iteration": 9,
+      "numerical_exponent": 3.0,
+      "proposed_transformation": {
+        "power": 3.0
+      },
+      "selected_feature": "pcntlt18tc",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 9.0
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0016513557024789786,
+      "d_phi_before": 0.002344350998872957,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "numerical",
+      "iteration": 10,
+      "numerical_exponent": 9.0,
+      "proposed_transformation": {
+        "power": 9.0
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "1": 2
+      },
+      "categorical_merge_mapping": {
+        "1": "2"
+      },
+      "d_phi_after": 0.0010959068439409573,
+      "d_phi_before": 0.0023238592604535153,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "categorical",
+      "iteration": 11,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "1": 2
+      },
+      "selected_feature": "notcov_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "1": 2
+      },
+      "categorical_merge_mapping": {
+        "1": "2"
+      },
+      "d_phi_after": 0.0010330314039567825,
+      "d_phi_before": 0.002294413403530757,
+      "dropped": false,
+      "epsilon": 0.002,
+      "feature_semantic_type": "categorical",
+      "iteration": 12,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "1": 2
+      },
+      "selected_feature": "asev_a",
+      "stopped_reason": null
+    }
+  ],
+  "total_steps": 12
+}

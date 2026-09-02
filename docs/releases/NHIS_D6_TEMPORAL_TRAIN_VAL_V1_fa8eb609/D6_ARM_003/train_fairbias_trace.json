@@ -1,0 +1,146 @@
+{
+  "algorithm_mode": "tang2024_paper_faithful",
+  "epsilon_threshold": 0.005,
+  "final_max_dphi": 0.004968475251586519,
+  "final_status": "CONVERGED",
+  "protected_attribute": "DISAB3_A",
+  "steps": [
+    {
+      "accepted_transformation": {
+        "2": 1
+      },
+      "categorical_merge_mapping": {
+        "2": "1"
+      },
+      "d_phi_after": 0.0032119391528825586,
+      "d_phi_before": 0.010974976082830412,
+      "dropped": false,
+      "epsilon": 0.005,
+      "feature_semantic_type": "categorical",
+      "iteration": 1,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "2": 1
+      },
+      "selected_feature": "empwrklsw1_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "3": 1
+      },
+      "categorical_merge_mapping": {
+        "3": "1"
+      },
+      "d_phi_after": 0.002083529376418442,
+      "d_phi_before": 0.010178074336484332,
+      "dropped": false,
+      "epsilon": 0.005,
+      "feature_semantic_type": "categorical",
+      "iteration": 2,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "3": 1
+      },
+      "selected_feature": "diff_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "-1": 1
+      },
+      "categorical_merge_mapping": {
+        "-1": "1"
+      },
+      "d_phi_after": 0.0023791886949866706,
+      "d_phi_before": 0.00696775837746962,
+      "dropped": false,
+      "epsilon": 0.005,
+      "feature_semantic_type": "categorical",
+      "iteration": 3,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "-1": 1
+      },
+      "selected_feature": "empwrkft1_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "1": 2
+      },
+      "categorical_merge_mapping": {
+        "1": "2"
+      },
+      "d_phi_after": 0.002486744014610791,
+      "d_phi_before": 0.005899628365842083,
+      "dropped": false,
+      "epsilon": 0.005,
+      "feature_semantic_type": "categorical",
+      "iteration": 4,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "1": 2
+      },
+      "selected_feature": "hypev_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 0.3333333333333333
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.0049468193399052314,
+      "d_phi_before": 0.00675819941773253,
+      "dropped": false,
+      "epsilon": 0.005,
+      "feature_semantic_type": "numerical",
+      "iteration": 5,
+      "numerical_exponent": 0.3333333333333333,
+      "proposed_transformation": {
+        "power": 0.3333333333333333
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "3": 1
+      },
+      "categorical_merge_mapping": {
+        "3": "1"
+      },
+      "d_phi_after": 0.00010958858280127598,
+      "d_phi_before": 0.005579341956181691,
+      "dropped": false,
+      "epsilon": 0.005,
+      "feature_semantic_type": "categorical",
+      "iteration": 6,
+      "numerical_exponent": null,
+      "proposed_transformation": {
+        "3": 1
+      },
+      "selected_feature": "cogmemdff_a",
+      "stopped_reason": null
+    },
+    {
+      "accepted_transformation": {
+        "power": 0.14285714285714285
+      },
+      "categorical_merge_mapping": null,
+      "d_phi_after": 0.004968475251586519,
+      "d_phi_before": 0.005567063349762727,
+      "dropped": false,
+      "epsilon": 0.005,
+      "feature_semantic_type": "numerical",
+      "iteration": 7,
+      "numerical_exponent": 0.14285714285714285,
+      "proposed_transformation": {
+        "power": 0.14285714285714285
+      },
+      "selected_feature": "agep_a",
+      "stopped_reason": null
+    }
+  ],
+  "total_steps": 7
+}

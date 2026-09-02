@@ -1,0 +1,258 @@
+{
+  "arms": {
+    "D6_ARM_001": {
+      "arm_id": "D6_ARM_001",
+      "disability_arm": "full_feature",
+      "expected_group_count": 2,
+      "expected_pair_count": 1,
+      "expected_predictors": 21,
+      "feature_set": "PRIMARY_CORE",
+      "outcome": "MEDDL12M_A",
+      "protected_attribute": "SEX_A"
+    },
+    "D6_ARM_002": {
+      "arm_id": "D6_ARM_002",
+      "disability_arm": "full_feature",
+      "expected_group_count": 7,
+      "expected_pair_count": 21,
+      "expected_predictors": 21,
+      "feature_set": "PRIMARY_CORE",
+      "outcome": "MEDDL12M_A",
+      "protected_attribute": "HISPALLP_A"
+    },
+    "D6_ARM_003": {
+      "arm_id": "D6_ARM_003",
+      "disability_arm": "full_feature",
+      "expected_group_count": 2,
+      "expected_pair_count": 1,
+      "expected_predictors": 21,
+      "feature_set": "PRIMARY_CORE",
+      "outcome": "MEDDL12M_A",
+      "protected_attribute": "DISAB3_A"
+    },
+    "D6_ARM_004": {
+      "arm_id": "D6_ARM_004",
+      "disability_arm": "exclude_disability_components",
+      "expected_group_count": 2,
+      "expected_pair_count": 1,
+      "expected_predictors": 15,
+      "feature_set": "PRIMARY_CORE",
+      "outcome": "MEDDL12M_A",
+      "protected_attribute": "DISAB3_A"
+    }
+  },
+  "artifacts": {
+    "D6_ARM_001/arm_config.json": {
+      "sha256": "bb564e47dad0c91727404904ff75d9023e8c2ed25d3bc073288a104a8a2df77b",
+      "size_bytes": 1144
+    },
+    "D6_ARM_001/final_changed_dict.json": {
+      "sha256": "426deaa8152233aa45dce2c440b8b227182040def4778bc29aa51d654d4b0780",
+      "size_bytes": 350
+    },
+    "D6_ARM_001/input_provenance.json": {
+      "sha256": "f31cd1702bd6edecb507ea4618b316ee710d3be4af51d302f6b3e98875117448",
+      "size_bytes": 11374
+    },
+    "D6_ARM_001/train_dphi_before_after.json": {
+      "sha256": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456",
+      "size_bytes": 2066
+    },
+    "D6_ARM_001/train_fairbias_trace.json": {
+      "sha256": "850b8ac8e06afdf9834ed05b03540ff9320fbeb82b422a9c883b7f4d4c02d2fc",
+      "size_bytes": 7722
+    },
+    "D6_ARM_001/validation_comparison.json": {
+      "sha256": "408175dcb94e497dbca431e48eb253982dedfeecb0ae8d674e16fd9d4a8a0b5b",
+      "size_bytes": 1809
+    },
+    "D6_ARM_001/validation_dphi_before_after.json": {
+      "sha256": "12b7b9b5fd779619cd759adf05cdc56a1f92a9aa505b00421ef2c76b2b9ca2e2",
+      "size_bytes": 2116
+    },
+    "D6_ARM_001/validation_group_metrics_baseline.csv": {
+      "sha256": "7de5ae235ab44ce6033b95ee512ea2b04c46c1fd0d2ce3d0f4f5494f151b17cd",
+      "size_bytes": 570
+    },
+    "D6_ARM_001/validation_group_metrics_fairbias.csv": {
+      "sha256": "a07bdc028d63de7dcf191643420f5dc52d2aef0e250ff7feb76aec2d0a73c46a",
+      "size_bytes": 526
+    },
+    "D6_ARM_001/validation_metrics_baseline.json": {
+      "sha256": "a8bfbdc2633c1d77295f773940a6ff79e59dc3b0789850780b9ec309c905a79a",
+      "size_bytes": 2423
+    },
+    "D6_ARM_001/validation_metrics_fairbias.json": {
+      "sha256": "b03a2245b016e886cb8cff1e0f51252998598e5a4b54623907514d8034f75cb7",
+      "size_bytes": 2344
+    },
+    "D6_ARM_002/arm_config.json": {
+      "sha256": "83e64e1d01be572d5a8630bed1287660e7260828daef157f7be57e67d21170e6",
+      "size_bytes": 1185
+    },
+    "D6_ARM_002/final_changed_dict.json": {
+      "sha256": "6825be2d1470e0cbc580c7ce99aa4e5e78f9d1287b21b6570b26f582e5e9b9a7",
+      "size_bytes": 294
+    },
+    "D6_ARM_002/input_provenance.json": {
+      "sha256": "02a483ee9cfde39d0dd66f0dd0987ff0ad72c9b4a32c934479763a6c9aa1a8a9",
+      "size_bytes": 11779
+    },
+    "D6_ARM_002/train_dphi_before_after.json": {
+      "sha256": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f",
+      "size_bytes": 2005
+    },
+    "D6_ARM_002/train_fairbias_trace.json": {
+      "sha256": "bea821ccd04387bb456af60a66be24c2414b07b3055134bad5ae10a4001c70e1",
+      "size_bytes": 6079
+    },
+    "D6_ARM_002/validation_comparison.json": {
+      "sha256": "f91ab274d776fd43767184e468a03cad8c86eae415d93fd11682ced5432faa9f",
+      "size_bytes": 2461
+    },
+    "D6_ARM_002/validation_dphi_before_after.json": {
+      "sha256": "f1a0e90e53855d7597b3928872e3690bb519b58bf7ba266c463673e9dfba81c5",
+      "size_bytes": 2050
+    },
+    "D6_ARM_002/validation_group_metrics_baseline.csv": {
+      "sha256": "01f73996961a8deafa56268b181136ef41bd6b8a873ff221de1ad9a41a5096ff",
+      "size_bytes": 1188
+    },
+    "D6_ARM_002/validation_group_metrics_fairbias.csv": {
+      "sha256": "4ae66ba322c5f62403172e691a545c2f0f54d88d10cbc08ff86702be2cbed5bd",
+      "size_bytes": 1216
+    },
+    "D6_ARM_002/validation_metrics_baseline.json": {
+      "sha256": "f713dde622460fb8af0292eb610e632a788fef56e8cd5eaf6727d62db693014d",
+      "size_bytes": 11819
+    },
+    "D6_ARM_002/validation_metrics_fairbias.json": {
+      "sha256": "d25007bfc1c89f8d335f8fd342e7fc596092f7a7ac572284bd7de9f4bb89186c",
+      "size_bytes": 11482
+    },
+    "D6_ARM_003/arm_config.json": {
+      "sha256": "659ab1b69c433b49e30fd95427f104b961f2dfc984c3ebbdce20f04f916652be",
+      "size_bytes": 1147
+    },
+    "D6_ARM_003/final_changed_dict.json": {
+      "sha256": "856e3d1d30cb0c2943a9136c8474eaed836ff1e0f1559008ea469f34bb5a2581",
+      "size_bytes": 223
+    },
+    "D6_ARM_003/input_provenance.json": {
+      "sha256": "04004d3b1889909626154eda456fd9ec0a36b93bd4a4734fbfb175eced5a70ff",
+      "size_bytes": 11547
+    },
+    "D6_ARM_003/train_dphi_before_after.json": {
+      "sha256": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c",
+      "size_bytes": 2081
+    },
+    "D6_ARM_003/train_fairbias_trace.json": {
+      "sha256": "e0e663c1aaf90bc1a790a9a412f0865ab688bf232da2e80e006c880a0bea69ec",
+      "size_bytes": 3789
+    },
+    "D6_ARM_003/validation_comparison.json": {
+      "sha256": "133f0bae00bc052c53221d59814b371013d6de6cdd2095b645c1db9e40f378ad",
+      "size_bytes": 1839
+    },
+    "D6_ARM_003/validation_dphi_before_after.json": {
+      "sha256": "b3fdab9519bab9f967a4ad1f1223f5a62103e3ac8274d0decf7b91085ed8a4b2",
+      "size_bytes": 2116
+    },
+    "D6_ARM_003/validation_group_metrics_baseline.csv": {
+      "sha256": "0633f2d19a1f840a5253d9cf0086bc3ef745783c2a64f94990ff5d45e4b6f5de",
+      "size_bytes": 564
+    },
+    "D6_ARM_003/validation_group_metrics_fairbias.csv": {
+      "sha256": "c5d95d1a94caa9f1dddd801c9e98116ca54477158af64f6871a584bf53bdfd1a",
+      "size_bytes": 564
+    },
+    "D6_ARM_003/validation_metrics_baseline.json": {
+      "sha256": "e3243c47d52266db857e9bec16bbc0897b898cf87d2b0a2042bcf07722ee5eb5",
+      "size_bytes": 2416
+    },
+    "D6_ARM_003/validation_metrics_fairbias.json": {
+      "sha256": "d989ba9d8c1ceb7cf8f79710ba33c234796ed2b3d5a44e37444838b3e2a7b37b",
+      "size_bytes": 2411
+    },
+    "D6_ARM_004/arm_config.json": {
+      "sha256": "2f1b5cde0536664acbde78e952b91c750a19d5eadece2c8d42f7ed7201d4c359",
+      "size_bytes": 1059
+    },
+    "D6_ARM_004/final_changed_dict.json": {
+      "sha256": "2b0f3138b2ac93d6d3dbe39f23849d46b94ac36d8db3f4f35e64af260883cb27",
+      "size_bytes": 275
+    },
+    "D6_ARM_004/input_provenance.json": {
+      "sha256": "d53188474ebeb625628d8c6c7e8bfa361f215e1a6b11dda6067a57a90b7f0c78",
+      "size_bytes": 9335
+    },
+    "D6_ARM_004/train_dphi_before_after.json": {
+      "sha256": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834",
+      "size_bytes": 1555
+    },
+    "D6_ARM_004/train_fairbias_trace.json": {
+      "sha256": "721f12518e15bec1d84da88a5c92830a81bb06b2ff9ef8d7aeff2126ff9db6ae",
+      "size_bytes": 4679
+    },
+    "D6_ARM_004/validation_comparison.json": {
+      "sha256": "e4ebda869b3bc2149418e7103bf9ca7677e0ff2d12d2bca192710cdc190d71f8",
+      "size_bytes": 1839
+    },
+    "D6_ARM_004/validation_dphi_before_after.json": {
+      "sha256": "4794d0a2868672dec2e272c260c67fe6a325e7813e9784f1630dab64a0365d62",
+      "size_bytes": 1600
+    },
+    "D6_ARM_004/validation_group_metrics_baseline.csv": {
+      "sha256": "3c3751d9e7af9473b5455d81620a5a3b606b8c1055e68f5333cf116cdbc2ad95",
+      "size_bytes": 551
+    },
+    "D6_ARM_004/validation_group_metrics_fairbias.csv": {
+      "sha256": "8c21345fe973d639d5f7e5b96d80a5c30310d2afeef5999147e06cf39ba5003e",
+      "size_bytes": 549
+    },
+    "D6_ARM_004/validation_metrics_baseline.json": {
+      "sha256": "9f49294578f37f63a1ff1bcb50b2229aaeb37366407b776c954e0395436f7019",
+      "size_bytes": 2390
+    },
+    "D6_ARM_004/validation_metrics_fairbias.json": {
+      "sha256": "b07d085291ceede5dd5dc26c68e2873d05ae7d2b9112428a702a3226eab98c1b",
+      "size_bytes": 2395
+    },
+    "preprocessing_provenance.json": {
+      "sha256": "1a75b8b8cbd429f751069618768e0e327a5e85a6b9c6cb3a75d9dcc1441d20d1",
+      "size_bytes": 2998
+    }
+  },
+  "base_commit": "f63f58918b89a276152b5948df9874bd9b2fc94e",
+  "causal_analysis": false,
+  "classifier_weighted": false,
+  "created_at": "2026-09-02T04:55:47Z",
+  "disclosure_2024": "D6 is a predeclared temporal robustness analysis using 2022 for development training, 2023 for temporal validation, and 2024 for forward-time evaluation. However, 2024 respondents were previously included in the pooled D4/D5 analyses, so the 2024 partition is not a globally untouched primary holdout. D6-specific transformations and models are nevertheless frozen before D6-specific 2024 evaluation.",
+  "evaluation_weighted": false,
+  "execution_preconditions": {
+    "features_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+    "frozen_features_verified": true,
+    "prior_release_archives_verified": true,
+    "prior_release_tags_verified": true,
+    "scientific_base_commit": "f63f58918b89a276152b5948df9874bd9b2fc94e",
+    "scientific_base_is_ancestor": true,
+    "scientific_code_diff_clean": true
+  },
+  "future_test_year": 2024,
+  "gate": "D6 temporal TRAIN/VALIDATION",
+  "git_commit": "fa8eb6096de995463b437c4e74f0e3da6a2c196d",
+  "longitudinal": false,
+  "manifest_version": "nhis-fairbias-d6-1.0",
+  "primary_analysis": false,
+  "release_id": "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609",
+  "repeated_cross_sectional": true,
+  "replaces_d4_primary": false,
+  "status": "COMPLETE",
+  "survey_weighted_geometry": false,
+  "temporal_robustness_analysis": true,
+  "test_year_evaluated": false,
+  "test_year_requested": false,
+  "train_year": 2022,
+  "validation_used_for_selection": false,
+  "validation_year": 2023
+}

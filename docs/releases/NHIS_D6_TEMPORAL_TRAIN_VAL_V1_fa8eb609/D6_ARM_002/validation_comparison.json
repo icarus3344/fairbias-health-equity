@@ -1,0 +1,91 @@
+{
+  "baseline_summary": {
+    "fairness_gaps": {
+      "demographic_parity_gap": 0.011720587391728331,
+      "equal_opportunity_gap": 0.1111111111111111,
+      "equalized_odds_max_gap": 0.1111111111111111,
+      "fpr_gap": 0.01098901098901099
+    },
+    "utility": {
+      "accuracy": 0.9324522760646109,
+      "auprc": 0.20077642832585907,
+      "auroc": 0.7791136828055484,
+      "balanced_accuracy": 0.5066010735389965,
+      "f1": 0.030392156862745098
+    }
+  },
+  "fairbias_summary": {
+    "fairness_gaps": {
+      "demographic_parity_gap": 0.0051813471502590676,
+      "equal_opportunity_gap": 0.1111111111111111,
+      "equalized_odds_max_gap": 0.1111111111111111,
+      "fpr_gap": 0.0006293266205160479
+    },
+    "utility": {
+      "accuracy": 0.9338865553392753,
+      "auprc": 0.17916408214505203,
+      "auroc": 0.7618132590305886,
+      "balanced_accuracy": 0.5020744759726807,
+      "f1": 0.009211873080859774
+    }
+  },
+  "fairness_gap_deltas": {
+    "demographic_parity_gap": -0.006539240241469264,
+    "equal_opportunity_gap": 0.0,
+    "equalized_odds_max_gap": 0.0,
+    "fpr_gap": -0.010359684368494942
+  },
+  "group_deltas": {
+    "1": {
+      "fpr": -0.005794910556815319,
+      "ppv": 0.047619047619047616,
+      "selection_rate": -0.0073059360730593605,
+      "tpr": -0.021897810218978103
+    },
+    "2": {
+      "fpr": -0.001042867336297272,
+      "ppv": 0.1031746031746032,
+      "selection_rate": -0.00123902942694889,
+      "tpr": -0.004344048653344918
+    },
+    "3": {
+      "fpr": -0.00546448087431694,
+      "ppv": null,
+      "selection_rate": -0.0066329753632343655,
+      "tpr": -0.02100840336134454
+    },
+    "4": {
+      "fpr": -0.0025173064820641915,
+      "ppv": 0.0,
+      "selection_rate": -0.0024316109422492403,
+      "tpr": 0.0
+    },
+    "5": {
+      "fpr": 0.0,
+      "ppv": 0.0,
+      "selection_rate": 0.0,
+      "tpr": 0.0
+    },
+    "6": {
+      "fpr": -0.01098901098901099,
+      "ppv": null,
+      "selection_rate": -0.013888888888888888,
+      "tpr": -0.029411764705882353
+    },
+    "7": {
+      "fpr": 0.0,
+      "ppv": null,
+      "selection_rate": -0.006389776357827476,
+      "tpr": -0.0625
+    }
+  },
+  "predicted_positive_delta": -86,
+  "selection_rate_delta": -0.0029368575624082235,
+  "utility_deltas": {
+    "accuracy": 0.0014342792746644406,
+    "auprc": -0.02161234618080704,
+    "auroc": -0.017300423774959772,
+    "balanced_accuracy": -0.004526597566315793,
+    "f1": -0.02118028378188532
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "agep_a": {
+    "power": 9.0
+  },
+  "asev_a": {
+    "1": 2
+  },
+  "empwrkft1_a": {
+    "-1": 1
+  },
+  "empwrklsw1_a": {
+    "2": 1
+  },
+  "hypev_a": {
+    "2": 1
+  },
+  "notcov_a": {
+    "1": 2
+  },
+  "pcnt18uptc": "dropped",
+  "pcntlt18tc": {
+    "power": 3.0
+  },
+  "region": "dropped"
+}

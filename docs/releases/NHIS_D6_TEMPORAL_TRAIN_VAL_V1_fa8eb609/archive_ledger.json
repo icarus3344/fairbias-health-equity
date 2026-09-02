@@ -1,0 +1,158 @@
+{
+  "archive_gate": "D6.0c",
+  "release_id": "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609",
+  "canonical_source_path": "runs/nhis_d6_temporal/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/",
+  "archive_path": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/",
+  "raw_canonical_file_count": 47,
+  "manifest_tracked_artifact_count": 45,
+  "per_arm_artifact_count": 44,
+  "source_manifest_sha256": "773d43b2d893232eb4cbba9dfcdcc639ecdc2fbc8efb2e353f7d2a68514159c4",
+  "archive_manifest_sha256": "773d43b2d893232eb4cbba9dfcdcc639ecdc2fbc8efb2e353f7d2a68514159c4",
+  "execution_commit": "fa8eb6096de995463b437c4e74f0e3da6a2c196d",
+  "scientific_base_commit": "f63f58918b89a276152b5948df9874bd9b2fc94e",
+  "train_year": 2022,
+  "validation_year": 2023,
+  "future_test_year": 2024,
+  "repeated_cross_sectional": true,
+  "longitudinal": false,
+  "causal_analysis": false,
+  "survey_weighted_geometry": false,
+  "classifier_weighted": false,
+  "evaluation_weighted": false,
+  "canonical_execution_count": 1,
+  "temporal_train_validation_rerun": false,
+  "validation_driven_tuning": false,
+  "test_year_requested": false,
+  "test_year_evaluated": false,
+  "no_cohort_access_during_archival": true,
+  "no_model_fit_during_archival": true,
+  "no_fairbias_relearning_during_archival": true,
+  "execution_preconditions": {
+    "starting_local_head": "fa8eb6096de995463b437c4e74f0e3da6a2c196d",
+    "starting_remote_head": "fa8eb6096de995463b437c4e74f0e3da6a2c196d",
+    "source_release_status": "COMPLETE",
+    "source_release_id_verified": true,
+    "source_manifest_sha_verified": true,
+    "source_manifest_state_match": true,
+    "destination_preexistence": "FRESH",
+    "source_canonical_files_verified": "47/47",
+    "source_manifest_artifacts_verified": "45/45"
+  },
+  "numerical_warning_reconciliation": {
+    "runtime_warnings_reported": true,
+    "warning_classes_reported": [
+      "divide-by-zero",
+      "overflow",
+      "invalid matrix multiplication"
+    ],
+    "canonical_release_rerun": false,
+    "frozen_changed_dict_finite": true,
+    "frozen_scaler_states_finite": true,
+    "frozen_classifier_states_finite": true,
+    "overall_dphi_fields_finite": true,
+    "overall_evaluation_fields_finite": true,
+    "expected_undefined_group_metrics_count": 4,
+    "unexpected_nonfinite_frozen_state_count": 0,
+    "reconciliation_verdict": "PASS",
+    "interpretation": "Runtime numerical warnings were reported during the paper-faithful execution. A post-execution read-only audit found no unexpected nonfinite values in the frozen terminal representation, scaler/model states, overall d_phi diagnostics, or overall evaluation metrics. No execution was repeated."
+  },
+  "cohort_source_row_digests": {
+    "D6_ARM_001": {
+      "2022": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+      "2023": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a"
+    },
+    "D6_ARM_002": {
+      "2022": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+      "2023": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad"
+    },
+    "D6_ARM_003": {
+      "2022": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+      "2023": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+    },
+    "D6_ARM_004": {
+      "2022": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+      "2023": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+    }
+  },
+  "model_state_anchors": {
+    "D6_ARM_001": {
+      "changed_dict": "40511e6c0d55b0ffdcef534f6b0eb120a16cdfe24ca75bf135ce1ce803f85f79",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_logistic_regression": "3a260ed45d5232ff14d2b2070de2196d91380e0b7ea5005972436a28138f46df",
+      "fairbias_scaler": "1fc71b9805939e5627fcbe081c1b23f3fc14373c919cdbe6de557e188b26cfb6",
+      "fairbias_logistic_regression": "cdfe73f72d0046f0e0068d0047b1b6ef1d934b334d287e208690c176ce95764e"
+    },
+    "D6_ARM_002": {
+      "changed_dict": "4c0bbba5d40022d61119f5ef16db6aa46f0b40bc89132777a3e7b877e42bbe6e",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_logistic_regression": "adca7c506795db6a15d7293be0363e546c79f5c85523cebd20f979c2287ed2f8",
+      "fairbias_scaler": "c89d08e57c67bc1fbd9d5c70671d1eb71ca6b51798e7173d08413a69c1aac5dc",
+      "fairbias_logistic_regression": "6d03134ce077895b8ffb4914bd57f7d73b1b4c94ed09f99456e7cc266bab05c3"
+    },
+    "D6_ARM_003": {
+      "changed_dict": "95ce9da442e66adbd8e1d5e0deab32d831a7a171922f5d6a8cda21a43e9c16af",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_logistic_regression": "ba6914f12b8c1e653c161791199e13392597911de31d19ff2e42f50c26d3f58d",
+      "fairbias_scaler": "3fad8127699fa2da2b6fad79d883dc02f45ba1e6494ee896cdcbd93dcc3a3b95",
+      "fairbias_logistic_regression": "48c0dced8358bd123bd41aba265bf728eae7d2fa32aaa0005ecedc450859f6f5"
+    },
+    "D6_ARM_004": {
+      "changed_dict": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568",
+      "baseline_scaler": "f59d3f21087ae95c2accbc70e0edf9a5e055abe97e2a69d5279aa691688f07a1",
+      "baseline_logistic_regression": "d050dc2a3ba59b2ea1f1767342dbb468680175cc182e94d2143d0ea01563bc3d",
+      "fairbias_scaler": "42236586cddc6dd9bf36d46d3209ef40e830c03493a3f041bb429aedc5d4856c",
+      "fairbias_logistic_regression": "cb0e9a360d68b1705bc1b3b54d508afe80803648fdb22aafc468e245b6045bca"
+    }
+  },
+  "disclosure_2024": "D6 is a predeclared temporal robustness analysis using 2022 for development training, 2023 for temporal validation, and 2024 for forward-time evaluation. However, 2024 respondents were previously included in the pooled D4/D5 analyses, so the 2024 partition is not a globally untouched primary holdout. D6-specific transformations and models are nevertheless frozen before D6-specific 2024 evaluation.",
+  "archive_commit_file_count": 48,
+  "canonical_file_hashes": [
+    {"relative_path": "D6_ARM_001/arm_config.json", "sha256": "bb564e47dad0c91727404904ff75d9023e8c2ed25d3bc073288a104a8a2df77b"},
+    {"relative_path": "D6_ARM_001/final_changed_dict.json", "sha256": "426deaa8152233aa45dce2c440b8b227182040def4778bc29aa51d654d4b0780"},
+    {"relative_path": "D6_ARM_001/input_provenance.json", "sha256": "f31cd1702bd6edecb507ea4618b316ee710d3be4af51d302f6b3e98875117448"},
+    {"relative_path": "D6_ARM_001/train_dphi_before_after.json", "sha256": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456"},
+    {"relative_path": "D6_ARM_001/train_fairbias_trace.json", "sha256": "850b8ac8e06afdf9834ed05b03540ff9320fbeb82b422a9c883b7f4d4c02d2fc"},
+    {"relative_path": "D6_ARM_001/validation_comparison.json", "sha256": "408175dcb94e497dbca431e48eb253982dedfeecb0ae8d674e16fd9d4a8a0b5b"},
+    {"relative_path": "D6_ARM_001/validation_dphi_before_after.json", "sha256": "12b7b9b5fd779619cd759adf05cdc56a1f92a9aa505b00421ef2c76b2b9ca2e2"},
+    {"relative_path": "D6_ARM_001/validation_group_metrics_baseline.csv", "sha256": "7de5ae235ab44ce6033b95ee512ea2b04c46c1fd0d2ce3d0f4f5494f151b17cd"},
+    {"relative_path": "D6_ARM_001/validation_group_metrics_fairbias.csv", "sha256": "a07bdc028d63de7dcf191643420f5dc52d2aef0e250ff7feb76aec2d0a73c46a"},
+    {"relative_path": "D6_ARM_001/validation_metrics_baseline.json", "sha256": "a8bfbdc2633c1d77295f773940a6ff79e59dc3b0789850780b9ec309c905a79a"},
+    {"relative_path": "D6_ARM_001/validation_metrics_fairbias.json", "sha256": "b03a2245b016e886cb8cff1e0f51252998598e5a4b54623907514d8034f75cb7"},
+    {"relative_path": "D6_ARM_002/arm_config.json", "sha256": "83e64e1d01be572d5a8630bed1287660e7260828daef157f7be57e67d21170e6"},
+    {"relative_path": "D6_ARM_002/final_changed_dict.json", "sha256": "6825be2d1470e0cbc580c7ce99aa4e5e78f9d1287b21b6570b26f582e5e9b9a7"},
+    {"relative_path": "D6_ARM_002/input_provenance.json", "sha256": "02a483ee9cfde39d0dd66f0dd0987ff0ad72c9b4a32c934479763a6c9aa1a8a9"},
+    {"relative_path": "D6_ARM_002/train_dphi_before_after.json", "sha256": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f"},
+    {"relative_path": "D6_ARM_002/train_fairbias_trace.json", "sha256": "bea821ccd04387bb456af60a66be24c2414b07b3055134bad5ae10a4001c70e1"},
+    {"relative_path": "D6_ARM_002/validation_comparison.json", "sha256": "f91ab274d776fd43767184e468a03cad8c86eae415d93fd11682ced5432faa9f"},
+    {"relative_path": "D6_ARM_002/validation_dphi_before_after.json", "sha256": "f1a0e90e53855d7597b3928872e3690bb519b58bf7ba266c463673e9dfba81c5"},
+    {"relative_path": "D6_ARM_002/validation_group_metrics_baseline.csv", "sha256": "01f73996961a8deafa56268b181136ef41bd6b8a873ff221de1ad9a41a5096ff"},
+    {"relative_path": "D6_ARM_002/validation_group_metrics_fairbias.csv", "sha256": "4ae66ba322c5f62403172e691a545c2f0f54d88d10cbc08ff86702be2cbed5bd"},
+    {"relative_path": "D6_ARM_002/validation_metrics_baseline.json", "sha256": "f713dde622460fb8af0292eb610e632a788fef56e8cd5eaf6727d62db693014d"},
+    {"relative_path": "D6_ARM_002/validation_metrics_fairbias.json", "sha256": "d25007bfc1c89f8d335f8fd342e7fc596092f7a7ac572284bd7de9f4bb89186c"},
+    {"relative_path": "D6_ARM_003/arm_config.json", "sha256": "659ab1b69c433b49e30fd95427f104b961f2dfc984c3ebbdce20f04f916652be"},
+    {"relative_path": "D6_ARM_003/final_changed_dict.json", "sha256": "856e3d1d30cb0c2943a9136c8474eaed836ff1e0f1559008ea469f34bb5a2581"},
+    {"relative_path": "D6_ARM_003/input_provenance.json", "sha256": "04004d3b1889909626154eda456fd9ec0a36b93bd4a4734fbfb175eced5a70ff"},
+    {"relative_path": "D6_ARM_003/train_dphi_before_after.json", "sha256": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c"},
+    {"relative_path": "D6_ARM_003/train_fairbias_trace.json", "sha256": "e0e663c1aaf90bc1a790a9a412f0865ab688bf232da2e80e006c880a0bea69ec"},
+    {"relative_path": "D6_ARM_003/validation_comparison.json", "sha256": "133f0bae00bc052c53221d59814b371013d6de6cdd2095b645c1db9e40f378ad"},
+    {"relative_path": "D6_ARM_003/validation_dphi_before_after.json", "sha256": "b3fdab9519bab9f967a4ad1f1223f5a62103e3ac8274d0decf7b91085ed8a4b2"},
+    {"relative_path": "D6_ARM_003/validation_group_metrics_baseline.csv", "sha256": "0633f2d19a1f840a5253d9cf0086bc3ef745783c2a64f94990ff5d45e4b6f5de"},
+    {"relative_path": "D6_ARM_003/validation_group_metrics_fairbias.csv", "sha256": "c5d95d1a94caa9f1dddd801c9e98116ca54477158af64f6871a584bf53bdfd1a"},
+    {"relative_path": "D6_ARM_003/validation_metrics_baseline.json", "sha256": "e3243c47d52266db857e9bec16bbc0897b898cf87d2b0a2042bcf07722ee5eb5"},
+    {"relative_path": "D6_ARM_003/validation_metrics_fairbias.json", "sha256": "d989ba9d8c1ceb7cf8f79710ba33c234796ed2b3d5a44e37444838b3e2a7b37b"},
+    {"relative_path": "D6_ARM_004/arm_config.json", "sha256": "2f1b5cde0536664acbde78e952b91c750a19d5eadece2c8d42f7ed7201d4c359"},
+    {"relative_path": "D6_ARM_004/final_changed_dict.json", "sha256": "2b0f3138b2ac93d6d3dbe39f23849d46b94ac36d8db3f4f35e64af260883cb27"},
+    {"relative_path": "D6_ARM_004/input_provenance.json", "sha256": "d53188474ebeb625628d8c6c7e8bfa361f215e1a6b11dda6067a57a90b7f0c78"},
+    {"relative_path": "D6_ARM_004/train_dphi_before_after.json", "sha256": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834"},
+    {"relative_path": "D6_ARM_004/train_fairbias_trace.json", "sha256": "721f12518e15bec1d84da88a5c92830a81bb06b2ff9ef8d7aeff2126ff9db6ae"},
+    {"relative_path": "D6_ARM_004/validation_comparison.json", "sha256": "e4ebda869b3bc2149418e7103bf9ca7677e0ff2d12d2bca192710cdc190d71f8"},
+    {"relative_path": "D6_ARM_004/validation_dphi_before_after.json", "sha256": "4794d0a2868672dec2e272c260c67fe6a325e7813e9784f1630dab64a0365d62"},
+    {"relative_path": "D6_ARM_004/validation_group_metrics_baseline.csv", "sha256": "3c3751d9e7af9473b5455d81620a5a3b606b8c1055e68f5333cf116cdbc2ad95"},
+    {"relative_path": "D6_ARM_004/validation_group_metrics_fairbias.csv", "sha256": "8c21345fe973d639d5f7e5b96d80a5c30310d2afeef5999147e06cf39ba5003e"},
+    {"relative_path": "D6_ARM_004/validation_metrics_baseline.json", "sha256": "9f49294578f37f63a1ff1bcb50b2229aaeb37366407b776c954e0395436f7019"},
+    {"relative_path": "D6_ARM_004/validation_metrics_fairbias.json", "sha256": "b07d085291ceede5dd5dc26c68e2873d05ae7d2b9112428a702a3226eab98c1b"},
+    {"relative_path": "d6_temporal_train_val_manifest.json", "sha256": "773d43b2d893232eb4cbba9dfcdcc639ecdc2fbc8efb2e353f7d2a68514159c4"},
+    {"relative_path": "preprocessing_provenance.json", "sha256": "1a75b8b8cbd429f751069618768e0e327a5e85a6b9c6cb3a75d9dcc1441d20d1"},
+    {"relative_path": "release_state.json", "sha256": "1b91401769fa55957f4e8b71c16faae0a9f54e4ccfd14cd1fb04e465b1d32352"}
+  ]
+}

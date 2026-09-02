@@ -1,0 +1,186 @@
+{
+  "categorical_categories": {
+    "asev_a": [
+      1,
+      2
+    ],
+    "chlev_a": [
+      1,
+      2
+    ],
+    "cogmemdff_a": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "comdiff_a": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "dibev_a": [
+      1,
+      2
+    ],
+    "diff_a": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "educp_a": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "empwrkft1_a": [
+      1,
+      2,
+      -1,
+      -2
+    ],
+    "empwrklsw1_a": [
+      1,
+      2
+    ],
+    "hearingdf_a": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "hospongt_a": [
+      1,
+      2
+    ],
+    "hypev_a": [
+      1,
+      2
+    ],
+    "lastdr_a": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "notcov_a": [
+      1,
+      2
+    ],
+    "phstat_a": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "ratcat_a": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "region": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "uppslfcr_a": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "usualpl_a": [
+      1,
+      2,
+      3
+    ],
+    "visiondf_a": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "empwrkft_distribution": {
+    "explicit_missing": 1209,
+    "full-time": 12381,
+    "part-time": 2957,
+    "structural_not_in_universe": 11104
+  },
+  "fit_study_role": "development_train",
+  "fit_year": 2022,
+  "numerical_medians": {
+    "agep_a": 54.0,
+    "emerg12mtc_a": 0.0,
+    "pcnt18uptc": 2.0,
+    "pcntlt18tc": 0.0
+  },
+  "numerical_stats": {
+    "agep_a": {
+      "count_missing": 64,
+      "count_valid": 27587,
+      "max": 85.0,
+      "mean": 52.94859897777939,
+      "median": 54.0,
+      "min": 18.0
+    },
+    "emerg12mtc_a": {
+      "count_missing": 221,
+      "count_valid": 27430,
+      "max": 4.0,
+      "mean": 0.3118483412322275,
+      "median": 0.0,
+      "min": 0.0
+    },
+    "pcnt18uptc": {
+      "count_missing": 0,
+      "count_valid": 27651,
+      "max": 3.0,
+      "mean": 1.786843152146396,
+      "median": 2.0,
+      "min": 1.0
+    },
+    "pcntlt18tc": {
+      "count_missing": 0,
+      "count_valid": 27651,
+      "max": 3.0,
+      "mean": 0.4649018118693718,
+      "median": 0.0,
+      "min": 0.0
+    }
+  },
+  "row_count": 27651,
+  "rules_manifest": {
+    "categorical_missing_rule": "Mapped to explicit missing sentinel -1 ('explicit_missing').",
+    "employment_rule": "Constructed 4-state employment intensity: 1=full-time, 2=part-time, -1=structural_not_in_universe (EMPWRKLSW1_A==2), -2=explicit_missing (unresolved in-universe/nonresponse).",
+    "numerical_missing_rule": "Imputed with 2022 development_train median, frozen and applied to 2023 and 2024.",
+    "regime": "temporal",
+    "schema_version": "nhis-fairbias-d2-1.0",
+    "temporal_freeze_rule": "2024 is frozen_test, evaluation-only; no fitting, tuning, or threshold selection allowed."
+  }
+}

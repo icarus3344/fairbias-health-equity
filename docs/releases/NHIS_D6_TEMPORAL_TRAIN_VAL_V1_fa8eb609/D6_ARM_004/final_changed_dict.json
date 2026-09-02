@@ -1,0 +1,25 @@
+{
+  "agep_a": "dropped",
+  "chlev_a": {
+    "1": 2
+  },
+  "dibev_a": {
+    "1": 2
+  },
+  "empwrkft1_a": {
+    "-1": 1
+  },
+  "empwrklsw1_a": {
+    "2": 1
+  },
+  "hypev_a": {
+    "1": 2
+  },
+  "pcntlt18tc": {
+    "power": 3.0
+  },
+  "phstat_a": {
+    "4": 2,
+    "5": 1
+  }
+}
