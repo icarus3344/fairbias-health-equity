@@ -33,6 +33,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, normalized_mutual_info_score, roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
 
+from .d6_temporal_runner import (
+    compute_cohort_source_row_digest as compute_d6_cohort_source_row_digest,
+)
+
 # -----------------------------------------------------------------------------
 # Module Integrity Guard: Prohibit Estimator Fitting & Relearning
 # -----------------------------------------------------------------------------
@@ -268,11 +272,21 @@ def compute_canonical_json_sha256(data: Any) -> str:
     return hashlib.sha256(canonical_bytes).hexdigest()
 
 
-def compute_cohort_source_row_digest(year: int, row_indices: Sequence[Any]) -> str:
-    """Compute deterministic SHA-256 digest of cohort row indices."""
-    sorted_indices = sorted(str(idx) for idx in row_indices)
-    payload = f"{year}:" + ",".join(sorted_indices)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+def compute_cohort_source_row_digest(
+    year: int,
+    row_indices: Sequence[Any],
+) -> str:
+    """Compute deterministic SHA-256 digest of cohort row indices.
+
+    Delegates strictly to canonical frozen D6 ordered newline-delimited semantics:
+    lines = [f"{year}:{idx}" for idx in index]
+    content = "\\n".join(lines)
+    hashlib.sha256(content.encode("utf-8")).hexdigest()
+    """
+    return compute_d6_cohort_source_row_digest(
+        year,
+        pd.Index(row_indices),
+    )
 
 
 # -----------------------------------------------------------------------------

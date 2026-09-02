@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import hashlib
 import inspect
 import json
 from pathlib import Path
@@ -22,6 +23,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import MinMaxScaler
 
 from nhis_fairbias.adapter import NHISStudyAdapter
+from nhis_fairbias.d6_temporal_runner import (
+    compute_cohort_source_row_digest as compute_d6_cohort_source_row_digest,
+)
 from nhis_fairbias.d7_terminal_mechanism import (
     ARM_DISABILITY_POLICIES,
     ARM_PROTECTED_ATTRIBUTES,
@@ -1638,3 +1642,116 @@ def test_76_true_runtime_synthetic_integration_test():
     for arm_id in D6_ARM_IDS:
         assert arm_id in diagnostics["arm_summaries"]
         assert diagnostics["arm_summaries"][arm_id]["hypothesis_adjudication"] == "PI_REVIEW_REQUIRED"
+
+
+# -----------------------------------------------------------------------------
+# 77-83. Provenance-Semantic Regression Tests (Gate D7.1b.1)
+# -----------------------------------------------------------------------------
+def test_77_d7_delegates_to_canonical_d6_digest():
+    """D7 compute_cohort_source_row_digest must delegate to canonical D6 implementation."""
+    with patch(
+        "nhis_fairbias.d7_terminal_mechanism.compute_d6_cohort_source_row_digest",
+        return_value="mock_d6_digest",
+    ) as mock_d6:
+        res = compute_cohort_source_row_digest(2024, [10, 20, 40])
+        assert res == "mock_d6_digest"
+        mock_d6.assert_called_once()
+        call_args = mock_d6.call_args[0]
+        assert call_args[0] == 2024
+        assert isinstance(call_args[1], pd.Index)
+        assert list(call_args[1]) == [10, 20, 40]
+
+
+def test_78_digest_exact_equivalence_across_index_types():
+    """D7 digest must exactly equal canonical D6 digest across varied index configurations."""
+    test_cases = [
+        ("consecutive", [0, 1, 2, 3, 4]),
+        ("nonconsecutive", [10, 20, 40, 80]),
+        ("unsorted", [40, 10, 80, 20]),
+        ("single_row", [42]),
+        ("empty", []),
+    ]
+    for name, idx in test_cases:
+        d7_res = compute_cohort_source_row_digest(2024, idx)
+        d6_res = compute_d6_cohort_source_row_digest(2024, pd.Index(idx))
+        assert d7_res == d6_res, f"Digest equivalence failed for {name} index"
+
+
+def test_79_d7_digest_order_sensitivity_no_sorting():
+    """D7 digest must be order-sensitive and must NOT sort row indices."""
+    idx_forward = [10, 20, 40]
+    idx_reversed = [40, 20, 10]
+    digest_forward = compute_cohort_source_row_digest(2024, idx_forward)
+    digest_reversed = compute_cohort_source_row_digest(2024, idx_reversed)
+    assert digest_forward != digest_reversed
+
+
+def test_80_known_literal_newline_payload_exact_sha256():
+    """D7 digest for [10, 20, 40] must match exact literal newline-separated SHA-256."""
+    literal_payload = b"2024:10\n2024:20\n2024:40"
+    expected_sha = hashlib.sha256(literal_payload).hexdigest()
+    observed_sha = compute_cohort_source_row_digest(2024, [10, 20, 40])
+    assert observed_sha == expected_sha
+
+
+def test_81_old_defective_serialization_differs():
+    """The defective old comma-joined and sorted formula must differ from the canonical digest."""
+    idx = [10, 20, 40]
+    old_sorted_indices = sorted(str(i) for i in idx)
+    old_defective_payload = f"2024:" + ",".join(old_sorted_indices)
+    old_defective_sha = hashlib.sha256(old_defective_payload.encode("utf-8")).hexdigest()
+
+    canonical_sha = compute_cohort_source_row_digest(2024, idx)
+    assert canonical_sha != old_defective_sha
+
+
+def test_82_expected_cohort_source_row_digests_constants_byte_for_byte_preserved():
+    """All 12 expected cohort digest constants must remain strictly byte-for-byte preserved."""
+    exact_historical_anchors = {
+        2022: {
+            "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+            "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+            "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+            "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+        },
+        2023: {
+            "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+            "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+            "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+            "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+        },
+        2024: {
+            "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+            "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+            "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+            "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+        },
+    }
+    assert EXPECTED_COHORT_SOURCE_ROW_DIGESTS == exact_historical_anchors
+
+
+def test_83_preserved_failed_release_immutable_and_cannot_be_overwritten():
+    """The first failed canonical release must exist, remain FAILED, and block overwrite/reuse."""
+    failed_release_dir = _REPO_ROOT / "runs" / "nhis_d7_terminal_mechanism" / "releases" / "NHIS_D7_TERMINAL_MECHANISM_V1_ed5597f5"
+    assert failed_release_dir.is_dir()
+
+    state_file = failed_release_dir / "release_state.json"
+    assert state_file.is_file()
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    assert state["status"] == "FAILED"
+    assert state["execution_head"] == "ed5597f5e67bf06caa6de134662f40ae53ac36b1"
+    assert state["manifest_sha256"] is None
+    assert "Cohort provenance barrier failed: 0/12 matched." in state["error"]
+
+    # Release manager must refuse to reuse or overwrite this release ID
+    manager = D7TerminalMechanismReleaseManager(
+        repo_root=_REPO_ROOT,
+        releases_parent_dir=failed_release_dir.parent,
+        adapter_factory=lambda: MagicMock(),
+    )
+    with patch("nhis_fairbias.d7_terminal_mechanism.verify_git_execution_preconditions"):
+        with pytest.raises(FileExistsError, match="Release directory collision"):
+            manager.execute_release(
+                release_id="NHIS_D7_TERMINAL_MECHANISM_V1_ed5597f5",
+                expected_execution_head="ed5597f5e67bf06caa6de134662f40ae53ac36b1",
+            )
