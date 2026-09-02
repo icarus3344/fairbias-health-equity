@@ -27,6 +27,7 @@ from nhis_fairbias.d6_temporal_test_release import (
     AnchorMismatchError,
     D6TemporalTestEvaluator,
     D6TrainingStateReproducer,
+    git_tracked_worktree_clean,
     D6_TRAIN_VAL_ARCHIVE_COMMIT,
     D6_TRAIN_VAL_ARCHIVE_DIR,
     D6_TRAIN_VAL_LEDGER_SHA256,
@@ -999,17 +1000,23 @@ class _SyntheticProductionRuntime(ProductionD6TemporalRuntime):
         self.reproduced_states: Dict[str, ReproducedArmState] = {}
         self.mutated_arm: str | None = None
         self.authorize_error: Exception | None = None
+        self.events: list[str] = []
+        self._authorized = False
+        self._test_authorized = False
 
     def authorize(self, expected_execution_head: str) -> Dict[str, Any]:
         if self.authorize_error is not None:
             raise self.authorize_error
         assert len(expected_execution_head) == 40
-        return {"expected_execution_head": expected_execution_head, "synthetic": True}
+        self._authorized = True
+        return {"expected_execution_head": expected_execution_head, "synthetic": True, "tracked_worktree_clean": True}
 
     def get_cohort(self, year: int, **kwargs: Any) -> Mapping[str, Any]:
         year_int = int(year)
         if year_int == 2023:
             raise AssertionError("FATAL: D6.1 attempted to access frozen 2023 validation cohort")
+        if year_int == 2024 and not self._test_authorized:
+            raise GlobalBarrierError("FATAL: 2024 request before runtime TEST authorization")
         if year_int == 2024 and self.summary_path is not None and not self.summary_path.is_file():
             raise AssertionError("FATAL: 2024 request occurred before training summary was frozen")
         self.calls.append({"year": year_int, **kwargs})
@@ -1405,3 +1412,330 @@ def test_77_production_release_state_preserves_failure_without_2024(
     assert state["status"] == "FAILED"
     assert state["2023_request_count"] == 0
     assert state["2024_request_count"] == 0
+
+
+def _setup_synthetic_git_repo(tmp_path: pathlib.Path) -> tuple[pathlib.Path, str, pathlib.Path, str]:
+    """Create a fully valid, self-contained git repository with the 3 target tracked files and parquet."""
+    import hashlib
+
+    repo = tmp_path / "synthetic_git_repo"
+    repo.mkdir(parents=True)
+    (repo / "src" / "nhis_fairbias").mkdir(parents=True)
+    (repo / "scripts").mkdir(parents=True)
+    (repo / "tests").mkdir(parents=True)
+    (repo / "data" / "processed" / "nhis").mkdir(parents=True)
+
+    release_harness = repo / "src" / "nhis_fairbias" / "d6_temporal_test_release.py"
+    cli_script = repo / "scripts" / "run_nhis_d6_temporal_test.py"
+    test_file = repo / "tests" / "test_nhis_d6_temporal_test_release.py"
+    parquet_file = repo / "data" / "processed" / "nhis" / "nhis_2022_2024_features.parquet"
+
+    release_harness.write_text("# release harness\n", encoding="utf-8")
+    cli_script.write_text("# cli script\n", encoding="utf-8")
+    test_file.write_text("# test file\n", encoding="utf-8")
+    parquet_bytes = b"synthetic_parquet_bytes_for_testing"
+    parquet_file.write_bytes(parquet_bytes)
+    parquet_sha = hashlib.sha256(parquet_bytes).hexdigest()
+
+    subprocess.run(["git", "init", "-b", "research/nhis-fairbias"], cwd=str(repo), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=str(repo), check=True, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=str(repo), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=str(repo), check=True, capture_output=True)
+    subprocess.run(["git", "update-ref", "refs/remotes/origin/research/nhis-fairbias", "HEAD"], cwd=str(repo), check=True, capture_output=True)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(repo), check=True, capture_output=True, text=True).stdout.strip()
+    return repo, head, parquet_file, parquet_sha
+
+
+def test_78_tracked_worktree_clean_behavior_and_untracked_tolerance(tmp_path: pathlib.Path) -> None:
+    # 1. Direct proof on real repository: archive/baseline_v0.3/ is untracked and tolerated
+    status_all = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--", "archive/baseline_v0.3/"],
+        cwd=str(_REPO_ROOT),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "archive/baseline_v0.3/" in status_all.stdout
+    status_no_untracked = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=no", "--", "archive/baseline_v0.3/"],
+        cwd=str(_REPO_ROOT),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert status_no_untracked.stdout.strip() == ""
+
+    # 2. In an isolated synthetic git repository, verify clean tree, untracked tolerance, and authorization
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    assert git_tracked_worktree_clean(repo) is True
+
+    # Untracked file does NOT cause failure
+    untracked = repo / "some_untracked_file.csv"
+    untracked.write_text("a,b,c\n", encoding="utf-8")
+    assert git_tracked_worktree_clean(repo) is True
+
+    # Substantive authorization succeeds on clean tree with untracked files present
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+    )
+    binding = runtime.authorize(head)
+    assert binding["tracked_worktree_clean"] is True
+
+
+def test_79_unstaged_modification_to_release_harness_fails_authorization(tmp_path: pathlib.Path) -> None:
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    target = repo / "src" / "nhis_fairbias" / "d6_temporal_test_release.py"
+    target.write_text("# unstaged modification\n", encoding="utf-8")
+    assert git_tracked_worktree_clean(repo) is False
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+    )
+    with pytest.raises(harness.D6HarnessError, match="clean tracked working tree"):
+        runtime.authorize(head)
+
+
+def test_80_staged_modification_to_release_harness_fails_authorization(tmp_path: pathlib.Path) -> None:
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    target = repo / "src" / "nhis_fairbias" / "d6_temporal_test_release.py"
+    target.write_text("# staged modification\n", encoding="utf-8")
+    subprocess.run(["git", "add", str(target)], cwd=str(repo), check=True, capture_output=True)
+    assert git_tracked_worktree_clean(repo) is False
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+    )
+    with pytest.raises(harness.D6HarnessError, match="clean tracked working tree"):
+        runtime.authorize(head)
+
+
+def test_81_unstaged_modification_to_cli_script_fails_authorization(tmp_path: pathlib.Path) -> None:
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    target = repo / "scripts" / "run_nhis_d6_temporal_test.py"
+    target.write_text("# unstaged cli modification\n", encoding="utf-8")
+    assert git_tracked_worktree_clean(repo) is False
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+    )
+    with pytest.raises(harness.D6HarnessError, match="clean tracked working tree"):
+        runtime.authorize(head)
+
+
+def test_82_staged_modification_to_cli_script_fails_authorization(tmp_path: pathlib.Path) -> None:
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    target = repo / "scripts" / "run_nhis_d6_temporal_test.py"
+    target.write_text("# staged cli modification\n", encoding="utf-8")
+    subprocess.run(["git", "add", str(target)], cwd=str(repo), check=True, capture_output=True)
+    assert git_tracked_worktree_clean(repo) is False
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+    )
+    with pytest.raises(harness.D6HarnessError, match="clean tracked working tree"):
+        runtime.authorize(head)
+
+
+def test_83_unstaged_modification_to_release_tests_fails_authorization(tmp_path: pathlib.Path) -> None:
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    target = repo / "tests" / "test_nhis_d6_temporal_test_release.py"
+    target.write_text("# unstaged test modification\n", encoding="utf-8")
+    assert git_tracked_worktree_clean(repo) is False
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+    )
+    with pytest.raises(harness.D6HarnessError, match="clean tracked working tree"):
+        runtime.authorize(head)
+
+
+def test_84_staged_modification_to_release_tests_fails_authorization(tmp_path: pathlib.Path) -> None:
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    target = repo / "tests" / "test_nhis_d6_temporal_test_release.py"
+    target.write_text("# staged test modification\n", encoding="utf-8")
+    subprocess.run(["git", "add", str(target)], cwd=str(repo), check=True, capture_output=True)
+    assert git_tracked_worktree_clean(repo) is False
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+    )
+    with pytest.raises(harness.D6HarnessError, match="clean tracked working tree"):
+        runtime.authorize(head)
+
+
+def test_85_tracked_modification_fails_closed_before_release_dir_adapter_or_cohorts(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo, head, parquet_path, parquet_sha = _setup_synthetic_git_repo(tmp_path)
+    constructed: list[bool] = []
+
+    def poison_adapter(**_kwargs: Any) -> Any:
+        constructed.append(True)
+        raise AssertionError("Adapter must not be constructed when tracked worktree is dirty")
+
+    runtime = ProductionD6TemporalRuntime(
+        repo_root=repo,
+        features_parquet_path=parquet_path,
+        expected_features_sha256=parquet_sha,
+        adapter_factory=poison_adapter,
+    )
+    fake_loader = _ProductionArchiveLoader()
+    manager = NHISD6TemporalTestReleaseManager(archive_loader=fake_loader, repo_root=repo)
+    release_root = tmp_path / "substantive_releases"
+    target_file = repo / "scripts" / "run_nhis_d6_temporal_test.py"
+    target_file.write_text("# mutation\n", encoding="utf-8")
+
+    with pytest.raises(harness.D6HarnessError, match="clean tracked working tree"):
+        manager.execute_production_release(
+            release_root,
+            release_id="SHOULD_NOT_BE_CREATED",
+            expected_execution_head=head,
+            runtime=runtime,
+        )
+    assert not release_root.exists()
+    assert not (release_root / "SHOULD_NOT_BE_CREATED").exists()
+    assert constructed == []
+    assert runtime.reproduced_states == {}
+
+
+def test_86_runtime_get_cohort_2024_fails_when_authorized_head_but_no_global_barrier() -> None:
+    calls: list[int] = []
+
+    class FakeAdapter:
+        def get_cohort(self, year: int, **_kwargs: Any) -> Any:
+            calls.append(year)
+            return {"synthetic": True, "year": year}
+
+    runtime = ProductionD6TemporalRuntime(repo_root=_REPO_ROOT, adapter_factory=FakeAdapter)
+    runtime._authorized = True
+    assert runtime.is_test_authorized is False
+    with pytest.raises(GlobalBarrierError, match="runtime TEST gate is closed"):
+        runtime.get_cohort(2024)
+    assert calls == []
+
+
+def test_87_runtime_authorize_test_access_fails_on_incomplete_3_of_4_summary(
+    archive_loader: FrozenD6ArchiveLoader,
+) -> None:
+    summary = _synthetic_summary(archive_loader)
+    summary["global"]["cohort_digest_match_count"] = 3
+    summary["global"]["cohort_digest_matches"] = "3/4"
+    summary["arms"]["D6_ARM_004"]["digest_match"] = False
+    runtime = ProductionD6TemporalRuntime(repo_root=_REPO_ROOT)
+    runtime._authorized = True
+    assert runtime.is_test_authorized is False
+    with pytest.raises(GlobalBarrierError, match="Global 2022 training-state reproduction barrier not satisfied"):
+        runtime.authorize_test_access(summary, archive_loader.expected_state_anchors())
+    assert runtime.is_test_authorized is False
+    with pytest.raises(GlobalBarrierError, match="runtime TEST gate is closed"):
+        runtime.get_cohort(2024)
+
+
+def test_88_runtime_authorize_test_access_fails_on_incomplete_19_of_20_summary(
+    archive_loader: FrozenD6ArchiveLoader,
+) -> None:
+    summary = _synthetic_summary(archive_loader)
+    summary["global"]["training_state_anchor_match_count"] = 19
+    summary["global"]["training_state_anchor_matches"] = "19/20"
+    summary["arms"]["D6_ARM_004"]["FairBias_LR"]["match"] = False
+    runtime = ProductionD6TemporalRuntime(repo_root=_REPO_ROOT)
+    runtime._authorized = True
+    assert runtime.is_test_authorized is False
+    with pytest.raises(GlobalBarrierError, match="Global 2022 training-state reproduction barrier not satisfied"):
+        runtime.authorize_test_access(summary, archive_loader.expected_state_anchors())
+    assert runtime.is_test_authorized is False
+    with pytest.raises(GlobalBarrierError, match="runtime TEST gate is closed"):
+        runtime.get_cohort(2024)
+
+
+def test_89_runtime_authorize_test_access_fails_on_forged_global_boolean(
+    archive_loader: FrozenD6ArchiveLoader,
+) -> None:
+    summary = _synthetic_summary(archive_loader)
+    # Global counts look verified, but per-arm observed hash is forged/mismatched
+    summary["arms"]["D6_ARM_003"]["FairBias_LR"]["observed_sha256"] = "0" * 64
+    runtime = ProductionD6TemporalRuntime(repo_root=_REPO_ROOT)
+    runtime._authorized = True
+    assert runtime.is_test_authorized is False
+    with pytest.raises(GlobalBarrierError, match="Global 2022 training-state reproduction barrier not satisfied"):
+        runtime.authorize_test_access(summary, archive_loader.expected_state_anchors())
+    assert runtime.is_test_authorized is False
+    with pytest.raises(GlobalBarrierError, match="runtime TEST gate is closed"):
+        runtime.get_cohort(2024)
+
+
+def test_90_runtime_authorize_test_access_opens_test_gate_on_valid_full_summary(
+    archive_loader: FrozenD6ArchiveLoader,
+) -> None:
+    summary = _synthetic_summary(archive_loader)
+    calls: list[int] = []
+
+    class FakeAdapter:
+        def get_cohort(self, year: int, **_kwargs: Any) -> Any:
+            calls.append(year)
+            return {"synthetic_cohort": True, "year": year}
+
+    runtime = ProductionD6TemporalRuntime(repo_root=_REPO_ROOT, adapter_factory=FakeAdapter)
+    runtime._authorized = True
+    assert runtime.is_test_authorized is False
+    opened = runtime.authorize_test_access(summary, archive_loader.expected_state_anchors())
+    assert opened is True
+    assert runtime.is_test_authorized is True
+    assert "open_production_test_gate" in runtime.events
+    cohort = runtime.get_cohort(2024)
+    assert cohort == {"synthetic_cohort": True, "year": 2024}
+    assert calls == [2024]
+    assert "production_get_cohort_2024" in runtime.events
+
+
+def test_91_canonical_production_manager_produces_exact_two_phase_sequence(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    result = manager.execute_production_release(
+        root,
+        release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+        expected_execution_head="a" * 40,
+        runtime=runtime,
+    )
+    events = result["events"]
+    barrier = events.index("ALL_D6_TRAINING_STATE_ANCHORS_VERIFIED")
+    first_2024 = next(index for index, event in enumerate(events) if event.startswith("request_2024_"))
+    assert barrier < first_2024
+    assert sum(event.startswith("request_2022_") for event in events[:barrier]) == 4
+    assert sum(event.startswith("request_2024_") for event in events[barrier:]) == 4
+    assert runtime.is_test_authorized is True
+    assert [call["year"] for call in runtime.calls] == [2022, 2022, 2022, 2022, 2024, 2024, 2024, 2024]
+    assert all(call["year"] != 2023 for call in runtime.calls)
+    assert result["status"] == "COMPLETE"
+
+
+def test_92_late_arm004_mismatch_prevents_runtime_test_gate_opening_and_zero_2024_requests(
+    tmp_path: pathlib.Path, archive_loader: FrozenD6ArchiveLoader
+) -> None:
+    manager, _expected, runtime, root = _production_manager(tmp_path, archive_loader)
+    runtime.mutated_arm = "D6_ARM_004"
+    with pytest.raises(GlobalBarrierError):
+        manager.execute_production_release(
+            root,
+            release_id="SYNTHETIC_D6_TEMPORAL_TEST",
+            expected_execution_head="d" * 40,
+            runtime=runtime,
+        )
+    assert runtime.is_test_authorized is False
+    assert [call["year"] for call in runtime.calls] == [2022, 2022, 2022, 2022]
+    state = json.loads((root / "SYNTHETIC_D6_TEMPORAL_TEST" / "release_state.json").read_text(encoding="utf-8"))
+    assert state["status"] == "FAILED"
+    assert state["2023_request_count"] == 0
+    assert state["2024_request_count"] == 0
+    assert state["test_year_requested"] is False
+    assert state["test_year_evaluated"] is False

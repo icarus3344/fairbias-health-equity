@@ -1,15 +1,12 @@
-"""Gate D6.1a: isolated temporal TEST release harness.
+"""Gate D6.1a.2: isolated temporal TEST release harness.
 
-This module deliberately separates archive inspection, future 2022 training-state
-reproduction, and future 2024 evaluation.  The default audit path is standard
-library only: it reads the immutable D6 TRAIN/VALIDATION archive and Git metadata,
-but never constructs an NHIS adapter, requests a cohort, fits a model, or creates
-a TEST release.
-
-The substantive methods are dependency-injected so synthetic tests can exercise the
-global barrier without touching real NHIS data.  A production D6.1b implementation
-must provide the reproduction and scoring callables explicitly; this module does
-not silently fall back to a real-data execution path.
+This module enforces deterministic working tree execution integrity, isolated
+archive inspection, verified 2022 training-state reproduction, and an independent
+runtime-level barrier prohibiting 2024 temporal test cohort access until all 4/4
+cohort digests, frozen preprocessing state, and 20/20 training-state anchors are
+independently verified.  The default audit path is standard library only: it reads
+the immutable D6 TRAIN/VALIDATION archive and Git metadata, but never constructs
+an NHIS adapter, requests a cohort, fits a model, or creates a TEST release.
 """
 
 from __future__ import annotations
@@ -369,6 +366,30 @@ def _git_worktree_clean(repo_root: pathlib.Path, paths: Sequence[str]) -> bool:
             f"Git status boundary check failed: {status.stderr.strip()}"
         )
     return not bool(status.stdout.strip())
+
+
+def git_tracked_worktree_clean(repo_root: pathlib.Path) -> bool:
+    """Require all tracked files across the repository to be clean relative to HEAD.
+
+    Untracked files (such as archive/baseline_v0.3/) are intentionally ignored
+    via --untracked-files=no. Both staged and unstaged tracked changes cause this
+    function to return False.
+    """
+    status = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=no"],
+        cwd=str(repo_root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if status.returncode != 0:
+        raise D6HarnessError(
+            f"Git tracked worktree check failed: {status.stderr.strip()}"
+        )
+    return not bool(status.stdout.strip())
+
+
+_git_tracked_worktree_clean = git_tracked_worktree_clean
 
 
 class FrozenD6ArchiveLoader:
@@ -950,7 +971,8 @@ class D6TrainingStateReproducer:
 
     ``reproduction_fn`` is intentionally injected.  It receives a 2022 cohort
     and must return the observed digest, preprocessing state, and five logical
-    state hashes.  No real-data implementation is bundled into Gate D6.1a.
+    state hashes.  D6.1a.2 enforces that the four-arm summary is fully verified
+    before the runtime TEST gate can be opened.
     """
 
     def __init__(
@@ -1375,11 +1397,13 @@ class ReproducedArmState:
 
 
 class ProductionD6TemporalRuntime:
-    """Lazy real-data implementation for D6.1b, installed but not run by D6.1a.1.
+    """Production real-data implementation for D6.1b, hardened by D6.1a.2.
 
     Expected anchors remain in ``FrozenD6ArchiveLoader``.  This class never reads
     those expected values while reproducing state: it computes observed hashes from
     freshly fitted 2022 objects and retains those exact objects for 2024 scoring.
+    TEST (2024) cohort access is prohibited at the runtime level until explicit
+    independent verification of the full 4/4 and 20/20 reproduction summary.
     """
 
     def __init__(
@@ -1402,6 +1426,7 @@ class ProductionD6TemporalRuntime:
         self._runner_module = runner_module
         self._adapter: Any = None
         self._authorized = False
+        self._test_authorized = False
         self.reproduced_states: Dict[str, ReproducedArmState] = {}
         self.events: List[str] = []
 
@@ -1413,8 +1438,13 @@ class ProductionD6TemporalRuntime:
     def _emit(self, event: str) -> None:
         self.events.append(event)
 
+    @property
+    def is_test_authorized(self) -> bool:
+        """Indicate whether the independent 2024 TEST barrier gate is open."""
+        return self._test_authorized
+
     def authorize(self, expected_execution_head: str) -> Dict[str, Any]:
-        """Verify HEAD and immutable prepared-data bytes before adapter construction."""
+        """Verify HEAD, clean tracked worktree, and immutable prepared-data bytes before adapter construction."""
         if not re.fullmatch(r"[0-9a-f]{40}", str(expected_execution_head)):
             raise D6HarnessError("--expected-execution-head must be an exact 40-character SHA")
         local_head = _git_revision(self.repo_root, "HEAD")
@@ -1422,6 +1452,11 @@ class ProductionD6TemporalRuntime:
         if local_head != remote_head or local_head != expected_execution_head:
             raise D6HarnessError(
                 "D6.1 substantive execution HEAD mismatch; no release or cohort access is allowed"
+            )
+        if not git_tracked_worktree_clean(self.repo_root):
+            raise D6HarnessError(
+                "D6.1 substantive execution requires a clean tracked working tree relative to HEAD; "
+                "tracked modifications detected; no release or cohort access is allowed"
             )
         if not self.features_parquet_path.is_file():
             raise D6HarnessError(
@@ -1439,7 +1474,28 @@ class ProductionD6TemporalRuntime:
             "expected_execution_head": expected_execution_head,
             "features_parquet_path": str(self.features_parquet_path),
             "features_parquet_sha256": observed_sha,
+            "tracked_worktree_clean": True,
         }
+
+    def authorize_test_access(
+        self,
+        summary: Mapping[str, Any],
+        expected_anchors: Optional[Mapping[str, Mapping[str, str]]] = None,
+    ) -> bool:
+        """Independently validate the global reproduction barrier before opening 2024 TEST gate."""
+        if not self._authorized:
+            raise D6HarnessError(
+                "Production runtime HEAD authorization must pass before TEST gate access"
+            )
+        if not _summary_has_global_barrier(summary, expected_anchors):
+            self._test_authorized = False
+            raise GlobalBarrierError(
+                "Global 2022 training-state reproduction barrier not satisfied; "
+                "2024 TEST access is forbidden."
+            )
+        self._test_authorized = True
+        self._emit("open_production_test_gate")
+        return True
 
     @property
     def adapter(self) -> Any:
@@ -1470,6 +1526,11 @@ class ProductionD6TemporalRuntime:
             )
         if year_int not in (TEMPORAL_TRAIN_YEAR, TEMPORAL_TEST_YEAR):
             raise D6HarnessError(f"D6.1 accepts only 2022 or 2024 cohorts, not {year_int}")
+        if year_int == TEMPORAL_TEST_YEAR and not self._test_authorized:
+            raise GlobalBarrierError(
+                "FATAL: D6.1 runtime TEST gate is closed; 2024 cohort access requires "
+                "independent verification of the complete 4/4 and 20/20 reproduction summary"
+            )
         self._emit(f"production_get_cohort_{year_int}")
         return self.adapter.get_cohort(year=year_int, **kwargs)
 
@@ -2258,7 +2319,12 @@ class NHISD6TemporalTestReleaseManager:
         try:
             summary = reproducer.reproduce_all(fail_closed=False)
             writer.write_training_summary(summary)
-            if not summary["global"]["all_training_state_anchors_verified"]:
+            if (
+                not _summary_has_global_barrier(
+                    summary, self.archive_loader.expected_state_anchors()
+                )
+                or not summary.get("global", {}).get("all_training_state_anchors_verified")
+            ):
                 self._record_event("GLOBAL_BARRIER_BLOCKED")
                 writer.write_failed("Global 2022 training-state reproduction barrier failed", self.events)
                 self.last_result = {
@@ -2271,6 +2337,11 @@ class NHISD6TemporalTestReleaseManager:
                 raise GlobalBarrierError("Global 2022 training-state reproduction barrier failed")
 
             self._record_event("ALL_D6_TRAINING_STATE_ANCHORS_VERIFIED")
+            if hasattr(selected_runtime, "authorize_test_access"):
+                selected_runtime.authorize_test_access(
+                    summary,
+                    self.archive_loader.expected_state_anchors(),
+                )
             evaluator = D6TemporalTestEvaluator(
                 self.archive_loader,
                 selected_runtime,
@@ -2367,4 +2438,5 @@ __all__ = [
     "TEMPORAL_VALIDATION_YEAR",
     "compute_canonical_json_sha256",
     "compute_file_sha256",
+    "git_tracked_worktree_clean",
 ]
