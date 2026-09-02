@@ -600,9 +600,13 @@ def test_23_no_test_cli_flag_exists() -> None:
 # ------------------------------------------------------------------------------
 # 24. Audit-Only Cannot Call execute_train_validation
 # ------------------------------------------------------------------------------
-def test_24_audit_only_cannot_call_execute_train_validation() -> None:
+def test_24_audit_only_cannot_call_execute_train_validation(tmp_path: pathlib.Path) -> None:
     """run_audit_only must never invoke execute_train_validation."""
-    manager = NHISD5WeightedReleaseManager(allow_substantive_execution=False)
+    fresh_root = tmp_path / "releases"
+    manager = NHISD5WeightedReleaseManager(
+        releases_root=fresh_root,
+        allow_substantive_execution=False,
+    )
     mock_exec = MagicMock()
     manager.runner.execute_train_validation = mock_exec
 
