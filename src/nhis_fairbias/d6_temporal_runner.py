@@ -163,6 +163,12 @@ FROZEN_D5_SECONDARY_TEST_TAG: str = "nhis-d5-weighted-secondary-test-v1"
 FROZEN_D5_SECONDARY_TEST_TAG_OBJECT: str = "2be0d13ba2440eab09d970feca922c114b779a8d"
 FROZEN_D5_SECONDARY_TEST_ARCHIVED_COMMIT: str = "f63f58918b89a276152b5948df9874bd9b2fc94e"
 
+PRIOR_RELEASE_ARCHIVE_DIRS: Tuple[str, ...] = (
+    "docs/releases/NHIS_D4_PRIMARY_TEST_RELEASE_V1_9920fc5a",
+    "docs/releases/NHIS_D5_WEIGHTED_TRAIN_VAL_V1_bc6034e5",
+    "docs/releases/NHIS_D5_WEIGHTED_SECONDARY_TEST_V1_14cc7aa6",
+)
+
 SCIENTIFIC_EXECUTION_BASE_COMMIT: str = "f63f58918b89a276152b5948df9874bd9b2fc94e"
 
 FROZEN_SCIENTIFIC_PATHS_SPEC: Tuple[str, ...] = (
@@ -293,6 +299,86 @@ def verify_cohort_alignment_and_uniqueness(
         raise ValueError("Cohort index alignment mismatch across X, y, and o")
     if not X.index.is_unique:
         raise ValueError("Cohort indices are not unique within partition")
+
+
+def compute_canonical_json_sha256(data: Any) -> str:
+    """Compute deterministic SHA-256 hash of a JSON-serializable structure.
+
+    Canonical encoding: sort_keys=True, separators=(",", ":"), allow_nan=False.
+    """
+    canonical_bytes = json.dumps(
+        data,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical_bytes).hexdigest()
+
+
+def extract_minmax_scaler_state(
+    scaler: MinMaxScaler, feature_order: Sequence[str]
+) -> Dict[str, Any]:
+    """Extract deterministic JSON-serializable state dictionary from a fitted MinMaxScaler.
+
+    Schema:
+    - feature_order: List[str]
+    - feature_range: List[float]
+    - n_features_in_: int
+    - data_min_: List[float]
+    - data_max_: List[float]
+    - data_range_: List[float]
+    - scale_: List[float]
+    - min_: List[float]
+    """
+    if not hasattr(scaler, "data_min_") or scaler.data_min_ is None:
+        raise ValueError("MinMaxScaler is not fitted.")
+    return {
+        "feature_order": [str(f) for f in feature_order],
+        "feature_range": [float(r) for r in scaler.feature_range],
+        "n_features_in_": int(scaler.n_features_in_),
+        "data_min_": [float(x) for x in scaler.data_min_],
+        "data_max_": [float(x) for x in scaler.data_max_],
+        "data_range_": [float(x) for x in scaler.data_range_],
+        "scale_": [float(x) for x in scaler.scale_],
+        "min_": [float(x) for x in scaler.min_],
+    }
+
+
+def extract_logistic_regression_state(
+    model: LogisticRegression, feature_order: Sequence[str]
+) -> Dict[str, Any]:
+    """Extract deterministic JSON-serializable state dictionary from a fitted LogisticRegression.
+
+    Schema:
+    - feature_order: List[str]
+    - classes_: List[int]
+    - coef_: List[List[float]]
+    - intercept_: List[float]
+    - n_features_in_: int
+    - n_iter_: List[int]
+    - random_state: Optional[int]
+    - solver: str
+    - max_iter: int
+    - penalty: Optional[str]
+    - C: float
+    - fit_intercept: bool
+    """
+    if not hasattr(model, "coef_") or model.coef_ is None:
+        raise ValueError("LogisticRegression is not fitted.")
+    return {
+        "feature_order": [str(f) for f in feature_order],
+        "classes_": [int(c) for c in model.classes_],
+        "coef_": [[float(w) for w in row] for row in model.coef_],
+        "intercept_": [float(b) for b in model.intercept_],
+        "n_features_in_": int(model.n_features_in_),
+        "n_iter_": [int(it) for it in model.n_iter_],
+        "random_state": int(model.random_state) if model.random_state is not None else None,
+        "solver": str(model.solver),
+        "max_iter": int(model.max_iter),
+        "penalty": str(model.penalty) if model.penalty is not None else None,
+        "C": float(model.C),
+        "fit_intercept": bool(model.fit_intercept),
+    }
 
 
 def get_git_commit(repo_root: Optional[pathlib.Path] = None) -> str:
@@ -547,6 +633,113 @@ def verify_frozen_features_parquet(
     }
 
 
+def verify_prior_release_archives(
+    repo_root: Optional[Union[str, pathlib.Path]] = None,
+) -> Dict[str, Any]:
+    """Verify presence of prior historical release directories."""
+    root = pathlib.Path(repo_root).resolve() if repo_root is not None else _REPO_ROOT
+    checked: Dict[str, bool] = {}
+    for arch_rel in PRIOR_RELEASE_ARCHIVE_DIRS:
+        arch_path = root / arch_rel
+        if not arch_path.is_dir():
+            raise FileNotFoundError(
+                f"Required prior release archive directory not found: {arch_path}."
+            )
+        checked[arch_rel] = True
+    return {
+        "prior_release_archives_verified": True,
+        "archive_directories": list(checked.keys()),
+    }
+
+
+def verify_execution_preconditions(
+    repo_root: Optional[Union[str, pathlib.Path]] = None,
+    features_parquet_path: Optional[Union[str, pathlib.Path]] = None,
+) -> Dict[str, Any]:
+    """Verify all mandatory preconditions before substantive canonical release execution.
+
+    Enforces:
+    1. Frozen features parquet existence and exact SHA-256 hash.
+    2. Frozen scientific execution boundary (base commit is ancestor + 0 diff across 6 paths).
+    3. Prior immutable release tag anchors (D4, D5 train/val, D5 secondary test).
+    4. Prior immutable release archive directories presence.
+    5. Static D6 protocol invariants (4 arms, outcome, predictor counts, group/pair counts).
+
+    Must fail closed BEFORE release directory creation or cohort loading.
+    """
+    root = pathlib.Path(repo_root).resolve() if repo_root is not None else _REPO_ROOT
+    pq_path = (
+        pathlib.Path(features_parquet_path).resolve()
+        if features_parquet_path is not None
+        else FROZEN_FEATURES_PARQUET_PATH.resolve()
+    )
+
+    # 1. Parquet hash verification
+    pq_info = verify_frozen_features_parquet(pq_path)
+
+    # 2. Scientific boundary verification
+    boundary_info = verify_scientific_code_boundary(repo_root=root)
+
+    # 3. Prior release tags verification
+    tag_info = verify_prior_release_tags(repo_root=root)
+
+    # 4. Prior release archive directories verification
+    archive_info = verify_prior_release_archives(repo_root=root)
+
+    # 5. Static D6 protocol invariants
+    if set(FROZEN_D6_ARMS.keys()) != {"D6_ARM_001", "D6_ARM_002", "D6_ARM_003", "D6_ARM_004"}:
+        raise ValueError(f"Arm registry mismatch: {list(FROZEN_D6_ARMS.keys())}")
+
+    for arm_id, arm in FROZEN_D6_ARMS.items():
+        if arm["outcome"] != "MEDDL12M_A":
+            raise ValueError(f"Invalid outcome for {arm_id}: {arm['outcome']}")
+        if arm["feature_set"] != "PRIMARY_CORE":
+            raise ValueError(f"Invalid feature_set for {arm_id}: {arm['feature_set']}")
+        if arm_id == "D6_ARM_004":
+            if arm["disability_arm"] != "exclude_disability_components" or arm["expected_predictors"] != 15:
+                raise ValueError(f"Invalid specification for {arm_id}")
+        else:
+            if arm["disability_arm"] != "full_feature" or arm["expected_predictors"] != 21:
+                raise ValueError(f"Invalid specification for {arm_id}")
+        if arm_id == "D6_ARM_002":
+            if arm["expected_group_count"] != 7 or arm["expected_pair_count"] != 21:
+                raise ValueError(f"HISPALLP_A coverage configuration mismatch in {arm_id}")
+
+    return {
+        "frozen_features_verified": bool(pq_info["hash_verified"]),
+        "features_parquet_path": str(pq_info["features_parquet_path"]),
+        "features_parquet_sha256": str(pq_info["features_parquet_sha256"]),
+        "scientific_base_commit": str(boundary_info["scientific_base_commit"]),
+        "current_git_commit": str(boundary_info["current_git_commit"]),
+        "scientific_base_is_ancestor": bool(boundary_info["scientific_base_is_ancestor"]),
+        "scientific_code_diff_clean": bool(boundary_info["scientific_code_diff_clean"]),
+        "scientific_paths_checked": list(boundary_info["scientific_paths_checked"]),
+        "prior_release_tags_verified": bool(
+            tag_info["d4_primary_test_tag_verified"]
+            and tag_info["d5_weighted_train_val_tag_verified"]
+            and tag_info["d5_weighted_secondary_test_tag_verified"]
+        ),
+        "d4_tag_commit": str(tag_info["d4_tag_commit"]),
+        "d5_train_val_tag_commit": str(tag_info["d5_train_val_tag_commit"]),
+        "d5_secondary_test_tag_commit": str(tag_info["d5_secondary_test_tag_commit"]),
+        "prior_release_archives_verified": bool(archive_info["prior_release_archives_verified"]),
+        "prior_release_archive_dirs": list(archive_info["archive_directories"]),
+        "predeclared_arms_verified": True,
+        "predeclared_arms": list(FROZEN_D6_ARMS.keys()),
+        "predeclared_arm_count": len(FROZEN_D6_ARMS),
+        "survey_weighting": "NONE",
+        "frozen_outcome": "MEDDL12M_A",
+        "execution_mode": "AUDIT ONLY",
+        "temporal_train_year": TEMPORAL_TRAIN_YEAR,
+        "temporal_validation_year": TEMPORAL_VALIDATION_YEAR,
+        "future_temporal_test_year": TEMPORAL_TEST_YEAR,
+        "temporal_robustness_analysis": True,
+        "repeated_cross_sectional": True,
+        "longitudinal": False,
+        "causal_analysis": False,
+    }
+
+
 class NHISD6TemporalRunner:
     """Dedicated orchestrator for Gate D6 temporal robustness TRAIN/VALIDATION analysis."""
 
@@ -590,33 +783,10 @@ class NHISD6TemporalRunner:
 
     def run_audit_only(self) -> Dict[str, Any]:
         """Perform read-only audit of inputs, contracts, and schema without cohort loading or execution."""
-        # 1. Verify frozen features parquet existence and hash
-        pq_info = verify_frozen_features_parquet(self.features_parquet_path)
-
-        # 2. Verify git boundary and base commit
-        boundary_info = verify_scientific_code_boundary(repo_root=self.repo_root)
-
-        # 3. Verify prior D4 and D5 tags
-        tag_info = verify_prior_release_tags(repo_root=self.repo_root)
-
-        # 4. Verify 4 D6 arm specifications
-        if set(FROZEN_D6_ARMS.keys()) != {"D6_ARM_001", "D6_ARM_002", "D6_ARM_003", "D6_ARM_004"}:
-            raise ValueError(f"Arm registry mismatch: {list(FROZEN_D6_ARMS.keys())}")
-
-        for arm_id, arm in FROZEN_D6_ARMS.items():
-            if arm["outcome"] != "MEDDL12M_A":
-                raise ValueError(f"Invalid outcome for {arm_id}: {arm['outcome']}")
-            if arm["feature_set"] != "PRIMARY_CORE":
-                raise ValueError(f"Invalid feature_set for {arm_id}: {arm['feature_set']}")
-            if arm_id == "D6_ARM_004":
-                if arm["disability_arm"] != "exclude_disability_components" or arm["expected_predictors"] != 15:
-                    raise ValueError(f"Invalid specification for {arm_id}")
-            else:
-                if arm["disability_arm"] != "full_feature" or arm["expected_predictors"] != 21:
-                    raise ValueError(f"Invalid specification for {arm_id}")
-            if arm_id == "D6_ARM_002":
-                if arm["expected_group_count"] != 7 or arm["expected_pair_count"] != 21:
-                    raise ValueError(f"HISPALLP_A coverage configuration mismatch in {arm_id}")
+        prec = verify_execution_preconditions(
+            repo_root=self.repo_root,
+            features_parquet_path=self.features_parquet_path,
+        )
 
         return {
             "status": "PASS",
@@ -629,18 +799,42 @@ class NHISD6TemporalRunner:
             "survey_weighted_geometry": False,
             "classifier_weighting": False,
             "evaluation_weighting": False,
-            "frozen_features_verified": True,
+            "frozen_features_verified": prec["frozen_features_verified"],
             "d4_tag_verified": True,
             "d5_train_val_tag_verified": True,
             "d5_secondary_test_tag_verified": True,
+            "prior_release_archives_verified": prec["prior_release_archives_verified"],
             "real_temporal_training_executed": False,
             "validation_2023_cohort_requested": False,
             "validation_2023_evaluated": False,
             "test_2024_cohort_requested": False,
             "test_2024_evaluated": False,
-            "boundary_info": boundary_info,
-            "features_parquet_info": pq_info,
-            "tag_info": tag_info,
+            "predeclared_arms": prec["predeclared_arms"],
+            "predeclared_arm_count": prec["predeclared_arm_count"],
+            "survey_weighting": prec["survey_weighting"],
+            "frozen_outcome": prec["frozen_outcome"],
+            "execution_mode": prec["execution_mode"],
+            "boundary_info": {
+                "scientific_base_commit": prec["scientific_base_commit"],
+                "current_git_commit": prec["current_git_commit"],
+                "scientific_base_is_ancestor": prec["scientific_base_is_ancestor"],
+                "scientific_code_diff_clean": prec["scientific_code_diff_clean"],
+                "scientific_paths_checked": prec["scientific_paths_checked"],
+            },
+            "features_parquet_info": {
+                "features_parquet_path": prec["features_parquet_path"],
+                "features_parquet_sha256": prec["features_parquet_sha256"],
+                "hash_verified": prec["frozen_features_verified"],
+            },
+            "tag_info": {
+                "d4_tag_commit": prec["d4_tag_commit"],
+                "d4_primary_test_tag_verified": True,
+                "d5_train_val_tag_commit": prec["d5_train_val_tag_commit"],
+                "d5_weighted_train_val_tag_verified": True,
+                "d5_secondary_test_tag_commit": prec["d5_secondary_test_tag_commit"],
+                "d5_weighted_secondary_test_tag_verified": True,
+            },
+            "preconditions": prec,
         }
 
     def execute_arm_train_validation(
@@ -911,6 +1105,52 @@ class NHISD6TemporalRunner:
         model_fairbias = get_classifier("LR", random_state=PRIMARY_D6_RANDOM_SEED)
         model_fairbias.fit(X_train_fb_scaled, y_train.to_numpy())
 
+        # ---------------------------------------------------------
+        # Step M.1: Freeze 2022 Deterministic Model & Scaler State Fingerprints
+        # ---------------------------------------------------------
+        record_event("freeze_2022_model_state")
+        baseline_features = list(X_train.columns)
+        fb_features = list(transformed_X_train.columns)
+
+        baseline_scaler_state = extract_minmax_scaler_state(scaler_baseline, baseline_features)
+        baseline_scaler_sha = compute_canonical_json_sha256(baseline_scaler_state)
+
+        baseline_lr_state = extract_logistic_regression_state(model_baseline, baseline_features)
+        baseline_lr_sha = compute_canonical_json_sha256(baseline_lr_state)
+
+        fairbias_scaler_state = extract_minmax_scaler_state(scaler_fb, fb_features)
+        fairbias_scaler_sha = compute_canonical_json_sha256(fairbias_scaler_state)
+
+        fairbias_lr_state = extract_logistic_regression_state(model_fairbias, fb_features)
+        fairbias_lr_sha = compute_canonical_json_sha256(fairbias_lr_state)
+
+        changed_dict_sha = compute_canonical_json_sha256(frozen_changed_dict)
+
+        frozen_2022_training_state = {
+            "documentation": (
+                "These frozen training-state fingerprints allow the future D6.1 temporal TEST harness "
+                "to refit deterministically from the same frozen 2022 cohort and verify exact "
+                "scaler/model/representation state reproduction before requesting the 2024 cohort."
+            ),
+            "baseline_scaler": {
+                "sha256": baseline_scaler_sha,
+                "state": baseline_scaler_state,
+            },
+            "baseline_logistic_regression": {
+                "sha256": baseline_lr_sha,
+                "state": baseline_lr_state,
+            },
+            "fairbias_scaler": {
+                "sha256": fairbias_scaler_sha,
+                "state": fairbias_scaler_state,
+            },
+            "fairbias_logistic_regression": {
+                "sha256": fairbias_lr_sha,
+                "state": fairbias_lr_state,
+            },
+            "changed_dict_sha256": changed_dict_sha,
+        }
+
         # =========================================================
         # ONLY AFTER STEPS A-M HAVE COMPLETED:
         # Step N: Request 2023 Development Validation Cohort
@@ -1097,6 +1337,7 @@ class NHISD6TemporalRunner:
             "validation_used_for_selection": False,
             "test_year_requested": False,
             "test_year_evaluated": False,
+            "frozen_2022_training_state": frozen_2022_training_state,
         }
 
         train_dphi_payload = {
@@ -1189,7 +1430,14 @@ class NHISD6TemporalReleaseManager:
                 "Overwrites or restarts are strictly forbidden."
             )
 
+        # Precondition verification must occur BEFORE release directory creation
+        preconditions_info = verify_execution_preconditions(
+            repo_root=self.repo_root,
+            features_parquet_path=self.runner.features_parquet_path,
+        )
+
         self.release_dir.mkdir(parents=True, exist_ok=False)
+        created_at_ts = utc_timestamp()
 
         # Atomically record STARTED state
         state_path = self.release_dir / "release_state.json"
@@ -1198,8 +1446,8 @@ class NHISD6TemporalReleaseManager:
             {
                 "release_id": self.release_id,
                 "status": "STARTED",
-                "created_at": utc_timestamp(),
-                "updated_at": utc_timestamp(),
+                "created_at": created_at_ts,
+                "updated_at": created_at_ts,
                 "manifest_sha256": None,
                 "error": None,
             },
@@ -1278,7 +1526,7 @@ class NHISD6TemporalReleaseManager:
                 "gate": "D6 temporal TRAIN/VALIDATION",
                 "release_id": self.release_id,
                 "status": "COMPLETE",
-                "created_at": utc_timestamp(),
+                "created_at": created_at_ts,
                 "git_commit": get_git_commit(self.repo_root),
                 "base_commit": SCIENTIFIC_EXECUTION_BASE_COMMIT,
                 "temporal_robustness_analysis": True,
@@ -1297,6 +1545,15 @@ class NHISD6TemporalReleaseManager:
                 "classifier_weighted": False,
                 "evaluation_weighted": False,
                 "disclosure_2024": TEMPORAL_2024_DISCLOSURE,
+                "execution_preconditions": {
+                    "frozen_features_verified": bool(preconditions_info["frozen_features_verified"]),
+                    "features_parquet_sha256": str(preconditions_info["features_parquet_sha256"]),
+                    "scientific_base_commit": str(preconditions_info["scientific_base_commit"]),
+                    "scientific_base_is_ancestor": bool(preconditions_info["scientific_base_is_ancestor"]),
+                    "scientific_code_diff_clean": bool(preconditions_info["scientific_code_diff_clean"]),
+                    "prior_release_tags_verified": bool(preconditions_info["prior_release_tags_verified"]),
+                    "prior_release_archives_verified": bool(preconditions_info["prior_release_archives_verified"]),
+                },
                 "arms": {
                     arm_id: {
                         "arm_id": arm_id,
@@ -1323,7 +1580,7 @@ class NHISD6TemporalReleaseManager:
                 {
                     "release_id": self.release_id,
                     "status": "COMPLETE",
-                    "created_at": state_path.stat().st_ctime if state_path.exists() else utc_timestamp(),
+                    "created_at": created_at_ts,
                     "updated_at": utc_timestamp(),
                     "manifest_sha256": manifest_sha,
                     "error": None,
@@ -1338,7 +1595,7 @@ class NHISD6TemporalReleaseManager:
                 {
                     "release_id": self.release_id,
                     "status": "FAILED",
-                    "created_at": utc_timestamp(),
+                    "created_at": created_at_ts,
                     "updated_at": utc_timestamp(),
                     "manifest_sha256": None,
                     "error": str(exc),

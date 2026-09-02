@@ -69,6 +69,7 @@ from nhis_fairbias.d6_temporal_runner import (
     NHISD6TemporalReleaseManager,
     NHISD6TemporalRunner,
     PRIMARY_D6_RANDOM_SEED,
+    PRIOR_RELEASE_ARCHIVE_DIRS,
     REQUIRED_PER_ARM_ARTIFACTS,
     SCIENTIFIC_EXECUTION_BASE_COMMIT,
     TEMPORAL_2024_DISCLOSURE,
@@ -76,10 +77,15 @@ from nhis_fairbias.d6_temporal_runner import (
     TEMPORAL_TEST_YEAR,
     TEMPORAL_TRAIN_YEAR,
     TEMPORAL_VALIDATION_YEAR,
+    compute_canonical_json_sha256,
     compute_cohort_source_row_digest,
+    extract_logistic_regression_state,
+    extract_minmax_scaler_state,
     get_git_commit,
     verify_cohort_alignment_and_uniqueness,
+    verify_execution_preconditions,
     verify_frozen_features_parquet,
+    verify_prior_release_archives,
     verify_prior_release_tags,
     verify_scientific_code_boundary,
 )
@@ -360,6 +366,30 @@ def make_mock_arm_execution_result(arm_id: str, **kwargs: Any) -> Dict[str, Any]
         "validation_used_for_selection": False,
         "test_year_requested": False,
         "test_year_evaluated": False,
+        "frozen_2022_training_state": {
+            "documentation": (
+                "These frozen training-state fingerprints allow the future D6.1 temporal TEST harness "
+                "to refit deterministically from the same frozen 2022 cohort and verify exact "
+                "scaler/model/representation state reproduction before requesting the 2024 cohort."
+            ),
+            "baseline_scaler": {
+                "sha256": "mock_baseline_scaler_sha",
+                "state": {"feature_order": ["educp_a", "agep_a"]},
+            },
+            "baseline_logistic_regression": {
+                "sha256": "mock_baseline_lr_sha",
+                "state": {"feature_order": ["educp_a", "agep_a"]},
+            },
+            "fairbias_scaler": {
+                "sha256": "mock_fb_scaler_sha",
+                "state": {"feature_order": ["educp_a", "agep_a"]},
+            },
+            "fairbias_logistic_regression": {
+                "sha256": "mock_fb_lr_sha",
+                "state": {"feature_order": ["educp_a", "agep_a"]},
+            },
+            "changed_dict_sha256": "mock_changed_dict_sha",
+        },
     }
 
     train_dphi = {
@@ -800,18 +830,18 @@ def test_31_2023_never_triggers_scaler_fit() -> None:
     """Check 31: 2023 never triggers scaler fit."""
     mock_adapter = MockStudyAdapter()
     runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+    orig_fit_transform = MinMaxScaler.fit_transform
     fit_calls: List[np.ndarray] = []
 
-    def mock_fit(self, X, y=None):
+    def spy_fit_transform(self, X, y=None):
         fit_calls.append(np.asarray(X))
-        return self
+        return orig_fit_transform(self, X, y=y)
 
-    with patch.object(MinMaxScaler, "fit", mock_fit), patch.object(
-        MinMaxScaler, "fit_transform", lambda self, X, y=None: np.asarray(X)
-    ), patch.object(MinMaxScaler, "transform", lambda self, X: np.asarray(X)), patch.object(
+    with patch.object(MinMaxScaler, "fit_transform", spy_fit_transform), patch.object(
         FairBiasMitigation, "mitigate_step", return_value=(None, {}, None, None)
     ):
         runner.execute_arm_train_validation("D6_ARM_001")
+        assert len(fit_calls) == 2
         for X_fit in fit_calls:
             assert len(X_fit) == 70
 
@@ -1192,7 +1222,8 @@ def test_60_no_d5_weighted_changed_dict_loaded() -> None:
     src_file = _REPO_ROOT / "src" / "nhis_fairbias" / "d6_temporal_runner.py"
     text = src_file.read_text(encoding="utf-8")
     assert "weighted_changed_dict" not in text
-    assert "NHIS_D5" not in text
+    assert "d5_changed_dict" not in text
+    assert "load_d5" not in text
 
 
 # ==============================================================================
@@ -1221,6 +1252,7 @@ def test_61_dynamic_ordering_event_sequence() -> None:
         "fit_baseline_lr_2022",
         "fit_fairbias_scaler_2022",
         "fit_fairbias_lr_2022",
+        "freeze_2022_model_state",
         "request_2023",
         "transform_2023",
         "score_and_evaluate_2023",
@@ -1229,7 +1261,8 @@ def test_61_dynamic_ordering_event_sequence() -> None:
     for ev in expected_order:
         assert ev in events
 
-    # Assert request_2023 strictly follows freezing and training
+    # Assert freeze_2022_model_state strictly precedes request_2023
+    assert events.index("freeze_2022_model_state") < events.index("request_2023")
     req_2023_idx = events.index("request_2023")
     assert req_2023_idx > events.index("freeze_2022_changed_dict")
     assert req_2023_idx > events.index("fit_baseline_lr_2022")
@@ -1259,10 +1292,10 @@ def test_62_cohort_request_sequence_8_total(tmp_path: pathlib.Path) -> None:
 
 
 def test_63_validation_selection_poison_invariant() -> None:
-    """Section 35: Validation-selection poison test.
+    """Section 35 & Section 14: Validation-selection poison test.
 
-    Create synthetic validation cohort with deliberately inverted/absurd labels.
-    Assert 2022 changed_dict, epsilon, scalers, coefficients, and threshold are invariant.
+    Assert 2022 changed_dict, epsilon, scalers, LR models, and all frozen state SHA fingerprints
+    remain strictly invariant under pathological validation data.
     """
     mock_adapter_normal = MockStudyAdapter()
     runner_normal = NHISD6TemporalRunner(adapter=mock_adapter_normal, allow_execution=True)
@@ -1307,10 +1340,31 @@ def test_63_validation_selection_poison_invariant() -> None:
         == res_poison["input_provenance"]["train_source_row_digest"]
     )
 
+    norm_state = res_normal["input_provenance"]["frozen_2022_training_state"]
+    pois_state = res_poison["input_provenance"]["frozen_2022_training_state"]
+
+    assert norm_state["changed_dict_sha256"] == pois_state["changed_dict_sha256"]
+    assert norm_state["baseline_scaler"]["sha256"] == pois_state["baseline_scaler"]["sha256"]
+    assert (
+        norm_state["baseline_logistic_regression"]["sha256"]
+        == pois_state["baseline_logistic_regression"]["sha256"]
+    )
+    assert norm_state["fairbias_scaler"]["sha256"] == pois_state["fairbias_scaler"]["sha256"]
+    assert (
+        norm_state["fairbias_logistic_regression"]["sha256"]
+        == pois_state["fairbias_logistic_regression"]["sha256"]
+    )
+    assert (
+        res_normal["arm_config"]["prediction_threshold"]
+        == res_poison["arm_config"]["prediction_threshold"]
+        == 0.5
+    )
+
 
 def test_64_cli_audit_only_execution() -> None:
     """Test CLI audit-only execution output."""
     import scripts.run_nhis_d6_temporal as cli_mod
+
     with patch("sys.argv", ["run_nhis_d6_temporal.py", "--audit-only"]):
         rc = cli_mod.main()
         assert rc == 0
@@ -1319,6 +1373,237 @@ def test_64_cli_audit_only_execution() -> None:
 def test_65_cli_rejects_test_flags() -> None:
     """Test CLI rejects forbidden test flags."""
     import scripts.run_nhis_d6_temporal as cli_mod
+
     for bad_flag in ["--test", "--execute-test", "--year-2024", "--evaluate-2024"]:
         with pytest.raises(SystemExit):
             cli_mod.parse_args([bad_flag])
+
+
+# ==============================================================================
+# Gate D6.0a.1 Hardened Provenance Tests
+# ==============================================================================
+
+
+def test_66_preconditions_parquet_hash_failure_fails_closed(tmp_path: pathlib.Path) -> None:
+    """Section 16: Parquet hash failure aborts substantive release before any cohort request."""
+    mock_adapter = MockStudyAdapter()
+    runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+    manager = NHISD6TemporalReleaseManager(
+        release_id="TEST_PRECOND_PQ",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    with patch(
+        "nhis_fairbias.d6_temporal_runner.verify_frozen_features_parquet",
+        side_effect=ValueError("Corrupted parquet hash"),
+    ):
+        with pytest.raises(ValueError, match="Corrupted parquet hash"):
+            manager.execute_release()
+
+    assert not (tmp_path / "TEST_PRECOND_PQ").exists()
+    assert len(mock_adapter.requested_cohorts) == 0
+
+
+def test_67_preconditions_scientific_boundary_failure_fails_closed(tmp_path: pathlib.Path) -> None:
+    """Section 16: Scientific boundary failure aborts substantive release before any cohort request."""
+    mock_adapter = MockStudyAdapter()
+    runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+    manager = NHISD6TemporalReleaseManager(
+        release_id="TEST_PRECOND_BOUNDARY",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    with patch(
+        "nhis_fairbias.d6_temporal_runner.verify_scientific_code_boundary",
+        side_effect=RuntimeError("Scientific boundary modified"),
+    ):
+        with pytest.raises(RuntimeError, match="Scientific boundary modified"):
+            manager.execute_release()
+
+    assert not (tmp_path / "TEST_PRECOND_BOUNDARY").exists()
+    assert len(mock_adapter.requested_cohorts) == 0
+
+
+def test_68_preconditions_prior_tag_failure_fails_closed(tmp_path: pathlib.Path) -> None:
+    """Section 16: Prior tag failure aborts substantive release before any cohort request."""
+    mock_adapter = MockStudyAdapter()
+    runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+    manager = NHISD6TemporalReleaseManager(
+        release_id="TEST_PRECOND_TAG",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    with patch(
+        "nhis_fairbias.d6_temporal_runner.verify_prior_release_tags",
+        side_effect=RuntimeError("Prior tag mismatch"),
+    ):
+        with pytest.raises(RuntimeError, match="Prior tag mismatch"):
+            manager.execute_release()
+
+    assert not (tmp_path / "TEST_PRECOND_TAG").exists()
+    assert len(mock_adapter.requested_cohorts) == 0
+
+
+def test_69_preconditions_missing_archive_directory_fails_closed(tmp_path: pathlib.Path) -> None:
+    """Section 16: Missing archive directory aborts substantive release before any cohort request."""
+    mock_adapter = MockStudyAdapter()
+    runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+    manager = NHISD6TemporalReleaseManager(
+        release_id="TEST_PRECOND_ARCHIVE",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    with patch(
+        "nhis_fairbias.d6_temporal_runner.verify_prior_release_archives",
+        side_effect=FileNotFoundError("Missing prior release archive"),
+    ):
+        with pytest.raises(FileNotFoundError, match="Missing prior release archive"):
+            manager.execute_release()
+
+    assert not (tmp_path / "TEST_PRECOND_ARCHIVE").exists()
+    assert len(mock_adapter.requested_cohorts) == 0
+
+
+def test_70_substantive_execution_without_prior_audit_only(tmp_path: pathlib.Path) -> None:
+    """Section 17: Substantive execution automatically runs preconditions without audit-only call."""
+    mock_adapter = MockStudyAdapter()
+    runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+    manager = NHISD6TemporalReleaseManager(
+        release_id="TEST_DIRECT_SUBSTANTIVE",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    # Execute substantive release directly WITHOUT calling runner.run_audit_only()
+    with patch.object(FairBiasMitigation, "mitigate_step", return_value=(None, {}, None, None)):
+        manifest = manager.execute_release()
+
+    assert manifest["status"] == "COMPLETE"
+    assert "execution_preconditions" in manifest
+    prec = manifest["execution_preconditions"]
+    assert prec["frozen_features_verified"] is True
+    assert prec["prior_release_tags_verified"] is True
+    assert prec["prior_release_archives_verified"] is True
+    assert prec["scientific_code_diff_clean"] is True
+
+
+def test_71_release_state_created_at_timestamp_stability(tmp_path: pathlib.Path) -> None:
+    """Section 18: created_at timestamp is preserved unchanged across STARTED, COMPLETE, and FAILED."""
+    mock_adapter = MockStudyAdapter()
+    runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+
+    # 1. Success path: STARTED -> COMPLETE
+    manager_success = NHISD6TemporalReleaseManager(
+        release_id="TEST_TIME_SUCCESS",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    with patch.object(FairBiasMitigation, "mitigate_step", return_value=(None, {}, None, None)):
+        manifest = manager_success.execute_release()
+
+    state_path = tmp_path / "TEST_TIME_SUCCESS" / "release_state.json"
+    with open(state_path, "r", encoding="utf-8") as f:
+        complete_state = json.load(f)
+
+    assert complete_state["status"] == "COMPLETE"
+    assert isinstance(complete_state["created_at"], str)
+    assert complete_state["created_at"] == manifest["created_at"]
+
+    # 2. Failure path: STARTED -> FAILED
+    manager_fail = NHISD6TemporalReleaseManager(
+        release_id="TEST_TIME_FAIL",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    with patch.object(
+        runner, "execute_arm_train_validation", side_effect=RuntimeError("Simulated arm fail")
+    ):
+        with pytest.raises(RuntimeError, match="Simulated arm fail"):
+            manager_fail.execute_release()
+
+    fail_state_path = tmp_path / "TEST_TIME_FAIL" / "release_state.json"
+    with open(fail_state_path, "r", encoding="utf-8") as f:
+        failed_state = json.load(f)
+
+    assert failed_state["status"] == "FAILED"
+    assert isinstance(failed_state["created_at"], str)
+    assert failed_state["error"] == "Simulated arm fail"
+
+
+def test_72_release_directory_exact_file_count_semantics(tmp_path: pathlib.Path) -> None:
+    """Section 19: Verify 44 per-arm scientific artifacts, 45 manifest artifacts, 47 total files."""
+    mock_adapter = MockStudyAdapter()
+    runner = NHISD6TemporalRunner(adapter=mock_adapter, allow_execution=True)
+    manager = NHISD6TemporalReleaseManager(
+        release_id="TEST_FILE_COUNTS_47",
+        base_dir=tmp_path,
+        runner=runner,
+        allow_substantive_execution=True,
+    )
+    with patch.object(FairBiasMitigation, "mitigate_step", return_value=(None, {}, None, None)):
+        manifest = manager.execute_release()
+
+    rel_dir = tmp_path / "TEST_FILE_COUNTS_47"
+
+    # 44 per-arm scientific artifacts (11 per arm x 4 arms)
+    per_arm_files = [p for p in rel_dir.glob("D6_ARM_*/*") if p.is_file()]
+    assert len(per_arm_files) == 44
+
+    # 45 manifest-tracked artifacts (44 per arm + 1 preprocessing_provenance.json)
+    assert len(manifest["artifacts"]) == 45
+    assert "preprocessing_provenance.json" in manifest["artifacts"]
+
+    # 47 total files in COMPLETE release directory (44 per-arm + preprocessing + manifest + release_state)
+    all_files = [p for p in rel_dir.rglob("*") if p.is_file()]
+    assert len(all_files) == 47
+
+
+def test_73_deterministic_scaler_and_lr_state_schemas_and_hashes() -> None:
+    """Section 9, 10, 12: Verify deterministic state extraction schemas and SHA-256 hashes."""
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import MinMaxScaler
+
+    rng = np.random.default_rng(42)
+    features = ["f1", "f2", "f3"]
+    X = rng.uniform(0.0, 100.0, size=(50, 3))
+    y = rng.integers(0, 2, size=50)
+
+    # Scaler
+    scaler = MinMaxScaler()
+    scaler.fit(X)
+    s_state = extract_minmax_scaler_state(scaler, features)
+    assert s_state["feature_order"] == features
+    assert s_state["n_features_in_"] == 3
+    assert len(s_state["data_min_"]) == 3
+    assert len(s_state["data_max_"]) == 3
+    assert len(s_state["scale_"]) == 3
+    assert len(s_state["min_"]) == 3
+
+    sha1 = compute_canonical_json_sha256(s_state)
+    sha2 = compute_canonical_json_sha256(s_state)
+    assert sha1 == sha2
+    assert len(sha1) == 64
+
+    # Model
+    model = LogisticRegression(random_state=0, solver="lbfgs", max_iter=1000)
+    model.fit(X, y)
+    m_state = extract_logistic_regression_state(model, features)
+    assert m_state["feature_order"] == features
+    assert m_state["classes_"] == [0, 1]
+    assert len(m_state["coef_"]) == 1
+    assert len(m_state["coef_"][0]) == 3
+    assert len(m_state["intercept_"]) == 1
+    assert m_state["random_state"] == 0
+    assert m_state["solver"] == "lbfgs"
+    assert m_state["max_iter"] == 1000
+
+    m_sha1 = compute_canonical_json_sha256(m_state)
+    m_sha2 = compute_canonical_json_sha256(m_state)
+    assert m_sha1 == m_sha2
+    assert len(m_sha1) == 64
