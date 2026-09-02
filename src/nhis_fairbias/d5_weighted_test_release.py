@@ -57,6 +57,10 @@ from sklearn.preprocessing import MinMaxScaler
 
 from fairbias.transform import FairTransform
 
+from .adapter import (
+    OUTCOME_MAP,
+    PROTECTED_MAP,
+)
 from .audit import write_csv_atomic
 from .download import (
     compute_sha256,
@@ -544,6 +548,96 @@ def verify_frozen_inputs(
     }
 
 
+ALLOWED_TEST_RELEASE_ROLES: Tuple[str, ...] = ("train", "test")
+
+
+def get_partition_cohort(
+    adapter: Any,
+    role: str,
+    arm_spec: Mapping[str, Any],
+) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Optional[pd.Series], pd.DataFrame]:
+    """Extract preprocessed cohort for a single allowed partition role ('train' or 'test').
+
+    Strictly forbids 'val', 'validation', or unknown roles (fails closed).
+    Calls adapter.get_partition(role) ONLY for the requested role.
+    Validation partition is never requested, loaded, or materialized during TEST release.
+    """
+    role_norm = str(role).strip().lower()
+    if role_norm not in ALLOWED_TEST_RELEASE_ROLES:
+        raise ValueError(
+            f"Partition role {role!r} is strictly forbidden during secondary TEST execution. "
+            f"Allowed roles are exactly: {ALLOWED_TEST_RELEASE_ROLES}. "
+            "Validation partition must never be requested, loaded, or materialized."
+        )
+
+    outcome = arm_spec["outcome"]
+    protected_attribute = arm_spec["protected_attribute"]
+    feature_set = arm_spec["feature_set"].lower()
+    disability_arm = arm_spec["disability_arm"]
+
+    # 1. Fetch active feature names from adapter
+    if hasattr(adapter, "get_feature_names"):
+        active_feature_names = adapter.get_feature_names(
+            feature_set=feature_set, disability_arm=disability_arm
+        )
+    else:
+        raise AttributeError("Adapter must provide get_feature_names().")
+
+    # 2. Call adapter.get_partition for requested role ONLY
+    raw_sub = adapter.get_partition(role_norm)
+
+    # 3. Resolve outcome and protected attribute columns
+    harm_outcome = OUTCOME_MAP.get(outcome)
+    if harm_outcome is None or harm_outcome not in raw_sub.columns:
+        if outcome in raw_sub.columns:
+            harm_outcome = outcome
+        else:
+            raise ValueError(f"Unsupported outcome: {outcome}. Supported: MEDDL12M_A, MEDNG12M_A")
+
+    harm_prot = PROTECTED_MAP.get(protected_attribute)
+    if harm_prot is None or harm_prot not in raw_sub.columns:
+        if protected_attribute in raw_sub.columns:
+            harm_prot = protected_attribute
+        else:
+            raise ValueError(
+                f"Unsupported protected attribute: {protected_attribute}. Supported: SEX_A, HISPALLP_A, DISAB3_A"
+            )
+
+    # 4. Filter substantive / nonmissing rows
+    y_raw = raw_sub[harm_outcome]
+    o_raw = raw_sub[harm_prot]
+    valid_mask = y_raw.notna() & o_raw.notna()
+    filtered_df = raw_sub[valid_mask].copy()
+
+    # 5. Transform via fitted preprocessor and select active predictor columns
+    if hasattr(adapter, "preprocessor") and hasattr(adapter.preprocessor, "transform"):
+        X_all = adapter.preprocessor.transform(
+            filtered_df, feature_set=feature_set, preserve_metadata=False
+        )
+        X = X_all[active_feature_names].copy()
+    else:
+        X = filtered_df[active_feature_names].copy()
+
+    # 6. Construct y and o
+    y = filtered_df[harm_outcome].astype(int)
+    y.name = outcome
+
+    o = filtered_df[harm_prot].astype(int)
+    o.name = protected_attribute
+
+    # 7. Survey weights (if present)
+    w = filtered_df["WTFA_A"].astype(float) if "WTFA_A" in filtered_df.columns else None
+    if w is not None:
+        w.name = "WTFA_A"
+
+    # 8. Metadata for record-id provenance
+    meta_cols = ["record_id", "survey_year", "study_role", "split_role", "WTFA_A", "PSTRAT", "PPSU"]
+    avail_meta = [c for c in meta_cols if c in filtered_df.columns]
+    metadata = filtered_df[avail_meta].copy()
+
+    return X, y, o, w, metadata
+
+
 class NHISD5WeightedTestReleaseManager:
     """Manages frozen secondary TEST evaluation, verification, and persistence for Gate D5.2."""
 
@@ -655,6 +749,8 @@ class NHISD5WeightedTestReleaseManager:
             "pooled_test_globally_untouched": False,
             "disclosure": SECONDARY_ANALYSIS_DISCLOSURE,
             "real_weighted_mitigation_executed": False,
+            "validation_requested": False,
+            "validation_materialized": False,
             "validation_re_scored": False,
             "test_partition_requested": False,
             "test_cohort_materialized": False,
@@ -662,6 +758,18 @@ class NHISD5WeightedTestReleaseManager:
             "test_embargo_active": True,
             "status": "PASS",
         }
+
+    def get_partition_cohort(
+        self,
+        role: str,
+        arm_spec: Mapping[str, Any],
+    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series, Optional[pd.Series], pd.DataFrame]:
+        """Extract preprocessed cohort for a single allowed partition role ('train' or 'test')."""
+        return get_partition_cohort(
+            adapter=self.adapter,
+            role=role,
+            arm_spec=arm_spec,
+        )
 
     def execute_release(
         self,
@@ -751,18 +859,15 @@ class NHISD5WeightedTestReleaseManager:
                     )
                 frozen_changed_dict = json.loads(cd_path.read_text(encoding="utf-8"))
 
-                # B. Extract cohorts
-                if hasattr(self.adapter, "get_pooled_cohort"):
-                    cohorts = self.adapter.get_pooled_cohort(
-                        outcome=arm_spec["outcome"],
-                        protected_attribute=arm_spec["protected_attribute"],
-                        feature_set=arm_spec["feature_set"].lower(),
-                        disability_arm=arm_spec["disability_arm"],
-                    )
-                    X_train, y_train, o_train, _, meta_train = cohorts["train"]
-                    X_test, y_test, o_test, _, meta_test = cohorts["test"]
-                else:
-                    raise RuntimeError("Adapter does not support get_pooled_cohort.")
+                # B. Extract single cohorts strictly for TRAIN and TEST (never load or materialize validation)
+                X_train, y_train, o_train, _, meta_train = self.get_partition_cohort(
+                    role="train",
+                    arm_spec=arm_spec,
+                )
+                X_test, y_test, o_test, _, meta_test = self.get_partition_cohort(
+                    role="test",
+                    arm_spec=arm_spec,
+                )
 
                 # Feature type identification
                 feature_set_key = arm_spec["feature_set"].lower()

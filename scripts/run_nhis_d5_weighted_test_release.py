@@ -119,6 +119,8 @@ def main(args: Sequence[str] | None = None) -> int:
     print(f"FROZEN INPUTS: {'VERIFIED' if inputs.get('status') == 'PASS' else 'FAIL'}")
 
     print("\nREAL WEIGHTED MITIGATION EXECUTED: FALSE")
+    print("VALIDATION REQUESTED: FALSE")
+    print("VALIDATION MATERIALIZED: FALSE")
     print("VALIDATION RE-SCORED: FALSE")
     print("TEST PARTITION REQUESTED: FALSE")
     print("TEST COHORT MATERIALIZED: FALSE")

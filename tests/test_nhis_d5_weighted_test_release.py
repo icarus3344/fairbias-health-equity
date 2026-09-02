@@ -63,6 +63,7 @@ if _SRC_DIR not in sys.path:
     sys.path.insert(0, _SRC_DIR)
 
 from nhis_fairbias.d5_weighted_test_release import (
+    ALLOWED_TEST_RELEASE_ROLES,
     CANONICAL_D5_SECONDARY_TEST_RELEASE_ID,
     DEFAULT_D4_ARCHIVE_DIR,
     DEFAULT_D5_ARCHIVE_DIR,
@@ -89,6 +90,7 @@ from nhis_fairbias.d5_weighted_test_release import (
     TEST_EVALUATION_BASE_COMMIT,
     compare_d5_validation_to_test,
     compute_sequence_digest,
+    get_partition_cohort,
     verify_d4_archive_and_tag,
     verify_d5_archive,
     verify_frozen_inputs,
@@ -102,47 +104,60 @@ def create_synthetic_adapter(n_train: int = 70, n_test: int = 49) -> MagicMock:
     """Create a synthetic adapter for release testing without touching real TEST data."""
     rng = np.random.default_rng(42)
 
-    def _make_split(n: int, role: str):
-        X = pd.DataFrame({
-            f"feat_{i}": rng.choice([0, 1], size=n) for i in range(15)
-        })
-        X["num_0"] = rng.normal(0, 1, size=n)
-        X["num_1"] = rng.normal(0, 1, size=n)
-        for i in range(15, 19):
-            X[f"feat_{i}"] = rng.choice([0, 1], size=n)
-        y = pd.Series(rng.choice([0, 1], size=n), name="MEDDL12M_A")
-        o = pd.Series(rng.choice([1, 2], size=n), name="SEX_A")
-        meta = pd.DataFrame({
-            "split_role": [role] * n,
-            "record_id": [f"{role}_{i}" for i in range(n)],
-        })
-        return X, y, o, None, meta
-
-    mock_adapter = MagicMock()
     cate_feats = [f"feat_{i}" for i in range(19)]
     num_feats = ["num_0", "num_1"]
+    all_feats = cate_feats + num_feats
+
+    def _make_raw_split(n: int, role: str):
+        df = pd.DataFrame({
+            f"feat_{i}": rng.choice([0, 1], size=n) for i in range(19)
+        })
+        df["num_0"] = rng.normal(0, 1, size=n)
+        df["num_1"] = rng.normal(0, 1, size=n)
+        df["meddl12m"] = rng.choice([0, 1], size=n)
+        df["sex_a"] = rng.choice([1, 2], size=n)
+        df["hispallp_a"] = [1, 2, 3, 4, 5, 6, 7] * (n // 7) + [1] * (n % 7)
+        df["disab3_a"] = rng.choice([1, 2], size=n)
+        df["record_id"] = [f"{role}_{i}" for i in range(n)]
+        df["survey_year"] = 2022
+        df["study_role"] = "pooled"
+        df["split_role"] = role
+        df["WTFA_A"] = 1.0
+        df["PSTRAT"] = 100
+        df["PPSU"] = 1
+        return df
+
+    raw_splits = {
+        "train": _make_raw_split(n_train, "train"),
+        "test": _make_raw_split(n_test, "test"),
+    }
+
+    mock_adapter = MagicMock()
     mock_adapter.preprocessor.get_feature_family_lists.return_value = (cate_feats, num_feats)
+    mock_adapter.preprocessor.transform.side_effect = lambda df, **kw: df[all_feats].copy()
 
-    def get_pooled_cohort(outcome, protected_attribute, feature_set, disability_arm):
-        X_tr, y_tr, o_tr, _, meta_tr = _make_split(n_train, "train")
-        X_te, y_te, o_te, _, meta_te = _make_split(n_test, "test")
-
-        if protected_attribute == "HISPALLP_A":
-            o_tr = pd.Series(rng.choice([1, 2, 3, 4, 5, 6, 7], size=n_train), name="HISPALLP_A")
-            # Ensure complete 7-group test set
-            o_te = pd.Series([1, 2, 3, 4, 5, 6, 7] * (n_test // 7) + [1] * (n_test % 7), name="HISPALLP_A")
-
+    def get_feature_names(feature_set, disability_arm):
         if disability_arm == "exclude_disability_components":
-            keep_cols = [f"feat_{i}" for i in range(13)] + ["num_0", "num_1"]
-            X_tr = X_tr[keep_cols]
-            X_te = X_te[keep_cols]
+            return [f"feat_{i}" for i in range(13)] + num_feats
+        return all_feats
 
-        return {
-            "train": (X_tr, y_tr, o_tr, None, meta_tr),
-            "test": (X_te, y_te, o_te, None, meta_te),
-        }
+    mock_adapter.get_feature_names.side_effect = get_feature_names
 
-    mock_adapter.get_pooled_cohort.side_effect = get_pooled_cohort
+    def get_partition(role: str):
+        role_norm = str(role).strip().lower()
+        if role_norm in ("val", "validation"):
+            raise AssertionError(f"FATAL: Validation partition accessed dynamically: {role}")
+        if role_norm not in raw_splits:
+            raise ValueError(f"Unknown split: {role!r}")
+        return raw_splits[role_norm].copy()
+
+    mock_adapter.get_partition.side_effect = get_partition
+
+    # Explicitly prohibit get_pooled_cohort
+    mock_adapter.get_pooled_cohort = MagicMock(
+        side_effect=AssertionError("FATAL: get_pooled_cohort must never be called in D5.2!")
+    )
+
     return mock_adapter
 
 
@@ -420,12 +435,22 @@ def test_19_test_transform_equals_frozen_train_transform(tmp_path):
         assert train_cd == test_cd
 
 
-# 20. No validation outcome used for model/transform selection
-def test_20_no_validation_outcome_used_for_selection(tmp_path):
+# 20. Strengthened: validation strictly inaccessible during test execution
+def test_20_validation_strictly_inaccessible_during_test_execution(tmp_path):
     mock_adapter = create_synthetic_adapter()
-    # If adapter returns val, verify it's never accessed
+    partition_calls = []
+    orig_get_partition = mock_adapter.get_partition
+
+    def tracking_get_partition(role: str):
+        partition_calls.append(role)
+        if role in ("val", "validation"):
+            raise AssertionError(f"FATAL: Validation partition accessed dynamically: {role}")
+        return orig_get_partition(role)
+
+    mock_adapter.get_partition = tracking_get_partition
+
     manager = NHISD5WeightedTestReleaseManager(
-        release_id="TEST_NO_VAL_ACCESS",
+        release_id="TEST_STRENGTHENED_NO_VAL",
         output_base_dir=tmp_path / "test_out",
         adapter=mock_adapter,
         enforce_git_boundary=False,
@@ -434,8 +459,49 @@ def test_20_no_validation_outcome_used_for_selection(tmp_path):
     res = manager.execute_release()
     assert res["status"] == "COMPLETE"
 
+    # Assert exact calls: 4 arms * (train, test) = 8 calls
+    assert len(partition_calls) == 8
+    expected_sequence = [
+        "train", "test",
+        "train", "test",
+        "train", "test",
+        "train", "test",
+    ]
+    assert partition_calls == expected_sequence
+    assert "val" not in partition_calls
+    assert "validation" not in partition_calls
 
-# 21. Audit-only never requests named TEST
+
+# 20b. Explicit get_pooled_cohort prohibition test
+def test_20b_get_pooled_cohort_prohibited_during_test_release(tmp_path):
+    mock_adapter = create_synthetic_adapter()
+    mock_adapter.get_pooled_cohort = MagicMock(
+        side_effect=AssertionError("FATAL: get_pooled_cohort must never be called in D5.2!")
+    )
+
+    manager = NHISD5WeightedTestReleaseManager(
+        release_id="TEST_NO_GET_POOLED_COHORT",
+        output_base_dir=tmp_path / "test_out",
+        adapter=mock_adapter,
+        enforce_git_boundary=False,
+        enforce_tags=False,
+    )
+    res = manager.execute_release()
+    assert res["status"] == "COMPLETE"
+    mock_adapter.get_pooled_cohort.assert_not_called()
+
+
+# 20c. get_partition_cohort fails closed on forbidden roles
+def test_20c_get_partition_cohort_fails_closed_on_forbidden_roles():
+    mock_adapter = create_synthetic_adapter()
+    arm_spec = FROZEN_D5_TEST_ARMS["D5_ARM_001"]
+
+    for forbidden in ["val", "validation", "unknown", "holdout", "VAL", "Train_Val"]:
+        with pytest.raises(ValueError, match="strictly forbidden"):
+            get_partition_cohort(mock_adapter, forbidden, arm_spec)
+
+
+# 21. Audit-only never requests named TEST or validation
 def test_21_audit_only_never_requests_named_test():
     mock_adapter = MagicMock()
     manager = NHISD5WeightedTestReleaseManager(
@@ -447,6 +513,8 @@ def test_21_audit_only_never_requests_named_test():
     assert audit["test_partition_requested"] is False
     assert audit["test_cohort_materialized"] is False
     assert audit["test_evaluated"] is False
+    assert audit.get("validation_requested") is False
+    assert audit.get("validation_materialized") is False
     assert mock_adapter.get_partition.call_count == 0
     assert mock_adapter.get_pooled_cohort.call_count == 0
 
