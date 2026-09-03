@@ -1,0 +1,120 @@
+{
+  "gate": "D7 terminal mechanism",
+  "release_id": "NHIS_D7_TERMINAL_MECHANISM_V2_2e99f5c3",
+  "created_at": "2026-09-02T15:35:35.442629+00:00",
+  "execution_commit": "2e99f5c357faa1ea7e5525f877f0c8172bcea5e5",
+  "scientific_identity": "post-primary explanatory descriptive terminal-state mechanism audit",
+  "mandatory_disclosure": "D7 is an explanatory post-primary analysis conducted after the primary and temporal TEST results were observed. TEST-partition mechanism diagnostics are descriptive and are not interpreted as independent confirmatory evidence.",
+  "scientific_terminology": {
+    "temporal_repeated_cross_sectional": true,
+    "longitudinal": false,
+    "panel": false,
+    "causal": false
+  },
+  "hypotheses": {
+    "H1": "Irreversible feature drops/category merges may remove outcome-relevant distinctions and contribute to reduced predictive discrimination.",
+    "H2": "Invertible monotone numerical power transforms may preserve raw feature information while changing numerical spacing and the linear functional relationship available to the fitted logistic model.",
+    "H3": "Terminal FairBias scoring functions may exhibit reduced Y=1 versus Y=0 score separation and/or altered score location/spread relative to baseline.",
+    "H4": "Protected-attribute-specific downstream differences may correspond to systematic differences in transformation family, transformation severity, and terminal LR contribution structure."
+  },
+  "nmi_gate_effectively_nonbinding": true,
+  "nmi_gate_disclosure": "Under the frozen configuration, the retained NMI information-loss gate is effectively non-binding because its threshold is far above the ordinary fractional-loss range.",
+  "cohort_source_row_digests": {
+    "2022": {
+      "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+      "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+      "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+      "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+    },
+    "2023": {
+      "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+      "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+      "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+      "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+    },
+    "2024": {
+      "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+      "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+      "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+      "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+    }
+  },
+  "expected_cohort_source_row_digests": {
+    "2022": {
+      "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+      "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+      "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+      "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+    },
+    "2023": {
+      "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+      "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+      "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+      "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+    },
+    "2024": {
+      "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+      "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+      "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+      "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+    }
+  },
+  "observed_cohort_source_row_digests": {
+    "2022": {
+      "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+      "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+      "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+      "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+    },
+    "2023": {
+      "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+      "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+      "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+      "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+    },
+    "2024": {
+      "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+      "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+      "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+      "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+    }
+  },
+  "cohort_digest_matches": 12,
+  "cohort_digest_expected": 12,
+  "preprocessing_expected_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+  "preprocessing_observed_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+  "preprocessing_state_match": true,
+  "training_state_anchors": {
+    "D6_ARM_001": {
+      "changed_dict": "40511e6c0d55b0ffdcef534f6b0eb120a16cdfe24ca75bf135ce1ce803f85f79",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_LR": "3a260ed45d5232ff14d2b2070de2196d91380e0b7ea5005972436a28138f46df",
+      "FairBias_scaler": "1fc71b9805939e5627fcbe081c1b23f3fc14373c919cdbe6de557e188b26cfb6",
+      "FairBias_LR": "cdfe73f72d0046f0e0068d0047b1b6ef1d934b334d287e208690c176ce95764e"
+    },
+    "D6_ARM_002": {
+      "changed_dict": "4c0bbba5d40022d61119f5ef16db6aa46f0b40bc89132777a3e7b877e42bbe6e",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_LR": "adca7c506795db6a15d7293be0363e546c79f5c85523cebd20f979c2287ed2f8",
+      "FairBias_scaler": "c89d08e57c67bc1fbd9d5c70671d1eb71ca6b51798e7173d08413a69c1aac5dc",
+      "FairBias_LR": "6d03134ce077895b8ffb4914bd57f7d73b1b4c94ed09f99456e7cc266bab05c3"
+    },
+    "D6_ARM_003": {
+      "changed_dict": "95ce9da442e66adbd8e1d5e0deab32d831a7a171922f5d6a8cda21a43e9c16af",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_LR": "ba6914f12b8c1e653c161791199e13392597911de31d19ff2e42f50c26d3f58d",
+      "FairBias_scaler": "3fad8127699fa2da2b6fad79d883dc02f45ba1e6494ee896cdcbd93dcc3a3b95",
+      "FairBias_LR": "48c0dced8358bd123bd41aba265bf728eae7d2fa32aaa0005ecedc450859f6f5"
+    },
+    "D6_ARM_004": {
+      "changed_dict": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568",
+      "baseline_scaler": "f59d3f21087ae95c2accbc70e0edf9a5e055abe97e2a69d5279aa691688f07a1",
+      "baseline_LR": "d050dc2a3ba59b2ea1f1767342dbb468680175cc182e94d2143d0ea01563bc3d",
+      "FairBias_scaler": "42236586cddc6dd9bf36d46d3209ef40e830c03493a3f041bb429aedc5d4856c",
+      "FairBias_LR": "cb0e9a360d68b1705bc1b3b54d508afe80803648fdb22aafc468e245b6045bca"
+    }
+  },
+  "scoring_mode": "ZERO ESTIMATOR REFIT",
+  "scoring_reproduction_verified": true,
+  "scoring_reproduction_tolerance": 1e-12
+}

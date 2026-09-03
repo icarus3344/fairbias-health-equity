@@ -1,0 +1,59 @@
+{
+  "gate": "D7 terminal mechanism",
+  "release_id": "NHIS_D7_TERMINAL_MECHANISM_V2_2e99f5c3",
+  "tracked_artifact_count": 9,
+  "total_file_count": 11,
+  "artifacts": {
+    "provenance_summary.json": {
+      "sha256": "5c1937d4670629ffed0d5049115a25e8cd3d6947f31f3c9d6cf3deab0b508f24",
+      "size_bytes": 7555
+    },
+    "terminal_transformation_inventory.json": {
+      "sha256": "9a1370bb9f8fe36218404b42e962545a65a9f15ec277b267dc293a097b3b4f60",
+      "size_bytes": 7765
+    },
+    "macro_context.json": {
+      "sha256": "9a41f9858759cdf42753dccff04ac5ead73511212bb5ed6a7a93272544e79477",
+      "size_bytes": 21784
+    },
+    "family1_information_compression.csv": {
+      "sha256": "83204acac1e2f8a2f43b77b6166ccffa7251ab002076e43b0cef07fa5a8367eb",
+      "size_bytes": 139354
+    },
+    "family2_numeric_geometry.csv": {
+      "sha256": "9249403b6cdf93c365fa22187fdbf0c6289a7565ef7cb4af6f3f2acc2abd2547",
+      "size_bytes": 7118
+    },
+    "score_distribution_summary.csv": {
+      "sha256": "01d6943a86a9e773c1cf86d8b07fbeeb18f9dac21a8c26677e1ca3d212808689",
+      "size_bytes": 23745
+    },
+    "protected_group_score_summary.csv": {
+      "sha256": "287dcefb1a152008f569f349a0736b0c106b7cf8c9ff09dca925e68d5c444672",
+      "size_bytes": 55405
+    },
+    "feature_logit_contribution_summary.csv": {
+      "sha256": "bc02804aee4b40caefb6760c288ec3cf6c1648c9e15fb68fab7df8d3f05f7da9",
+      "size_bytes": 134419
+    },
+    "mechanism_arm_summary.json": {
+      "sha256": "fd725ce1036e1aa34ee71734ce39f548e0de8fd37741074b97c29d62e6ec92ff",
+      "size_bytes": 13981
+    }
+  },
+  "mandatory_disclosure": "D7 is an explanatory post-primary analysis conducted after the primary and temporal TEST results were observed. TEST-partition mechanism diagnostics are descriptive and are not interpreted as independent confirmatory evidence.",
+  "scientific_terminology": {
+    "temporal_repeated_cross_sectional": true,
+    "longitudinal": false,
+    "panel": false,
+    "causal": false
+  },
+  "hypotheses": {
+    "H1": "Irreversible feature drops/category merges may remove outcome-relevant distinctions and contribute to reduced predictive discrimination.",
+    "H2": "Invertible monotone numerical power transforms may preserve raw feature information while changing numerical spacing and the linear functional relationship available to the fitted logistic model.",
+    "H3": "Terminal FairBias scoring functions may exhibit reduced Y=1 versus Y=0 score separation and/or altered score location/spread relative to baseline.",
+    "H4": "Protected-attribute-specific downstream differences may correspond to systematic differences in transformation family, transformation severity, and terminal LR contribution structure."
+  },
+  "nmi_gate_effectively_nonbinding": true,
+  "nmi_gate_disclosure": "Under the frozen configuration, the retained NMI information-loss gate is effectively non-binding because its threshold is far above the ordinary fractional-loss range."
+}

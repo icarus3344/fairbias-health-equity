@@ -1,0 +1,511 @@
+{
+  "gate": "D7.1c",
+  "study": "D7 terminal mechanism audit",
+  "scientific_identity": "post-primary explanatory descriptive terminal-state mechanism audit",
+  "scientific_terminology": {
+    "temporal_repeated_cross_sectional": true,
+    "longitudinal": false,
+    "panel": false,
+    "causal": false
+  },
+  "post_primary": true,
+  "post_test": true,
+  "descriptive_mechanism_audit": true,
+  "execution_attempt_count": 2,
+  "attempt_history": {
+    "attempt_1": {
+      "release_id": "NHIS_D7_TERMINAL_MECHANISM_V1_ed5597f5",
+      "execution_head": "ed5597f5e67bf06caa6de134662f40ae53ac36b1",
+      "status": "FAILED",
+      "failure": "D7-specific cohort digest serialization mismatch",
+      "cohort_barrier": "0 / 12",
+      "score_reproduction": "NOT REACHED",
+      "mechanism_diagnostics": 0,
+      "rerun": false,
+      "preservation_note": "Permanently preserved in local run repository; failure occurred prior to scoring; produced zero mechanism diagnostics."
+    },
+    "attempt_2": {
+      "release_id": "NHIS_D7_TERMINAL_MECHANISM_V2_2e99f5c3",
+      "execution_head": "2e99f5c357faa1ea7e5525f877f0c8172bcea5e5",
+      "status": "COMPLETE",
+      "cohort_barrier": "12 / 12",
+      "score_reproduction": "16 / 16",
+      "mechanism_diagnostics": "COMPLETE",
+      "verification_verdict": "PASS"
+    }
+  },
+  "canonical_success_release": "NHIS_D7_TERMINAL_MECHANISM_V2_2e99f5c3",
+  "canonical_success_execution_sha": "2e99f5c357faa1ea7e5525f877f0c8172bcea5e5",
+  "source_manifest_sha256": "8f73d5af0bf94482ed7027398ff2555c172679f0c41f269b213f092fda2da237",
+  "canonical_source_directory": "runs/nhis_d7_terminal_mechanism/releases/NHIS_D7_TERMINAL_MECHANISM_V2_2e99f5c3",
+  "archival_destination_directory": "docs/releases/NHIS_D7_TERMINAL_MECHANISM_V2_2e99f5c3",
+  "canonical_file_hashes": {
+    "d7_terminal_mechanism_manifest.json": {
+      "sha256": "8f73d5af0bf94482ed7027398ff2555c172679f0c41f269b213f092fda2da237",
+      "size_bytes": 2967
+    },
+    "family1_information_compression.csv": {
+      "sha256": "83204acac1e2f8a2f43b77b6166ccffa7251ab002076e43b0cef07fa5a8367eb",
+      "size_bytes": 139354
+    },
+    "family2_numeric_geometry.csv": {
+      "sha256": "9249403b6cdf93c365fa22187fdbf0c6289a7565ef7cb4af6f3f2acc2abd2547",
+      "size_bytes": 7118
+    },
+    "feature_logit_contribution_summary.csv": {
+      "sha256": "bc02804aee4b40caefb6760c288ec3cf6c1648c9e15fb68fab7df8d3f05f7da9",
+      "size_bytes": 134419
+    },
+    "macro_context.json": {
+      "sha256": "9a41f9858759cdf42753dccff04ac5ead73511212bb5ed6a7a93272544e79477",
+      "size_bytes": 21784
+    },
+    "mechanism_arm_summary.json": {
+      "sha256": "fd725ce1036e1aa34ee71734ce39f548e0de8fd37741074b97c29d62e6ec92ff",
+      "size_bytes": 13981
+    },
+    "protected_group_score_summary.csv": {
+      "sha256": "287dcefb1a152008f569f349a0736b0c106b7cf8c9ff09dca925e68d5c444672",
+      "size_bytes": 55405
+    },
+    "provenance_summary.json": {
+      "sha256": "5c1937d4670629ffed0d5049115a25e8cd3d6947f31f3c9d6cf3deab0b508f24",
+      "size_bytes": 7555
+    },
+    "release_state.json": {
+      "sha256": "df62ac4b38fde5e6f46584db7c38fb9ee08598b24dadd4be697a02282b591412",
+      "size_bytes": 343
+    },
+    "score_distribution_summary.csv": {
+      "sha256": "01d6943a86a9e773c1cf86d8b07fbeeb18f9dac21a8c26677e1ca3d212808689",
+      "size_bytes": 23745
+    },
+    "terminal_transformation_inventory.json": {
+      "sha256": "9a1370bb9f8fe36218404b42e962545a65a9f15ec277b267dc293a097b3b4f60",
+      "size_bytes": 7765
+    }
+  },
+  "upstream_provenance": {
+    "prepared_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+    "preprocessing_provenance_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+    "d6_temporal_train_val": {
+      "release_id": "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609",
+      "manifest_sha256": "773d43b2d893232eb4cbba9dfcdcc639ecdc2fbc8efb2e353f7d2a68514159c4",
+      "tag_name": "nhis-d6-temporal-train-val-v1",
+      "tag_object": "e23941edf2085c84290868f69289d30af62b7e95",
+      "commit": "bdf154c541d365b216a732bc3a58415af41cdcc7"
+    },
+    "d6_temporal_test": {
+      "release_id": "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7",
+      "manifest_sha256": "2a134eb1c23421fd7e50f8c255f2d55395ecfda8149700c78f76dac3da553fd5",
+      "tag_name": "nhis-d6-temporal-test-v1",
+      "tag_object": "b3aaae6559028e83aea9c329d585c1607e87364c",
+      "commit": "e24685cbde26497d0209f26fcf1d82b131dbe726"
+    }
+  },
+  "cohort_digests": {
+    "expected": {
+      "2022": {
+        "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+        "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+        "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+        "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+      },
+      "2023": {
+        "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+        "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+        "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+        "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+      },
+      "2024": {
+        "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+        "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+        "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+        "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+      }
+    },
+    "observed": {
+      "2022": {
+        "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+        "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+        "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+        "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+      },
+      "2023": {
+        "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+        "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+        "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+        "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+      },
+      "2024": {
+        "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+        "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+        "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+        "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+      }
+    },
+    "matches_count": 12,
+    "expected_count": 12,
+    "status": "PASS (12/12 match)"
+  },
+  "training_state_anchors": {
+    "D6_ARM_001": {
+      "changed_dict": "40511e6c0d55b0ffdcef534f6b0eb120a16cdfe24ca75bf135ce1ce803f85f79",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_LR": "3a260ed45d5232ff14d2b2070de2196d91380e0b7ea5005972436a28138f46df",
+      "FairBias_scaler": "1fc71b9805939e5627fcbe081c1b23f3fc14373c919cdbe6de557e188b26cfb6",
+      "FairBias_LR": "cdfe73f72d0046f0e0068d0047b1b6ef1d934b334d287e208690c176ce95764e"
+    },
+    "D6_ARM_002": {
+      "changed_dict": "4c0bbba5d40022d61119f5ef16db6aa46f0b40bc89132777a3e7b877e42bbe6e",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_LR": "adca7c506795db6a15d7293be0363e546c79f5c85523cebd20f979c2287ed2f8",
+      "FairBias_scaler": "c89d08e57c67bc1fbd9d5c70671d1eb71ca6b51798e7173d08413a69c1aac5dc",
+      "FairBias_LR": "6d03134ce077895b8ffb4914bd57f7d73b1b4c94ed09f99456e7cc266bab05c3"
+    },
+    "D6_ARM_003": {
+      "changed_dict": "95ce9da442e66adbd8e1d5e0deab32d831a7a171922f5d6a8cda21a43e9c16af",
+      "baseline_scaler": "75bfcaae59a34c0f43127cb73473730971fb3e37c660ebc298044a286e50f0ad",
+      "baseline_LR": "ba6914f12b8c1e653c161791199e13392597911de31d19ff2e42f50c26d3f58d",
+      "FairBias_scaler": "3fad8127699fa2da2b6fad79d883dc02f45ba1e6494ee896cdcbd93dcc3a3b95",
+      "FairBias_LR": "48c0dced8358bd123bd41aba265bf728eae7d2fa32aaa0005ecedc450859f6f5"
+    },
+    "D6_ARM_004": {
+      "changed_dict": "ff0a2fb81596b598b13331803b03a8a1572b88c1a96d53d352807cab93eeb568",
+      "baseline_scaler": "f59d3f21087ae95c2accbc70e0edf9a5e055abe97e2a69d5279aa691688f07a1",
+      "baseline_LR": "d050dc2a3ba59b2ea1f1767342dbb468680175cc182e94d2143d0ea01563bc3d",
+      "FairBias_scaler": "42236586cddc6dd9bf36d46d3209ef40e830c03493a3f041bb429aedc5d4856c",
+      "FairBias_LR": "cb0e9a360d68b1705bc1b3b54d508afe80803648fdb22aafc468e245b6045bca"
+    }
+  },
+  "preprocessing_verification": {
+    "expected_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+    "observed_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+    "match": true
+  },
+  "scoring_reproduction": {
+    "records": [
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_001",
+        "model": "baseline",
+        "expected_auroc": 0.7791293076210748,
+        "observed_auroc": 0.7791293076210748,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.2007556144414719,
+        "observed_auprc": 0.2007556144414719,
+        "diff_auprc": 0.0,
+        "expected_count_predicted_positive": 111,
+        "observed_count_predicted_positive": 111,
+        "expected_selection_rate": 0.003791372066810124,
+        "observed_selection_rate": 0.0037913720668101,
+        "diff_selection_rate": 2.42861286636753e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_001",
+        "model": "fairbias",
+        "expected_auroc": 0.7050300381246706,
+        "observed_auroc": 0.7050300381246706,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.14386587848089485,
+        "observed_auprc": 0.1438658784808948,
+        "diff_auprc": 5.551115123125783e-17,
+        "expected_count_predicted_positive": 1,
+        "observed_count_predicted_positive": 1,
+        "expected_selection_rate": 3.4156505106397514e-05,
+        "observed_selection_rate": 3.4156505106397514e-05,
+        "diff_selection_rate": 0.0,
+        "status": "PASS"
+      },
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_002",
+        "model": "baseline",
+        "expected_auroc": 0.7791136828055484,
+        "observed_auroc": 0.7791136828055484,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.20077642832585907,
+        "observed_auprc": 0.200776428325859,
+        "diff_auprc": 5.551115123125783e-17,
+        "expected_count_predicted_positive": 109,
+        "observed_count_predicted_positive": 109,
+        "expected_selection_rate": 0.003722296212819725,
+        "observed_selection_rate": 0.0037222962128197,
+        "diff_selection_rate": 2.47198095326695e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_002",
+        "model": "fairbias",
+        "expected_auroc": 0.7618132590305886,
+        "observed_auroc": 0.7618132590305886,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.17916408214505203,
+        "observed_auprc": 0.179164082145052,
+        "diff_auprc": 2.7755575615628914e-17,
+        "expected_count_predicted_positive": 23,
+        "observed_count_predicted_positive": 23,
+        "expected_selection_rate": 0.0007854386504115015,
+        "observed_selection_rate": 0.0007854386504115,
+        "diff_selection_rate": 1.5178830414797062e-18,
+        "status": "PASS"
+      },
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_003",
+        "model": "baseline",
+        "expected_auroc": 0.7789055681211667,
+        "observed_auroc": 0.7789055681211667,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.20069572937732338,
+        "observed_auprc": 0.2006957293773233,
+        "diff_auprc": 8.326672684688674e-17,
+        "expected_count_predicted_positive": 110,
+        "observed_count_predicted_positive": 110,
+        "expected_selection_rate": 0.003756574004507889,
+        "observed_selection_rate": 0.0037565740045078,
+        "diff_selection_rate": 8.890457814381136e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_003",
+        "model": "fairbias",
+        "expected_auroc": 0.768286949821869,
+        "observed_auroc": 0.768286949821869,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.19083870471607547,
+        "observed_auprc": 0.1908387047160754,
+        "diff_auprc": 8.326672684688674e-17,
+        "expected_count_predicted_positive": 92,
+        "observed_count_predicted_positive": 92,
+        "expected_selection_rate": 0.003141861894679325,
+        "observed_selection_rate": 0.0031418618946793,
+        "diff_selection_rate": 2.5153490401663703e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_004",
+        "model": "baseline",
+        "expected_auroc": 0.7625650951766704,
+        "observed_auroc": 0.7625650951766704,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.18843906165955077,
+        "observed_auprc": 0.1884390616595507,
+        "diff_auprc": 5.551115123125783e-17,
+        "expected_count_predicted_positive": 95,
+        "observed_count_predicted_positive": 95,
+        "expected_selection_rate": 0.003244313912984086,
+        "observed_selection_rate": 0.003244313912984,
+        "diff_selection_rate": 8.586881206085195e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2023,
+        "arm_id": "D6_ARM_004",
+        "model": "fairbias",
+        "expected_auroc": 0.7105834823020472,
+        "observed_auroc": 0.7105834823020472,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.16095078945686564,
+        "observed_auprc": 0.1609507894568656,
+        "diff_auprc": 2.7755575615628914e-17,
+        "expected_count_predicted_positive": 67,
+        "observed_count_predicted_positive": 67,
+        "expected_selection_rate": 0.0022880950754729868,
+        "observed_selection_rate": 0.0022880950754729,
+        "diff_selection_rate": 8.673617379884035e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_001",
+        "model": "baseline",
+        "expected_auroc": 0.7516813909908746,
+        "observed_auroc": 0.7516813909908746,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.21530154489634734,
+        "observed_auprc": 0.2153015448963473,
+        "diff_auprc": 2.7755575615628914e-17,
+        "expected_count_predicted_positive": 130,
+        "observed_count_predicted_positive": 130,
+        "expected_selection_rate": 0.00401854714064915,
+        "observed_selection_rate": 0.0040185471406491,
+        "diff_selection_rate": 5.0306980803327406e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_001",
+        "model": "fairbias",
+        "expected_auroc": 0.663616305761805,
+        "observed_auroc": 0.663616305761805,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.1408667675847245,
+        "observed_auprc": 0.1408667675847245,
+        "diff_auprc": 0.0,
+        "expected_count_predicted_positive": 2,
+        "observed_count_predicted_positive": 2,
+        "expected_selection_rate": 6.182380216383307e-05,
+        "observed_selection_rate": 6.182380216383307e-05,
+        "diff_selection_rate": 0.0,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_002",
+        "model": "baseline",
+        "expected_auroc": 0.7513692505002743,
+        "observed_auroc": 0.7513692505002743,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.21480999255828503,
+        "observed_auprc": 0.214809992558285,
+        "diff_auprc": 2.7755575615628914e-17,
+        "expected_count_predicted_positive": 127,
+        "observed_count_predicted_positive": 127,
+        "expected_selection_rate": 0.00392520475969711,
+        "observed_selection_rate": 0.0039252047596971,
+        "diff_selection_rate": 9.540979117872439e-18,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_002",
+        "model": "fairbias",
+        "expected_auroc": 0.732767917846384,
+        "observed_auroc": 0.732767917846384,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.18007305052849834,
+        "observed_auprc": 0.1800730505284983,
+        "diff_auprc": 2.7755575615628914e-17,
+        "expected_count_predicted_positive": 43,
+        "observed_count_predicted_positive": 43,
+        "expected_selection_rate": 0.001329006335960439,
+        "observed_selection_rate": 0.0013290063359604,
+        "diff_selection_rate": 3.881443777498106e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_003",
+        "model": "baseline",
+        "expected_auroc": 0.7512725309249968,
+        "observed_auroc": 0.7512725309249968,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.21433313492402795,
+        "observed_auprc": 0.2143331349240279,
+        "diff_auprc": 5.551115123125783e-17,
+        "expected_count_predicted_positive": 131,
+        "observed_count_predicted_positive": 131,
+        "expected_selection_rate": 0.004048958397725165,
+        "observed_selection_rate": 0.0040489583977251,
+        "diff_selection_rate": 6.505213034913027e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_003",
+        "model": "fairbias",
+        "expected_auroc": 0.7343827887279166,
+        "observed_auroc": 0.7343827887279166,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.2027401500568511,
+        "observed_auprc": 0.2027401500568511,
+        "diff_auprc": 0.0,
+        "expected_count_predicted_positive": 104,
+        "observed_count_predicted_positive": 104,
+        "expected_selection_rate": 0.003214440254682574,
+        "observed_selection_rate": 0.0032144402546825,
+        "diff_selection_rate": 7.37257477290143e-17,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_004",
+        "model": "baseline",
+        "expected_auroc": 0.7352557123378971,
+        "observed_auroc": 0.7352557123378971,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.1989613824119812,
+        "observed_auprc": 0.1989613824119812,
+        "diff_auprc": 0.0,
+        "expected_count_predicted_positive": 88,
+        "observed_count_predicted_positive": 88,
+        "expected_selection_rate": 0.0027199109847314087,
+        "observed_selection_rate": 0.0027199109847314,
+        "diff_selection_rate": 8.673617379884035e-18,
+        "status": "PASS"
+      },
+      {
+        "year": 2024,
+        "arm_id": "D6_ARM_004",
+        "model": "fairbias",
+        "expected_auroc": 0.6669734185222992,
+        "observed_auroc": 0.6669734185222992,
+        "diff_auroc": 0.0,
+        "expected_auprc": 0.1592473309854776,
+        "observed_auprc": 0.1592473309854776,
+        "diff_auprc": 0.0,
+        "expected_count_predicted_positive": 67,
+        "observed_count_predicted_positive": 67,
+        "expected_selection_rate": 0.0020708413179205045,
+        "observed_selection_rate": 0.0020708413179205,
+        "diff_selection_rate": 4.336808689942018e-18,
+        "status": "PASS"
+      }
+    ],
+    "count_evaluated": 16,
+    "count_passed": 16,
+    "status": "PASS (16/16 evaluations)",
+    "tolerance": 1e-12
+  },
+  "numerical_reconciliation": {
+    "unexpected_substantive_nan_count": 0,
+    "unexpected_substantive_inf_count": 0,
+    "structured_nan_records": {
+      "feature_logit_contribution_summary.csv": "12 structured NaNs corresponding to features dropped from FairBias representation (agep_a in ARM 1 and 4, region and pcnt18uptc in ARM 2 across 3 survey years); absence_equivalent_zero_contribution is true and no ordinary coefficient exists.",
+      "family1_information_compression.csv": "schema-partition NaNs between feature_summary records (81 rows, category details unpopulated) and category_state records (876 rows, feature-level NMI unpopulated)."
+    }
+  },
+  "pi_reporting_corrections": {
+    "correction_a_no_causal_transformation_attribution": "Terminal transformation and fitted-contribution changes are interpreted as descriptive associations. D7.1 does not identify individual transformation steps as causal determinants of downstream utility loss.",
+    "correction_b_power_transform_information_wording": "Accepted positive-power transforms are monotone and bijective over their non-overflow observed support and therefore do not intrinsically discard the original ordering/distinctions, while they may substantially alter numerical spacing and the geometry presented to the downstream linear model.",
+    "correction_c_year_specific_nmi": "Terminal transformation identities were learned on frozen 2022 training data and then applied unchanged across years. NMI, category prevalence, score-distribution, and contribution diagnostics are year-specific. PI examples citing 2024 NMI or category prevalence must be labeled explicitly as 2024 descriptive diagnostics.",
+    "canonical_release_modified": false,
+    "scientific_results_modified": false,
+    "reporting_interpretation_only": true
+  },
+  "pi_mechanism_interpretation": {
+    "H1": {
+      "status": "DESCRIPTIVELY_SUPPORTED",
+      "strongest_evidence": "SEX and DISAB-exclude",
+      "qualification": "individual transformations are not causally isolated"
+    },
+    "H2": {
+      "status": "DESCRIPTIVELY_SUPPORTED",
+      "strongest_evidence": "HISP age power-9 terminal reparameterization and altered fitted contribution structure",
+      "qualification": "no causal stepwise attribution"
+    },
+    "H3": {
+      "status": "DIRECTLY_SUPPORTED",
+      "evidence": "observed reduction in Y0/Y1 score separation, including KS reduction in SEX and DISAB-exclude"
+    },
+    "H4": {
+      "status": "DESCRIPTIVELY_SUPPORTED",
+      "evidence": "large cross-arm differences in transformation family/severity, contribution structure, score separation, and downstream utility"
+    }
+  },
+  "important_sex_interpretation": "The SEX failure is not well characterized as a uniform downward score shift. In 2024 the overall FairBias score mean is nearly unchanged and the median increases, while the Y=0 median rises, the Y=1 median falls, KS separation decreases substantially, and the number of scores above 0.5 falls from 130 to 2. The descriptive signature is therefore better characterized as class-separation / upper-tail compression than simple global score suppression.",
+  "execution_constraints_maintained": {
+    "no_refit": true,
+    "no_fairbias_relearning": true,
+    "canonical_threshold": 0.5,
+    "no_threshold_tuning": true,
+    "no_respondent_level_persistence": true,
+    "d7_2_not_started": true
+  }
+}

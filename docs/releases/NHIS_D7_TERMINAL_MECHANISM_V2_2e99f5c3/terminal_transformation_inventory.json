@@ -1,0 +1,448 @@
+{
+  "D6_ARM_001": {
+    "arm_id": "D6_ARM_001",
+    "protected_attribute": "SEX_A",
+    "disability_arm": "full_feature",
+    "changed_dict": {
+      "agep_a": "dropped",
+      "asev_a": {
+        "1": 2
+      },
+      "diff_a": {
+        "2": 1
+      },
+      "empwrkft1_a": {
+        "-1": 1,
+        "2": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hearingdf_a": {
+        "1": 2
+      },
+      "notcov_a": {
+        "2": 1
+      },
+      "pcnt18uptc": {
+        "power": 5.0
+      },
+      "pcntlt18tc": {
+        "power": 9.0
+      },
+      "usualpl_a": {
+        "1": 2
+      }
+    },
+    "drops": [
+      "agep_a"
+    ],
+    "powers": {
+      "pcnt18uptc": 5.0,
+      "pcntlt18tc": 9.0
+    },
+    "merges": {
+      "asev_a": {
+        "1": 2
+      },
+      "diff_a": {
+        "2": 1
+      },
+      "empwrkft1_a": {
+        "-1": 1,
+        "2": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hearingdf_a": {
+        "1": 2
+      },
+      "notcov_a": {
+        "2": 1
+      },
+      "usualpl_a": {
+        "1": 2
+      }
+    },
+    "unchanged_features": [
+      "educp_a",
+      "region",
+      "ratcat_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "visiondf_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a"
+    ],
+    "baseline_feature_order": [
+      "agep_a",
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ],
+    "fairbias_feature_order": [
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ]
+  },
+  "D6_ARM_002": {
+    "arm_id": "D6_ARM_002",
+    "protected_attribute": "HISPALLP_A",
+    "disability_arm": "full_feature",
+    "changed_dict": {
+      "agep_a": {
+        "power": 9.0
+      },
+      "asev_a": {
+        "1": 2
+      },
+      "empwrkft1_a": {
+        "-1": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hypev_a": {
+        "2": 1
+      },
+      "notcov_a": {
+        "1": 2
+      },
+      "pcnt18uptc": "dropped",
+      "pcntlt18tc": {
+        "power": 3.0
+      },
+      "region": "dropped"
+    },
+    "drops": [
+      "pcnt18uptc",
+      "region"
+    ],
+    "powers": {
+      "agep_a": 9.0,
+      "pcntlt18tc": 3.0
+    },
+    "merges": {
+      "asev_a": {
+        "1": 2
+      },
+      "empwrkft1_a": {
+        "-1": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hypev_a": {
+        "2": 1
+      },
+      "notcov_a": {
+        "1": 2
+      }
+    },
+    "unchanged_features": [
+      "educp_a",
+      "ratcat_a",
+      "phstat_a",
+      "chlev_a",
+      "dibev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ],
+    "baseline_feature_order": [
+      "agep_a",
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ],
+    "fairbias_feature_order": [
+      "agep_a",
+      "educp_a",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ]
+  },
+  "D6_ARM_003": {
+    "arm_id": "D6_ARM_003",
+    "protected_attribute": "DISAB3_A",
+    "disability_arm": "full_feature",
+    "changed_dict": {
+      "agep_a": {
+        "power": 0.14285714285714285
+      },
+      "cogmemdff_a": {
+        "3": 1
+      },
+      "diff_a": {
+        "3": 1
+      },
+      "empwrkft1_a": {
+        "-1": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hypev_a": {
+        "1": 2
+      }
+    },
+    "drops": [],
+    "powers": {
+      "agep_a": 0.14285714285714285
+    },
+    "merges": {
+      "cogmemdff_a": {
+        "3": 1
+      },
+      "diff_a": {
+        "3": 1
+      },
+      "empwrkft1_a": {
+        "-1": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hypev_a": {
+        "1": 2
+      }
+    },
+    "unchanged_features": [
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "notcov_a",
+      "phstat_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "usualpl_a"
+    ],
+    "baseline_feature_order": [
+      "agep_a",
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ],
+    "fairbias_feature_order": [
+      "agep_a",
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "visiondf_a",
+      "hearingdf_a",
+      "diff_a",
+      "comdiff_a",
+      "uppslfcr_a",
+      "cogmemdff_a",
+      "usualpl_a"
+    ]
+  },
+  "D6_ARM_004": {
+    "arm_id": "D6_ARM_004",
+    "protected_attribute": "DISAB3_A",
+    "disability_arm": "exclude_disability_components",
+    "changed_dict": {
+      "agep_a": "dropped",
+      "chlev_a": {
+        "1": 2
+      },
+      "dibev_a": {
+        "1": 2
+      },
+      "empwrkft1_a": {
+        "-1": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hypev_a": {
+        "1": 2
+      },
+      "pcntlt18tc": {
+        "power": 3.0
+      },
+      "phstat_a": {
+        "4": 2,
+        "5": 1
+      }
+    },
+    "drops": [
+      "agep_a"
+    ],
+    "powers": {
+      "pcntlt18tc": 3.0
+    },
+    "merges": {
+      "chlev_a": {
+        "1": 2
+      },
+      "dibev_a": {
+        "1": 2
+      },
+      "empwrkft1_a": {
+        "-1": 1
+      },
+      "empwrklsw1_a": {
+        "2": 1
+      },
+      "hypev_a": {
+        "1": 2
+      },
+      "phstat_a": {
+        "4": 2,
+        "5": 1
+      }
+    },
+    "unchanged_features": [
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "ratcat_a",
+      "notcov_a",
+      "asev_a",
+      "usualpl_a"
+    ],
+    "baseline_feature_order": [
+      "agep_a",
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "usualpl_a"
+    ],
+    "fairbias_feature_order": [
+      "educp_a",
+      "region",
+      "pcnt18uptc",
+      "pcntlt18tc",
+      "ratcat_a",
+      "empwrklsw1_a",
+      "empwrkft1_a",
+      "notcov_a",
+      "phstat_a",
+      "hypev_a",
+      "chlev_a",
+      "dibev_a",
+      "asev_a",
+      "usualpl_a"
+    ]
+  }
+}
