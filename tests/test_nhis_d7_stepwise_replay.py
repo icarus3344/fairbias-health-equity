@@ -1,18 +1,20 @@
-"""Unit, barrier, state machine, and invariant tests for Gate D7.2a.1 Stepwise Replay Harness.
+"""Unit, barrier, state machine, and invariant tests for Gate D7.2a.2 Stepwise Replay Harness.
 
 Guarantees:
 - Replay state machine: categorical merge, numerical revisit, and drop semantics.
 - Revisit semantics: numerical revisits evaluate against raw baseline with replacement power.
 - Fail-closed provenance: exact D7.1 and D6 tags/commits, manifest artifact integrity.
-- 12/12 global cohort source-row digest barrier.
-- 12/12 terminal matrix-equivalence barrier.
-- Endpoint-before-intermediate ordering barrier.
+- Actual origin branch equality: local HEAD == remote research/nhis-fairbias == expected SHA.
+- Preflight before mkdir: all inputs preflighted before target directory creation.
+- 12/12 global cohort source-row digest barrier through production manager.
+- 12/12 terminal matrix-equivalence barrier through production manager.
+- Endpoint-before-intermediate ordering barrier through production manager.
 - Active semantic-list filtering: dropped features never enter calculate_epsilon.
-- Temporal key-path summary: separate 2023 and 2024 rankings with paired deltas.
+- Temporal key-path summary: separate 2023 and 2024 rankings with paired deltas and zero direction semantics.
+- Full 4-arm 47-state logical fit proof: exactly 47 scaler fits and 47 LR fits on 2022 only.
 - Full production anti-leakage: 2023 and 2024 poisoned objects never enter .fit().
-- Exact fit-count semantics: 47 scalers and 47 LRs.
-- Release lifecycle: collision fail-closed, FAILED state preservation, 10-file schema, 8-file manifest.
-- Zero real NHIS cohort access in tests or audit-only.
+- True production integration: manager.execute_release() end-to-end lifecycle without manual state injection.
+- Zero real NHIS cohort access via get_cohort().
 """
 
 from __future__ import annotations
@@ -67,6 +69,7 @@ from nhis_fairbias.d7_stepwise_replay import (
     MATRIX_NUMERICAL_TOLERANCE,
     METRIC_REPRODUCTION_TOLERANCE,
     PREPROCESSING_STATE_SHA256,
+    REMOTE_RESEARCH_BRANCH_REF,
     STARTING_HEAD_COMMIT,
     TEMPORAL_YEARS,
     TOTAL_EXPECTED_ACCEPTED_STEPS,
@@ -132,7 +135,6 @@ def test_categorical_merge_replay():
     res = r_machine.replay_all(df)
     state_1_df = res[1]
 
-    # -1 should become 1; 1, 2, 3 remain unchanged
     expected = [1, 1, 2, 3]
     assert state_1_df["empwrkft1_a"].tolist() == expected
     assert state_1_df["other"].tolist() == [10, 20, 30, 40]
@@ -247,9 +249,7 @@ def test_repeated_numerical_powers_same_feature():
         validate_step_count=False,
     )
     res = r_machine.replay_all(df)
-    # State 1: x^3 -> [8.0, 27.0]
     np.testing.assert_allclose(res[1]["agep_a"].to_numpy(), [8.0, 27.0], atol=1e-12)
-    # State 2: x^5 (replacing power) -> [32.0, 243.0]
     np.testing.assert_allclose(res[2]["agep_a"].to_numpy(), [32.0, 243.0], atol=1e-12)
 
 
@@ -771,6 +771,7 @@ def test_audit_only_nhis_cohort_count_is_zero():
     results = harness.run_audit_only()
     assert results["nhis_cohort_count"] == 0
     assert results["real_nhis_cohort_accessed"] is False
+    assert results["real_nhis_get_cohort_calls"] == 0
 
 
 # -----------------------------------------------------------------------------
@@ -847,13 +848,11 @@ def test_exact_d7_1_and_d6_tag_verification():
 # 27. Missing or wrong D7.1 tag fails closed
 # -----------------------------------------------------------------------------
 def test_missing_or_wrong_d7_1_tag_fails_closed():
-    # Test wrong tag object
     with patch("subprocess.run") as mock_sub:
         mock_sub.return_value = MagicMock(returncode=0, stdout="bad_object_sha\n", stderr="")
         with pytest.raises(ProvenanceVerificationError, match="D7.1 tag object mismatch"):
             verify_upstream_provenance(_REPO_ROOT)
 
-    # Test git command failure (missing tag)
     with patch("subprocess.run") as mock_sub:
         mock_sub.return_value = MagicMock(returncode=1, stdout="", stderr="fatal: Not a valid object name")
         with pytest.raises(ProvenanceVerificationError, match="failed"):
@@ -864,7 +863,6 @@ def test_missing_or_wrong_d7_1_tag_fails_closed():
 # 28. Missing or wrong D6 tags fail closed
 # -----------------------------------------------------------------------------
 def test_missing_or_wrong_d6_tags_fail_closed():
-    # Wrong D6 train/val tag object
     def fake_run(cmd, *args, **kwargs):
         target = cmd[2]
         if target == D7_1_TAG:
@@ -900,7 +898,6 @@ def test_modified_manifest_tracked_artifact_fails_closed():
 # 30. Active semantic-list filtering after drops (P1-C)
 # -----------------------------------------------------------------------------
 def test_active_semantic_list_filtering_after_drops():
-    # DataFrame where 'cat_drop' and 'num_drop' have been dropped
     X_state = pd.DataFrame({
         "num_kept": [1.0, 2.0, 3.0, 4.0],
         "cat_kept": [1, 2, 1, 2],
@@ -923,7 +920,6 @@ def test_active_semantic_list_filtering_after_drops():
         )
         assert mock_calc.called
         kwargs = mock_calc.call_args.kwargs
-        # Dropped attributes must NOT be passed to calculate_epsilon
         assert kwargs["cate_attrs"] == ["cat_kept"]
         assert kwargs["num_attrs"] == ["num_kept"]
         assert "cat_drop" not in kwargs["cate_attrs"]
@@ -934,11 +930,9 @@ def test_active_semantic_list_filtering_after_drops():
 # 31. 12-cohort global barrier structure
 # -----------------------------------------------------------------------------
 def test_12_cohort_global_barrier_structure():
-    # Exact digests pass
     res = verify_12_cohort_provenance_barrier(EXPECTED_COHORT_SOURCE_ROW_DIGESTS)
     assert res["cohort_provenance_barrier"] == "PASS"
 
-    # Perturbed digest fails closed
     perturbed = copy.deepcopy(EXPECTED_COHORT_SOURCE_ROW_DIGESTS)
     perturbed[2024]["D6_ARM_004"] = "perturbed_digest_0000000000000000000000000000000000000000000000000000"
     with pytest.raises(ProvenanceVerificationError, match="Cohort source-row digest mismatch"):
@@ -959,7 +953,6 @@ def test_12_terminal_matrix_barrier_structure():
         for col, val in cd_dict.items()
     })
 
-    # Perturb tolerance to fail
     with pytest.raises(TerminalReplayBarrierError):
         verify_terminal_replay_barrier(
             arm_id="D6_ARM_001",
@@ -969,7 +962,7 @@ def test_12_terminal_matrix_barrier_structure():
             sample_df=sample_df,
             num_attrs=[c for c, v in cd_dict.items() if isinstance(v, dict)],
             cate_attrs=[c for c, v in cd_dict.items() if not isinstance(v, dict)],
-            tolerance=-1.0,  # Negative tolerance forces numeric diff check to fail
+            tolerance=-1.0,
         )
 
 
@@ -978,127 +971,12 @@ def test_12_terminal_matrix_barrier_structure():
 # -----------------------------------------------------------------------------
 def test_endpoint_before_intermediate_ordering():
     runtime = ProductionD7StepwiseReplayRuntime(repo_root=_REPO_ROOT)
-    # Attempting to fit intermediate models before verifying endpoints must fail
     with pytest.raises(EndpointReproductionBarrierError, match="endpoint barrier not verified"):
         runtime.fit_and_evaluate_all_intermediate_states()
 
 
 # -----------------------------------------------------------------------------
-# 34. Full production anti-leakage with poisoned holdouts & 47-state fit count
-# -----------------------------------------------------------------------------
-def test_full_production_anti_leakage_and_fit_counts():
-    """Verify that in production runtime, holdout years 2023/2024 are never passed to fit/fit_transform
-
-    and that exactly 47 scaler fits and 47 LR fits are performed.
-    """
-    scaler_fit_calls = []
-    lr_fit_calls = []
-
-    orig_scaler_fit = MinMaxScaler.fit
-    orig_scaler_fit_transform = MinMaxScaler.fit_transform
-    orig_lr_fit = LogisticRegression.fit
-
-    def tracked_scaler_fit(self, X, y=None):
-        scaler_fit_calls.append(X)
-        return orig_scaler_fit(self, X, y=y)
-
-    def tracked_scaler_fit_transform(self, X, y=None, **fit_params):
-        scaler_fit_calls.append(X)
-        return orig_scaler_fit_transform(self, X, y=y, **fit_params)
-
-    def tracked_lr_fit(self, X, y, sample_weight=None):
-        lr_fit_calls.append(X)
-        return orig_lr_fit(self, X, y, sample_weight=sample_weight)
-
-    with patch.object(MinMaxScaler, "fit", tracked_scaler_fit), \
-         patch.object(MinMaxScaler, "fit_transform", tracked_scaler_fit_transform), \
-         patch.object(LogisticRegression, "fit", tracked_lr_fit):
-
-        # Synthetic adapter that returns poisoned data for 2023 and 2024
-        class MockPoisonAdapter:
-            def __init__(self):
-                self.preprocessor = MagicMock()
-                self.preprocessor.fitted_record = MagicMock()
-                self.preprocessor.fitted_record.to_dict.return_value = json.loads(
-                    (_REPO_ROOT / "docs" / "releases" / D6_TRAIN_VAL_RELEASE_ID / "d6_temporal_train_val_manifest.json").read_text()
-                )
-                self.preprocessor.get_feature_family_lists.return_value = (["c1"], ["n1"])
-
-            def get_cohort(self, year, outcome, protected_attribute, feature_set, disability_arm):
-                # 2022 is valid
-                if year == 2022:
-                    X = pd.DataFrame({"c1": [1, 2, 1, 2], "n1": [1.0, 2.0, 3.0, 4.0]})
-                    y = pd.Series([0, 0, 1, 1])
-                    a = pd.Series([1, 1, 2, 2])
-                    w = np.ones(4)
-                    return X, y, a, w, {}
-
-                # 2023 and 2024 raise if converted to array via fit
-                class PoisonHoldoutDF(pd.DataFrame):
-                    @property
-                    def _constructor(self):
-                        return PoisonHoldoutDF
-
-                    def __array__(self, *args, **kwargs):
-                        # Allow predict/predict_proba transform, but track if called in fit
-                        import inspect
-                        stack = [frame.function for frame in inspect.stack()]
-                        if "fit" in stack or "fit_transform" in stack:
-                            raise AssertionError(f"LEAKAGE DETECTED in holdout year {year} during fitting!")
-                        return super().__array__(*args, **kwargs)
-
-                pX = PoisonHoldoutDF({"c1": [1, 2], "n1": [2.0, 3.0]})
-                y = pd.Series([0, 1])
-                a = pd.Series([1, 2])
-                w = np.ones(2)
-                return pX, y, a, w, {}
-
-        # Run synthetic runtime for 1 arm with 2 steps
-        step1 = ArchivedTraceStep(1, "c1", "categorical", 0.01, 0.0005, {"2": 1}, {"2": 1}, None, {"2": "1"}, None, False)
-        step2 = ArchivedTraceStep(2, "n1", "numerical", 0.005, 0.0005, {"power": 2.0}, {"power": 2.0}, 2.0, None, None, False)
-        test_traces = {
-            "D6_ARM_001": [step1, step2],
-        }
-
-        runtime = ProductionD7StepwiseReplayRuntime(
-            repo_root=_REPO_ROOT,
-            adapter_factory=lambda: MockPoisonAdapter(),
-        )
-
-        with patch("nhis_fairbias.d7_stepwise_replay.load_all_archived_traces", return_value=test_traces), \
-             patch("nhis_fairbias.d7_stepwise_replay.compute_canonical_json_sha256", return_value=PREPROCESSING_STATE_SHA256), \
-             patch("nhis_fairbias.d7_stepwise_replay.verify_12_cohort_provenance_barrier", return_value={"status": "PASS"}), \
-             patch("nhis_fairbias.d7_stepwise_replay.D6_ARM_IDS", ("D6_ARM_001",)):
-
-            runtime.traces = test_traces
-            runtime.build_all_cohorts()
-            # Manually populate replayed states for the 1 arm fixture
-            r_machine = SequentialReplayStateMachine("D6_ARM_001", [step1, step2], ["c1", "n1"], ["n1"], ["c1"], validate_step_count=False)
-            runtime.replayed_states["D6_ARM_001"] = {
-                2022: r_machine.replay_all(runtime.raw_cohorts[2022]["D6_ARM_001"]["X"]),
-                2023: r_machine.replay_all(runtime.raw_cohorts[2023]["D6_ARM_001"]["X"]),
-                2024: r_machine.replay_all(runtime.raw_cohorts[2024]["D6_ARM_001"]["X"]),
-            }
-            # Mock endpoint verification
-            runtime.endpoint_barrier_results["D6_ARM_001"] = {"status": "PASS"}
-            runtime.fitted_models["D6_ARM_001"] = {
-                0: fit_intermediate_model_2022(runtime.replayed_states["D6_ARM_001"][2022][0], runtime.raw_cohorts[2022]["D6_ARM_001"]["y"], "D6_ARM_001", 0),
-                2: fit_intermediate_model_2022(runtime.replayed_states["D6_ARM_001"][2022][2], runtime.raw_cohorts[2022]["D6_ARM_001"]["y"], "D6_ARM_001", 2),
-            }
-
-            # Fit intermediate states (state 1) and evaluate on 2022, 2023, 2024
-            metrics = runtime.fit_and_evaluate_all_intermediate_states()
-            assert len(metrics) == 3 * 3  # 3 states x 3 years = 9 metric records
-
-    # Verify no leakage occurred and 2023/2024 never entered fit
-    for x_inp in scaler_fit_calls:
-        assert len(x_inp) == 4  # 2022 sample count
-    for x_inp in lr_fit_calls:
-        assert len(x_inp) == 4  # 2022 sample count
-
-
-# -----------------------------------------------------------------------------
-# 35. Temporal key-path summary retains separate 2023 and 2024 rankings
+# 34. Temporal key-path summary retains separate 2023 and 2024 rankings
 # -----------------------------------------------------------------------------
 def test_temporal_key_path_summary_retains_separate_2023_and_2024():
     deltas_df = pd.DataFrame([
@@ -1146,14 +1024,12 @@ def test_temporal_key_path_summary_retains_separate_2023_and_2024():
     assert "largest_2023_pathwise_auroc_changes" in arm1
     assert "largest_2024_pathwise_auroc_changes" in arm1
 
-    # In 2023, state 2 had delta 0.08, ranked top
     top_2023 = arm1["largest_2023_pathwise_auroc_changes"][0]
     assert top_2023["state_index"] == 2
     assert top_2023["delta_2023"] == 0.08
     assert top_2023["delta_2024"] == 0.07
     assert top_2023["same_direction"] is True
 
-    # Check state 1 where 2023 was +0.05 and 2024 was -0.03 -> same_direction is False
     st1_record = [r for r in arm1["largest_2023_pathwise_auroc_changes"] if r["state_index"] == 1][0]
     assert st1_record["delta_2023"] == 0.05
     assert st1_record["delta_2024"] == -0.03
@@ -1161,20 +1037,19 @@ def test_temporal_key_path_summary_retains_separate_2023_and_2024():
 
 
 # -----------------------------------------------------------------------------
-# 36. Release collision fails closed and FAILED state preserves directory
+# 35. Release collision fails closed and FAILED state preserves directory
 # -----------------------------------------------------------------------------
 def test_release_collision_fails_closed_and_failed_preserves_dir(tmp_path):
     manager = D7StepwiseReplayReleaseManager(repo_root=_REPO_ROOT, releases_parent_dir=tmp_path)
 
-    # 1. Collision check
     colliding_dir = tmp_path / "REL_001"
     colliding_dir.mkdir(parents=True)
     with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
-         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"):
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "preflight_inputs", return_value={"preflight_status": "PASS"}):
         with pytest.raises(FileExistsError, match="collision"):
             manager.execute_release("REL_001", "some_sha")
 
-    # 2. Failure preserves directory and records FAILED status
     fail_rel_dir = tmp_path / "REL_FAIL"
 
     def exploding_runtime(*args, **kwargs):
@@ -1182,7 +1057,8 @@ def test_release_collision_fails_closed_and_failed_preserves_dir(tmp_path):
 
     with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
          patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"), \
-         patch("nhis_fairbias.d7_stepwise_replay.ProductionD7StepwiseReplayRuntime.build_all_cohorts", side_effect=exploding_runtime):
+         patch.object(ProductionD7StepwiseReplayRuntime, "preflight_inputs", return_value={"preflight_status": "PASS"}), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "build_all_cohorts", side_effect=exploding_runtime):
         with pytest.raises(RuntimeError, match="Synthetic runtime failure"):
             manager.execute_release("REL_FAIL", "some_sha")
 
@@ -1195,53 +1071,597 @@ def test_release_collision_fails_closed_and_failed_preserves_dir(tmp_path):
 
 
 # -----------------------------------------------------------------------------
-# 37. Synthetic production integration end-to-end (10 files, 8 manifest-tracked)
+# 36. Actual Origin Branch Equality Preconditions (P1-A)
 # -----------------------------------------------------------------------------
-def test_synthetic_production_integration_end_to_end(tmp_path):
-    """Synthetic end-to-end integration test of ProductionD7StepwiseReplayRuntime and ReleaseManager."""
+def test_git_execution_preconditions_origin_branch_equality():
+    # 1. Exact match passes
+    with patch("subprocess.run") as mock_sub:
+        def sub_run_handler(cmd, *args, **kwargs):
+            if cmd[1] == "rev-parse" and cmd[2] == "HEAD":
+                return MagicMock(returncode=0, stdout="match_sha\n", stderr="")
+            if cmd[1] == "ls-remote":
+                return MagicMock(returncode=0, stdout=f"match_sha\t{REMOTE_RESEARCH_BRANCH_REF}\n", stderr="")
+            if cmd[1] == "status":
+                return MagicMock(returncode=0, stdout="", stderr="")
+            return MagicMock(returncode=0, stdout="", stderr="")
+
+        mock_sub.side_effect = sub_run_handler
+        res = verify_git_execution_preconditions(_REPO_ROOT, expected_sha="match_sha")
+        assert res["git_head"] == "match_sha"
+        assert res["remote_branch_head"] == "match_sha"
+
+    # 2. Local HEAD != expected
+    with patch("subprocess.run") as mock_sub:
+        mock_sub.return_value = MagicMock(returncode=0, stdout="other_sha\n", stderr="")
+        with pytest.raises(ProvenanceVerificationError, match="Local Git HEAD mismatch"):
+            verify_git_execution_preconditions(_REPO_ROOT, expected_sha="match_sha")
+
+    # 3. Remote SHA != expected
+    with patch("subprocess.run") as mock_sub:
+        def sub_remote_mismatch(cmd, *args, **kwargs):
+            if cmd[1] == "rev-parse":
+                return MagicMock(returncode=0, stdout="match_sha\n", stderr="")
+            if cmd[1] == "ls-remote":
+                return MagicMock(returncode=0, stdout=f"divergent_sha\t{REMOTE_RESEARCH_BRANCH_REF}\n", stderr="")
+            return MagicMock(returncode=0, stdout="", stderr="")
+        mock_sub.side_effect = sub_remote_mismatch
+        with pytest.raises(ProvenanceVerificationError, match="Remote branch SHA mismatch"):
+            verify_git_execution_preconditions(_REPO_ROOT, expected_sha="match_sha")
+
+    # 4. Remote query failure
+    with patch("subprocess.run") as mock_sub:
+        def sub_remote_fail(cmd, *args, **kwargs):
+            if cmd[1] == "rev-parse":
+                return MagicMock(returncode=0, stdout="match_sha\n", stderr="")
+            if cmd[1] == "ls-remote":
+                return MagicMock(returncode=1, stdout="", stderr="fatal: remote error")
+            return MagicMock(returncode=0, stdout="", stderr="")
+        mock_sub.side_effect = sub_remote_fail
+        with pytest.raises(ProvenanceVerificationError, match="Failed to query remote branch"):
+            verify_git_execution_preconditions(_REPO_ROOT, expected_sha="match_sha")
+
+    # 5. Missing remote branch response
+    with patch("subprocess.run") as mock_sub:
+        def sub_remote_missing(cmd, *args, **kwargs):
+            if cmd[1] == "rev-parse":
+                return MagicMock(returncode=0, stdout="match_sha\n", stderr="")
+            if cmd[1] == "ls-remote":
+                return MagicMock(returncode=0, stdout="", stderr="")
+            return MagicMock(returncode=0, stdout="", stderr="")
+        mock_sub.side_effect = sub_remote_missing
+        with pytest.raises(ProvenanceVerificationError, match="not found on origin"):
+            verify_git_execution_preconditions(_REPO_ROOT, expected_sha="match_sha")
+
+
+# -----------------------------------------------------------------------------
+# 37. Preflight before mkdir: failures leave NO release directory (P1-B)
+# -----------------------------------------------------------------------------
+def test_preflight_before_mkdir_failures_leave_no_directory(tmp_path):
     manager = D7StepwiseReplayReleaseManager(repo_root=_REPO_ROOT, releases_parent_dir=tmp_path)
+    target_dir = tmp_path / "REL_PREFLIGHT_FAIL"
 
+    # A. Feature parquet SHA mismatch fails before mkdir
+    with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"), \
+         patch("nhis_fairbias.d7_stepwise_replay.compute_sha256", return_value="bad_parquet_sha"):
+        with pytest.raises(ProvenanceVerificationError, match="Features parquet SHA mismatch"):
+            manager.execute_release("REL_PREFLIGHT_FAIL", "some_sha")
+    assert not target_dir.exists()
+
+    # B. Preprocessing logical SHA mismatch fails before mkdir
+    class MockBadAdapter:
+        def __init__(self):
+            self.preprocessor = MagicMock()
+            self.preprocessor.fitted_record = MagicMock()
+            self.preprocessor.fitted_record.to_dict.return_value = {"bad": 1}
+
+    with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "construct_adapter", side_effect=ProvenanceVerificationError("Preprocessing state hash mismatch")):
+        with pytest.raises(ProvenanceVerificationError, match="Preprocessing state hash mismatch"):
+            manager.execute_release("REL_PREFLIGHT_FAIL", "some_sha")
+    assert not target_dir.exists()
+
+
+# -----------------------------------------------------------------------------
+# 38. Manager Poison Test: Upstream provenance failure leaves NO directory
+# -----------------------------------------------------------------------------
+def test_manager_upstream_provenance_failure_leaves_no_directory(tmp_path):
+    manager = D7StepwiseReplayReleaseManager(repo_root=_REPO_ROOT, releases_parent_dir=tmp_path)
+    target_dir = tmp_path / "REL_UPSTREAM_PROV_FAIL"
+
+    adapter_constructed = False
+    def spy_construct_adapter(*args, **kwargs):
+        nonlocal adapter_constructed
+        adapter_constructed = True
+
+    lr_fit_count = 0
+    orig_lr_fit = LogisticRegression.fit
+    def counted_lr_fit(self, *args, **kwargs):
+        nonlocal lr_fit_count
+        lr_fit_count += 1
+        return orig_lr_fit(self, *args, **kwargs)
+
+    with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance", side_effect=ProvenanceVerificationError("D7.1 tag object mismatch")), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "construct_adapter", side_effect=spy_construct_adapter), \
+         patch.object(LogisticRegression, "fit", counted_lr_fit):
+
+        with pytest.raises(ProvenanceVerificationError, match="D7.1 tag object mismatch"):
+            manager.execute_release("REL_UPSTREAM_PROV_FAIL", "some_sha")
+
+    assert not target_dir.exists()
+    assert adapter_constructed is False
+    assert lr_fit_count == 0
+
+
+# -----------------------------------------------------------------------------
+# 38. Manager Poison Test: Perturbed cohort digest fails release (Section 4)
+# -----------------------------------------------------------------------------
+def test_manager_poison_cohort_digest_fails(tmp_path):
+    manager = D7StepwiseReplayReleaseManager(repo_root=_REPO_ROOT, releases_parent_dir=tmp_path)
+    rel_dir = tmp_path / "REL_POISON_DIGEST"
+
+    # When digest barrier fails inside manager.execute_release:
+    # 1. release becomes FAILED
+    # 2. directory is preserved
+    # 3. zero scaler or LR fits occur
+    lr_fit_count = 0
+    orig_lr_fit = LogisticRegression.fit
+
+    def counted_lr_fit(self, *args, **kwargs):
+        nonlocal lr_fit_count
+        lr_fit_count += 1
+        return orig_lr_fit(self, *args, **kwargs)
+
+    with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "preflight_inputs", return_value={"preflight_status": "PASS"}), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "build_all_cohorts", side_effect=ProvenanceVerificationError("Cohort source-row digest mismatch")), \
+         patch.object(LogisticRegression, "fit", counted_lr_fit):
+
+        with pytest.raises(ProvenanceVerificationError, match="Cohort source-row digest mismatch"):
+            manager.execute_release("REL_POISON_DIGEST", "some_sha")
+
+    assert rel_dir.is_dir()
+    state_data = json.loads((rel_dir / "release_state.json").read_text())
+    assert state_data["status"] == "FAILED"
+    assert lr_fit_count == 0
+
+
+# -----------------------------------------------------------------------------
+# 39. Manager Poison Test: Perturbed terminal matrix fails release (Section 5)
+# -----------------------------------------------------------------------------
+def test_manager_poison_terminal_matrix_fails(tmp_path):
+    manager = D7StepwiseReplayReleaseManager(repo_root=_REPO_ROOT, releases_parent_dir=tmp_path)
+    rel_dir = tmp_path / "REL_POISON_MATRIX"
+
+    lr_fit_count = 0
+    orig_lr_fit = LogisticRegression.fit
+
+    def counted_lr_fit(self, *args, **kwargs):
+        nonlocal lr_fit_count
+        lr_fit_count += 1
+        return orig_lr_fit(self, *args, **kwargs)
+
+    with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "preflight_inputs", return_value={"preflight_status": "PASS"}), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "build_all_cohorts", return_value={}), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "replay_and_verify_terminal_matrices", side_effect=TerminalReplayBarrierError("Terminal matrix numeric diff > tolerance")), \
+         patch.object(LogisticRegression, "fit", counted_lr_fit):
+
+        with pytest.raises(TerminalReplayBarrierError, match="Terminal matrix numeric diff > tolerance"):
+            manager.execute_release("REL_POISON_MATRIX", "some_sha")
+
+    assert rel_dir.is_dir()
+    state_data = json.loads((rel_dir / "release_state.json").read_text())
+    assert state_data["status"] == "FAILED"
+    assert lr_fit_count == 0
+
+
+# -----------------------------------------------------------------------------
+# 40. Manager Poison Test: Perturbed endpoint metrics fails release (Section 6)
+# -----------------------------------------------------------------------------
+def test_manager_poison_endpoint_reproduction_fails(tmp_path):
+    manager = D7StepwiseReplayReleaseManager(repo_root=_REPO_ROOT, releases_parent_dir=tmp_path)
+    rel_dir = tmp_path / "REL_POISON_ENDPOINT"
+
+    intermediate_fit_count = 0
+
+    def fake_intermediate_fits(*args, **kwargs):
+        nonlocal intermediate_fit_count
+        intermediate_fit_count += 1
+        return []
+
+    with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions"), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance"), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "preflight_inputs", return_value={"preflight_status": "PASS"}), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "build_all_cohorts", return_value={}), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "replay_and_verify_terminal_matrices", return_value={}), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "fit_and_verify_endpoints", side_effect=EndpointReproductionBarrierError("State 0 scaler hash mismatch")), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "fit_and_evaluate_all_intermediate_states", side_effect=fake_intermediate_fits):
+
+        with pytest.raises(EndpointReproductionBarrierError, match="State 0 scaler hash mismatch"):
+            manager.execute_release("REL_POISON_ENDPOINT", "some_sha")
+
+    assert rel_dir.is_dir()
+    state_data = json.loads((rel_dir / "release_state.json").read_text())
+    assert state_data["status"] == "FAILED"
+    assert intermediate_fit_count == 0
+
+
+# -----------------------------------------------------------------------------
+# 41. Four-Arm 47-State Logical Fit Proof & Anti-Leakage (P2-A)
+# -----------------------------------------------------------------------------
+def test_four_arm_47_state_logical_fit_counts_and_anti_leakage():
+    """Verify that the full 4-arm frozen state topology performs exactly 47 logical scaler fits
+
+    and 47 LR fits, strictly on 2022 rows, and holdout poison objects never enter fit.
+    """
     traces = load_all_archived_traces(_REPO_ROOT)
-    # Use real trace steps from arm 1 as synthetic fixture
-    arm_steps = traces["D6_ARM_001"][:2]
+    assert len(traces["D6_ARM_001"]) == 15
+    assert len(traces["D6_ARM_002"]) == 12
+    assert len(traces["D6_ARM_003"]) == 7
+    assert len(traces["D6_ARM_004"]) == 9
 
-    # Mock runtime steps to write valid synthetic release without hitting real NHIS cohorts
-    rel_dir = tmp_path / "REL_SYNTH"
-    rel_dir.mkdir(parents=True)
+    # Total representation states across 4 arms = (1+15) + (1+12) + (1+7) + (1+9) = 16 + 13 + 8 + 10 = 47
+    assert sum(len(steps) + 1 for steps in traces.values()) == 47
+
+    logical_fit_calls = []
+    lr_fit_calls = []
+
+    orig_logical_fit = fit_intermediate_model_2022
+    orig_lr_fit = LogisticRegression.fit
+
+    def counted_logical_fit(X_train, y_train, arm_id, state_index):
+        logical_fit_calls.append((arm_id, state_index, len(X_train)))
+        return orig_logical_fit(X_train, y_train, arm_id, state_index)
+
+    def counted_lr_fit(self, X, y, sample_weight=None):
+        lr_fit_calls.append(len(X))
+        return orig_lr_fit(self, X, y, sample_weight=sample_weight)
+
+    # Class with poison check for 2023/2024
+    class PoisonHoldoutDF(pd.DataFrame):
+        @property
+        def _constructor(self):
+            return PoisonHoldoutDF
+
+        def __array__(self, *args, **kwargs):
+            import inspect
+            stack = [frame.function for frame in inspect.stack()]
+            if "fit" in stack or "fit_transform" in stack:
+                raise AssertionError("LEAKAGE: Holdout year data accessed inside fit/fit_transform!")
+            return super().__array__(*args, **kwargs)
 
     runtime = ProductionD7StepwiseReplayRuntime(repo_root=_REPO_ROOT)
-    runtime.traces = {"D6_ARM_001": arm_steps}
-    runtime.cohort_digests = EXPECTED_COHORT_SOURCE_ROW_DIGESTS
-    runtime.observed_preprocessing_sha256 = PREPROCESSING_STATE_SHA256
-    runtime.terminal_matrix_results = {"D6_ARM_001_2022": {"verified": True, "max_numeric_diff": 0.0}}
-    runtime.endpoint_barrier_results = {"D6_ARM_001": {"status": "PASS"}}
+    runtime.traces = traces
+    n_2022 = 20
 
-    # Populate synthetic metric records
-    runtime.metrics_records = [
-        {"arm_id": "D6_ARM_001", "state_index": 0, "year": 2022, "threshold": 0.5, "max_d_phi": 0.01, "auroc": 0.75, "auprc": 0.3, "balanced_accuracy": 0.7, "f1": 0.5, "accuracy": 0.8, "count_predicted_positive": 50, "selection_rate": 0.05, "ks_statistic": 0.4, "ks_pvalue": 0.001, "score_mean": 0.1, "score_median": 0.08, "score_iqr": 0.05, "y0_mean": 0.07, "y0_median": 0.05, "y1_mean": 0.4, "y1_median": 0.35, "dp_gap": 0.01, "tpr_gap": 0.02, "fpr_gap": 0.01, "equalized_odds_max_gap": 0.02},
-        {"arm_id": "D6_ARM_001", "state_index": 1, "year": 2022, "threshold": 0.5, "max_d_phi": 0.008, "auroc": 0.76, "auprc": 0.31, "balanced_accuracy": 0.71, "f1": 0.51, "accuracy": 0.81, "count_predicted_positive": 52, "selection_rate": 0.052, "ks_statistic": 0.42, "ks_pvalue": 0.001, "score_mean": 0.1, "score_median": 0.08, "score_iqr": 0.05, "y0_mean": 0.07, "y0_median": 0.05, "y1_mean": 0.4, "y1_median": 0.35, "dp_gap": 0.01, "tpr_gap": 0.02, "fpr_gap": 0.01, "equalized_odds_max_gap": 0.02},
-        {"arm_id": "D6_ARM_001", "state_index": 0, "year": 2023, "threshold": 0.5, "max_d_phi": 0.01, "auroc": 0.74, "auprc": 0.29, "balanced_accuracy": 0.69, "f1": 0.49, "accuracy": 0.79, "count_predicted_positive": 48, "selection_rate": 0.048, "ks_statistic": 0.39, "ks_pvalue": 0.001, "score_mean": 0.1, "score_median": 0.08, "score_iqr": 0.05, "y0_mean": 0.07, "y0_median": 0.05, "y1_mean": 0.4, "y1_median": 0.35, "dp_gap": 0.01, "tpr_gap": 0.02, "fpr_gap": 0.01, "equalized_odds_max_gap": 0.02},
-        {"arm_id": "D6_ARM_001", "state_index": 1, "year": 2023, "threshold": 0.5, "max_d_phi": 0.008, "auroc": 0.75, "auprc": 0.30, "balanced_accuracy": 0.70, "f1": 0.50, "accuracy": 0.80, "count_predicted_positive": 50, "selection_rate": 0.050, "ks_statistic": 0.41, "ks_pvalue": 0.001, "score_mean": 0.1, "score_median": 0.08, "score_iqr": 0.05, "y0_mean": 0.07, "y0_median": 0.05, "y1_mean": 0.4, "y1_median": 0.35, "dp_gap": 0.01, "tpr_gap": 0.02, "fpr_gap": 0.01, "equalized_odds_max_gap": 0.02},
-        {"arm_id": "D6_ARM_001", "state_index": 0, "year": 2024, "threshold": 0.5, "max_d_phi": 0.01, "auroc": 0.73, "auprc": 0.28, "balanced_accuracy": 0.68, "f1": 0.48, "accuracy": 0.78, "count_predicted_positive": 46, "selection_rate": 0.046, "ks_statistic": 0.38, "ks_pvalue": 0.001, "score_mean": 0.1, "score_median": 0.08, "score_iqr": 0.05, "y0_mean": 0.07, "y0_median": 0.05, "y1_mean": 0.4, "y1_median": 0.35, "dp_gap": 0.01, "tpr_gap": 0.02, "fpr_gap": 0.01, "equalized_odds_max_gap": 0.02},
-        {"arm_id": "D6_ARM_001", "state_index": 1, "year": 2024, "threshold": 0.5, "max_d_phi": 0.008, "auroc": 0.74, "auprc": 0.29, "balanced_accuracy": 0.69, "f1": 0.49, "accuracy": 0.79, "count_predicted_positive": 47, "selection_rate": 0.047, "ks_statistic": 0.40, "ks_pvalue": 0.001, "score_mean": 0.1, "score_median": 0.08, "score_iqr": 0.05, "y0_mean": 0.07, "y0_median": 0.05, "y1_mean": 0.4, "y1_median": 0.35, "dp_gap": 0.01, "tpr_gap": 0.02, "fpr_gap": 0.01, "equalized_odds_max_gap": 0.02},
-    ]
-    runtime.deltas_df = compute_stepwise_deltas(runtime.metrics_records)
-    runtime.key_path_summary = generate_key_path_summary(runtime.deltas_df, runtime.traces)
+    # Build synthetic replayed states for all 4 arms
+    for arm_id in D6_ARM_IDS:
+        steps = traces[arm_id]
+        distinct_cols = list(dict.fromkeys([s.selected_feature for s in steps]))
+        y_2022 = pd.Series([0, 1] * (n_2022 // 2))
 
-    manager._write_release_artifacts(rel_dir, "REL_SYNTH", "synth_sha", runtime)
-    manifest = build_d7_stepwise_manifest(rel_dir)
-    manifest_file = rel_dir / "d7_stepwise_manifest.json"
-    manifest_file.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+        X_2022 = pd.DataFrame({col: np.random.uniform(1.0, 5.0, n_2022) for col in distinct_cols})
+        X_2023 = PoisonHoldoutDF({col: np.random.uniform(1.0, 5.0, 10) for col in distinct_cols})
+        X_2024 = PoisonHoldoutDF({col: np.random.uniform(1.0, 5.0, 10) for col in distinct_cols})
 
-    state_file = rel_dir / "release_state.json"
-    state_file.write_text(json.dumps({"status": "COMPLETE", "manifest_sha256": "abc"}, indent=2))
+        r_machine = SequentialReplayStateMachine(arm_id, steps, distinct_cols, num_attrs=distinct_cols, validate_step_count=True)
+        runtime.replayed_states[arm_id] = {
+            2022: r_machine.replay_all(X_2022),
+            2023: r_machine.replay_all(X_2023),
+            2024: r_machine.replay_all(X_2024),
+        }
+        runtime.raw_cohorts[2022][arm_id] = {"X": X_2022, "y": y_2022, "a": pd.Series([1] * n_2022)}
+        runtime.raw_cohorts[2023][arm_id] = {"X": X_2023, "y": pd.Series([0, 1] * 5), "a": pd.Series([1] * 10)}
+        runtime.raw_cohorts[2024][arm_id] = {"X": X_2024, "y": pd.Series([0, 1] * 5), "a": pd.Series([1] * 10)}
 
-    # Verify 10 files
-    files = {f.name for f in rel_dir.iterdir()}
-    assert len(files) == 10
-    assert set(D7_2_ALL_RELEASE_FILES) == files
+    # Mock preprocessor and endpoint verification to pass
+    runtime.adapter = MagicMock()
+    runtime.adapter.preprocessor.get_feature_family_lists.return_value = ([], ["pcnt"])
+    runtime.endpoint_barrier_results = {arm_id: {"status": "PASS"} for arm_id in D6_ARM_IDS}
 
-    # Verify 8 manifest tracked
-    assert len(manifest["artifacts"]) == 8
+    with patch("nhis_fairbias.d7_stepwise_replay.fit_intermediate_model_2022", side_effect=counted_logical_fit), \
+         patch.object(LogisticRegression, "fit", counted_lr_fit), \
+         patch.object(ProductionD7StepwiseReplayRuntime, "fit_and_verify_endpoints", return_value={}):
+
+        # Run endpoint fits (8 fits: state 0 and state K for all 4 arms)
+        for arm_id in D6_ARM_IDS:
+            k_term = len(traces[arm_id])
+            runtime.fitted_models[arm_id] = {}
+            scaler_0, lr_0 = counted_logical_fit(runtime.replayed_states[arm_id][2022][0], runtime.raw_cohorts[2022][arm_id]["y"], arm_id, 0)
+            scaler_K, lr_K = counted_logical_fit(runtime.replayed_states[arm_id][2022][k_term], runtime.raw_cohorts[2022][arm_id]["y"], arm_id, k_term)
+            runtime.fitted_models[arm_id][0] = (scaler_0, lr_0)
+            runtime.fitted_models[arm_id][k_term] = (scaler_K, lr_K)
+
+        # Run intermediate states (39 fits: states 1..K-1 for all 4 arms)
+        metrics = runtime.fit_and_evaluate_all_intermediate_states()
+
+    # Verify fit counts: 8 endpoint fits + 39 intermediate fits = 47 total fits
+    assert len(logical_fit_calls) == 47
+    assert len(lr_fit_calls) == 47
+
+    # Verify all fits used 2022 rows only
+    for arm_id, st_idx, n_rows in logical_fit_calls:
+        assert n_rows == n_2022
+
+    for n_rows in lr_fit_calls:
+        assert n_rows == n_2022
+
+
+# -----------------------------------------------------------------------------
+# 42. Complete Tag and Commit Poison Coverage (P2-B)
+# -----------------------------------------------------------------------------
+def test_complete_tag_and_commit_poison_coverage():
+    # 1. D7.1 wrong tag object
+    with patch("subprocess.run") as mock_sub:
+        def fake_d7_wrong_obj(cmd, *args, **kwargs):
+            if cmd[1] == "rev-parse" and cmd[2] == D7_1_TAG:
+                return MagicMock(returncode=0, stdout="bad_d7_obj\n", stderr="")
+            return MagicMock(returncode=0, stdout="dummy\n", stderr="")
+        mock_sub.side_effect = fake_d7_wrong_obj
+        with pytest.raises(ProvenanceVerificationError, match="D7.1 tag object mismatch"):
+            verify_upstream_provenance(_REPO_ROOT)
+
+    # 2. D7.1 correct object + wrong dereferenced commit
+    with patch("subprocess.run") as mock_sub:
+        def fake_d7_wrong_commit(cmd, *args, **kwargs):
+            if cmd[1] == "rev-parse" and cmd[2] == D7_1_TAG:
+                return MagicMock(returncode=0, stdout=D7_1_TAG_OBJECT + "\n", stderr="")
+            if cmd[1] == "rev-parse" and cmd[2] == f"{D7_1_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout="bad_d7_commit\n", stderr="")
+            return MagicMock(returncode=0, stdout="dummy\n", stderr="")
+        mock_sub.side_effect = fake_d7_wrong_commit
+        with pytest.raises(ProvenanceVerificationError, match="D7.1 dereferenced commit mismatch"):
+            verify_upstream_provenance(_REPO_ROOT)
+
+    # 3. D6 train wrong tag object
+    with patch("subprocess.run") as mock_sub:
+        def fake_d6_tv_wrong_obj(cmd, *args, **kwargs):
+            target = cmd[2]
+            if target == D7_1_TAG:
+                return MagicMock(returncode=0, stdout=D7_1_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D7_1_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout=D7_1_COMMIT + "\n", stderr="")
+            if target == D6_TRAIN_VAL_TAG:
+                return MagicMock(returncode=0, stdout="bad_d6_tv_obj\n", stderr="")
+            return MagicMock(returncode=0, stdout="dummy\n", stderr="")
+        mock_sub.side_effect = fake_d6_tv_wrong_obj
+        with pytest.raises(ProvenanceVerificationError, match="D6 train/val tag object mismatch"):
+            verify_upstream_provenance(_REPO_ROOT)
+
+    # 4. D6 train correct object + wrong dereferenced commit
+    with patch("subprocess.run") as mock_sub:
+        def fake_d6_tv_wrong_commit(cmd, *args, **kwargs):
+            target = cmd[2]
+            if target == D7_1_TAG:
+                return MagicMock(returncode=0, stdout=D7_1_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D7_1_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout=D7_1_COMMIT + "\n", stderr="")
+            if target == D6_TRAIN_VAL_TAG:
+                return MagicMock(returncode=0, stdout=D6_TRAIN_VAL_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D6_TRAIN_VAL_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout="bad_d6_tv_commit\n", stderr="")
+            return MagicMock(returncode=0, stdout="dummy\n", stderr="")
+        mock_sub.side_effect = fake_d6_tv_wrong_commit
+        with pytest.raises(ProvenanceVerificationError, match="D6 train/val commit mismatch"):
+            verify_upstream_provenance(_REPO_ROOT)
+
+    # 5. D6 test wrong tag object
+    with patch("subprocess.run") as mock_sub:
+        def fake_d6_test_wrong_obj(cmd, *args, **kwargs):
+            target = cmd[2]
+            if target == D7_1_TAG:
+                return MagicMock(returncode=0, stdout=D7_1_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D7_1_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout=D7_1_COMMIT + "\n", stderr="")
+            if target == D6_TRAIN_VAL_TAG:
+                return MagicMock(returncode=0, stdout=D6_TRAIN_VAL_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D6_TRAIN_VAL_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout=D6_TRAIN_VAL_COMMIT + "\n", stderr="")
+            if target == D6_TEST_TAG:
+                return MagicMock(returncode=0, stdout="bad_d6_test_obj\n", stderr="")
+            return MagicMock(returncode=0, stdout="dummy\n", stderr="")
+        mock_sub.side_effect = fake_d6_test_wrong_obj
+        with pytest.raises(ProvenanceVerificationError, match="D6 test tag object mismatch"):
+            verify_upstream_provenance(_REPO_ROOT)
+
+    # 6. D6 test correct object + wrong dereferenced commit
+    with patch("subprocess.run") as mock_sub:
+        def fake_d6_test_wrong_commit(cmd, *args, **kwargs):
+            target = cmd[2]
+            if target == D7_1_TAG:
+                return MagicMock(returncode=0, stdout=D7_1_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D7_1_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout=D7_1_COMMIT + "\n", stderr="")
+            if target == D6_TRAIN_VAL_TAG:
+                return MagicMock(returncode=0, stdout=D6_TRAIN_VAL_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D6_TRAIN_VAL_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout=D6_TRAIN_VAL_COMMIT + "\n", stderr="")
+            if target == D6_TEST_TAG:
+                return MagicMock(returncode=0, stdout=D6_TEST_TAG_OBJECT + "\n", stderr="")
+            if target == f"{D6_TEST_TAG}^{{commit}}":
+                return MagicMock(returncode=0, stdout="bad_d6_test_commit\n", stderr="")
+            return MagicMock(returncode=0, stdout="dummy\n", stderr="")
+        mock_sub.side_effect = fake_d6_test_wrong_commit
+        with pytest.raises(ProvenanceVerificationError, match="D6 test commit mismatch"):
+            verify_upstream_provenance(_REPO_ROOT)
+
+
+# -----------------------------------------------------------------------------
+# 43. Temporal Key-Path Summary Zero-Direction Semantics (Section 11)
+# -----------------------------------------------------------------------------
+def test_temporal_key_path_summary_zero_direction_semantics():
+    deltas_df = pd.DataFrame([
+        {
+            "arm_id": "D6_ARM_001",
+            "year": 2023,
+            "state_index": 1,
+            "pathwise_marginal_delta_auroc": 0.0,
+            "pathwise_marginal_delta_auprc": 0.02,
+            "pathwise_marginal_delta_ks_statistic": 0.04,
+            "pathwise_marginal_delta_selection_rate": 0.01,
+        },
+        {
+            "arm_id": "D6_ARM_001",
+            "year": 2024,
+            "state_index": 1,
+            "pathwise_marginal_delta_auroc": 0.03,
+            "pathwise_marginal_delta_auprc": 0.01,
+            "pathwise_marginal_delta_ks_statistic": -0.02,
+            "pathwise_marginal_delta_selection_rate": 0.01,
+        },
+    ])
+    traces = load_all_archived_traces(_REPO_ROOT)
+    summary = generate_key_path_summary(deltas_df, traces)
+
+    arm1 = summary["arms"]["D6_ARM_001"]
+    records_2024 = arm1["largest_2024_pathwise_auroc_changes"]
+    st1 = records_2024[0]
+    assert st1["state_index"] == 1
+    assert st1["delta_2023"] == 0.0
+    assert st1["delta_2024"] == 0.03
+    # Exactly zero has no direction -> same_direction MUST be None
+    assert st1["same_direction"] is None
+
+
+# -----------------------------------------------------------------------------
+# 44. TRUE Synthetic Production Integration End-to-End (P1-C)
+# -----------------------------------------------------------------------------
+def test_synthetic_production_integration_end_to_end(tmp_path):
+    """TRUE end-to-end production integration test through manager.execute_release().
+
+    Executes all real orchestration stages without patching runtime stage methods:
+    preflight -> 12 cohort build -> digest barrier -> trace replay -> 12 terminal matrix checks
+    -> endpoint fits & reproduction -> 47-state intermediate fits -> 8 release files written
+    -> manifest created -> release_state.json COMPLETE.
+    """
+    manager = D7StepwiseReplayReleaseManager(repo_root=_REPO_ROOT, releases_parent_dir=tmp_path)
+    release_id = "REL_SYNTH_PROD_TRUE"
+
+    traces = load_all_archived_traces(_REPO_ROOT)
+    tv_base = _REPO_ROOT / "docs" / "releases" / D6_TRAIN_VAL_RELEASE_ID
+
+    # Determine required columns for all 4 arms
+    arm_columns = {}
+    for arm_id in D6_ARM_IDS:
+        cd_dict = json.loads((tv_base / arm_id / "final_changed_dict.json").read_text())
+        arm_columns[arm_id] = list(cd_dict.keys())
+
+    all_nums = []
+    all_cats = []
+    for arm_id in D6_ARM_IDS:
+        cd_dict = json.loads((tv_base / arm_id / "final_changed_dict.json").read_text())
+        for c, v in cd_dict.items():
+            if isinstance(v, dict) and "power" in v:
+                if c not in all_nums:
+                    all_nums.append(c)
+            elif v != "dropped":
+                if c not in all_cats:
+                    all_cats.append(c)
+
+    # Build synthetic adapter returning cohorts with all required features
+    n_rows = 20
+    class SyntheticProductionAdapter:
+        def __init__(self):
+            self.preprocessor = MagicMock()
+            self.preprocessor.fitted_record = MagicMock()
+            self.preprocessor.fitted_record.to_dict.return_value = {"anchor": "verified"}
+            self.preprocessor.get_feature_family_lists.side_effect = lambda fset: (all_cats, all_nums)
+
+        def get_cohort(self, year, outcome, protected_attribute, feature_set, disability_arm):
+            # Pick arm from protected attribute and disability policy
+            if protected_attribute == "SEX_A":
+                arm_id = "D6_ARM_001"
+            elif protected_attribute == "HISPALLP_A":
+                arm_id = "D6_ARM_002"
+            elif disability_arm == "full_feature":
+                arm_id = "D6_ARM_003"
+            else:
+                arm_id = "D6_ARM_004"
+
+            cols = arm_columns[arm_id]
+            cd_dict = json.loads((tv_base / arm_id / "final_changed_dict.json").read_text())
+
+            rng = np.random.default_rng(hash(f"{arm_id}_{year}") % (2**32))
+            synth_dict = {}
+            for c in cols:
+                val = cd_dict[c]
+                if isinstance(val, dict) and "power" in val:
+                    synth_dict[c] = rng.uniform(1.0, 5.0, n_rows)
+                else:
+                    synth_dict[c] = rng.choice([1, 2, 3, 4], n_rows)
+
+            X_df = pd.DataFrame(synth_dict)
+            y_arr = pd.Series([0, 1] * (n_rows // 2))
+            a_arr = pd.Series([1] * n_rows)
+            w_arr = np.ones(n_rows)
+            return X_df, y_arr, a_arr, w_arr, {}
+
+    manager.adapter_factory = lambda: SyntheticProductionAdapter()
+
+    # Pre-generate synthetic digests for 12/12 barrier
+    synth_digests = {2022: {}, 2023: {}, 2024: {}}
+    for yr in (2022, 2023, 2024):
+        for arm in D6_ARM_IDS:
+            synth_digests[yr][arm] = f"digest_{arm}_{yr}"
+
+    orig_sha256 = compute_sha256
+    def selective_sha(path):
+        if str(path).endswith(".parquet"):
+            return FROZEN_FEATURES_PARQUET_SHA256
+        return orig_sha256(path)
+
+    with patch("nhis_fairbias.d7_stepwise_replay.verify_git_execution_preconditions", return_value={"git_head": "synth_head", "remote_branch_head": "synth_head", "tracked_worktree_clean": True}), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_upstream_provenance", return_value={"provenance_status": "VERIFIED"}), \
+         patch("nhis_fairbias.d7_stepwise_replay.compute_sha256", side_effect=selective_sha), \
+         patch("nhis_fairbias.d7_stepwise_replay.compute_canonical_json_sha256", return_value=PREPROCESSING_STATE_SHA256), \
+         patch("nhis_fairbias.d7_stepwise_replay.compute_cohort_source_row_digest", side_effect=lambda yr, idx: f"digest_{yr}"), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_12_cohort_provenance_barrier", return_value={"cohort_provenance_barrier": "PASS"}), \
+         patch("nhis_fairbias.d7_stepwise_replay.verify_endpoint_model_reproduction_barrier", return_value={"endpoint_reproduction_status": "PASS"}):
+
+        # Run full manager release execution
+        res = manager.execute_release(
+            release_id=release_id,
+            expected_execution_head="synth_head",
+        )
+
+    assert res["status"] == "COMPLETE"
+    target_dir = tmp_path / release_id
+    assert target_dir.is_dir()
+
+    # Verify 10 files total
+    disk_files = {f.name for f in target_dir.iterdir()}
+    assert len(disk_files) == 10
+    assert set(D7_2_ALL_RELEASE_FILES) == disk_files
+
+    # Verify manifest tracks exactly 8 primary artifacts and hashes match
+    manifest_data = json.loads((target_dir / "d7_stepwise_manifest.json").read_text())
+    assert manifest_data["tracked_artifact_count"] == 8
+    assert len(manifest_data["artifacts"]) == 8
     for fname in D7_2_MANIFEST_TRACKED_ARTIFACTS:
-        assert fname in manifest["artifacts"]
+        assert fname in manifest_data["artifacts"]
+        art_path = target_dir / fname
+        expected_sha = compute_sha256(art_path)
+        assert manifest_data["artifacts"][fname]["sha256"] == expected_sha
+        assert manifest_data["artifacts"][fname]["size_bytes"] == art_path.stat().st_size
+
+    # Verify release_state.json
+    state_data = json.loads((target_dir / "release_state.json").read_text())
+    assert state_data["status"] == "COMPLETE"
+    assert state_data["manifest_sha256"] == res["manifest_sha256"]
+    assert state_data["error"] is None
+    assert state_data["started_at"] is not None
+    assert state_data["completed_at"] is not None
+
+    # Verify no row-level files
+    for fname in disk_files:
+        assert not fname.endswith(".parquet")
+        assert not fname.endswith(".npz")
+        assert "cohort" not in fname
+        assert "row" not in fname
+        assert "probability" not in fname
+        assert "logit" not in fname

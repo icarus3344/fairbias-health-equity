@@ -108,7 +108,11 @@ def main() -> int:
     print(f"TOTAL ACCEPTED STEPS:\n{results['total_accepted_steps']}\n")
     print(f"TOTAL REPRESENTATION STATES:\n{results['total_representation_states']}\n")
     print(f"TERMINAL REPLAY BARRIER:\n{results['terminal_replay_barrier']}\n")
-    print(f"REAL NHIS COHORTS ACCESSED:\n{results['nhis_cohort_count']}\n")
+    print(
+        f"REAL PREPARED PARQUET OPENED FOR PREPROCESSING VERIFICATION: "
+        f"{'YES' if results.get('real_prepared_parquet_opened_for_preprocessing_verification') else 'NO'}\n"
+    )
+    print(f"REAL NHIS GET_COHORT CALLS:\n{results.get('real_nhis_get_cohort_calls', 0)}\n")
     print(f"MODELS FIT COUNT:\n{results['models_fit_count']}\n")
     print(f"FAIRBIAS MITIGATION EXECUTIONS:\n{results['fairbias_mitigation_count']}\n")
     print(f"D7.2 SUBSTANTIVE EXECUTION:\n{results['d7_2_substantive_execution']}\n")
