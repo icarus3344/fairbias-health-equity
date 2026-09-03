@@ -1,0 +1,9 @@
+{
+  "release_id": "NHIS_D7_STEPWISE_REPLAY_V1_fc248b66",
+  "execution_head": "fc248b66a7c1ed48dadeb6c36afa1c59a70877f8",
+  "status": "COMPLETE",
+  "started_at": "2026-09-03T05:11:11.641624+00:00",
+  "completed_at": "2026-09-03T05:13:17.364281+00:00",
+  "manifest_sha256": "1eb428386405d02a959444573eb2a5c148ef529bffda61db9482259349609378",
+  "error": null
+}

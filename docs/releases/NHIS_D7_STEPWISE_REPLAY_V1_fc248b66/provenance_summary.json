@@ -1,0 +1,110 @@
+{
+  "cohort_provenance": {
+    "cohort_digests_matched_count": 12,
+    "expected_cohort_source_row_digests": {
+      "2022": {
+        "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+        "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+        "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+        "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+      },
+      "2023": {
+        "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+        "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+        "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+        "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+      },
+      "2024": {
+        "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+        "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+        "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+        "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+      }
+    },
+    "observed_cohort_source_row_digests": {
+      "2022": {
+        "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+        "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+        "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+        "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d"
+      },
+      "2023": {
+        "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+        "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+        "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+        "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a"
+      },
+      "2024": {
+        "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+        "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+        "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+        "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9"
+      }
+    }
+  },
+  "created_at_utc": "2026-09-03T05:13:17.351230+00:00",
+  "git_identity": {
+    "expected_execution_head": "fc248b66a7c1ed48dadeb6c36afa1c59a70877f8",
+    "observed_execution_head": "fc248b66a7c1ed48dadeb6c36afa1c59a70877f8",
+    "observed_remote_branch_head": "fc248b66a7c1ed48dadeb6c36afa1c59a70877f8",
+    "tracked_worktree_clean": true
+  },
+  "mandatory_disclosure": "D7.2 is an exploratory explanatory, path-dependent post-primary audit conducted along the actual accepted FairBias transformation path learned from NHIS 2022. Intermediate representation states have no historical model; each state fits a fresh scaler and logistic regression on 2022 only. Evaluations on 2023 and 2024 repeated cross-sections are descriptive and order-dependent, not causal.",
+  "prepared_data": {
+    "expected_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+    "expected_preprocessing_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+    "observed_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+    "observed_preprocessing_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+    "parquet_path": "data/processed/nhis/nhis_2022_2024_features.parquet"
+  },
+  "refit_configuration": {
+    "D7_2_refits_intermediate_classifiers": true,
+    "descriptive_test_year": 2024,
+    "max_iter": 1000,
+    "random_state": 0,
+    "solver": "lbfgs",
+    "survey_weights": null,
+    "threshold": 0.5,
+    "training_year": 2022,
+    "validation_year": 2023
+  },
+  "release_id": "NHIS_D7_STEPWISE_REPLAY_V1_fc248b66",
+  "scientific_question": "Along the actual accepted FairBias transformation path learned from NHIS 2022, at which path states do predictive discrimination, class-conditional score separation, and prediction volume change, and how do those path-dependent changes transport to the unchanged 2023 and 2024 repeated cross-sections?",
+  "scientific_terminology": {
+    "causal_identification": false,
+    "exploratory_explanatory": true,
+    "independent_test": false,
+    "longitudinal": false,
+    "model_selection": false,
+    "new_fairness_algorithm": false,
+    "panel": false,
+    "path_dependent": true,
+    "post_primary": true,
+    "post_test": true,
+    "temporal_repeated_cross_sectional": true,
+    "threshold_optimization": false
+  },
+  "upstream_provenance": {
+    "d6_test_artifacts_verified": 41,
+    "d6_test_tag": "nhis-d6-temporal-test-v1",
+    "d6_train_val_artifacts_verified": 45,
+    "d6_train_val_tag": "nhis-d6-temporal-train-val-v1",
+    "d7_1_tag": "nhis-d7-terminal-mechanism-v1",
+    "expected_d6_test_commit": "e24685cbde26497d0209f26fcf1d82b131dbe726",
+    "expected_d6_test_manifest_sha256": "2a134eb1c23421fd7e50f8c255f2d55395ecfda8149700c78f76dac3da553fd5",
+    "expected_d6_test_tag_object": "b3aaae6559028e83aea9c329d585c1607e87364c",
+    "expected_d6_train_val_commit": "bdf154c541d365b216a732bc3a58415af41cdcc7",
+    "expected_d6_train_val_manifest_sha256": "773d43b2d893232eb4cbba9dfcdcc639ecdc2fbc8efb2e353f7d2a68514159c4",
+    "expected_d6_train_val_tag_object": "e23941edf2085c84290868f69289d30af62b7e95",
+    "expected_d7_1_commit": "a5f0d81c4cceb50b02d40ad6a2f2e4f88f2eefd9",
+    "expected_d7_1_tag_object": "bd1067ee1e4530d303e8ea4d6e605d4afcc45d53",
+    "observed_d6_test_commit": "e24685cbde26497d0209f26fcf1d82b131dbe726",
+    "observed_d6_test_manifest_sha256": "2a134eb1c23421fd7e50f8c255f2d55395ecfda8149700c78f76dac3da553fd5",
+    "observed_d6_test_tag_object": "b3aaae6559028e83aea9c329d585c1607e87364c",
+    "observed_d6_train_val_commit": "bdf154c541d365b216a732bc3a58415af41cdcc7",
+    "observed_d6_train_val_manifest_sha256": "773d43b2d893232eb4cbba9dfcdcc639ecdc2fbc8efb2e353f7d2a68514159c4",
+    "observed_d6_train_val_tag_object": "e23941edf2085c84290868f69289d30af62b7e95",
+    "observed_d7_1_commit": "a5f0d81c4cceb50b02d40ad6a2f2e4f88f2eefd9",
+    "observed_d7_1_tag_object": "bd1067ee1e4530d303e8ea4d6e605d4afcc45d53"
+  }
+}

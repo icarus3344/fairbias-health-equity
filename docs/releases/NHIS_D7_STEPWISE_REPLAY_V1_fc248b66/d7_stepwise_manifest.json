@@ -1,0 +1,39 @@
+{
+  "artifacts": {
+    "archived_trace_inventory.json": {
+      "sha256": "c92ec1acdfdfca0b8f8973d2053771d4eb54aa39f3cfc73b3edfb3fd2dde8ff5",
+      "size_bytes": 21447
+    },
+    "endpoint_reproduction.json": {
+      "sha256": "385ed4823c40f3f1b8fe0db82a1eea9cc6215746760e10e90055c888ca4c7286",
+      "size_bytes": 2022
+    },
+    "key_path_summary.json": {
+      "sha256": "caa99c323b92c09e2c71d3537b615887909cc4b71c5eb06181f2cad60d7f9ce6",
+      "size_bytes": 50986
+    },
+    "protected_fairness_stepwise.csv": {
+      "sha256": "f99d7bfdb04bcede81587207043cbb8f1344eda761af4cc8fd968b7cb95cf5f7",
+      "size_bytes": 14255
+    },
+    "provenance_summary.json": {
+      "sha256": "7c9cbf4fee1f96abc5d0d43fc838ac488d5fe862519b3e570747b42d1c479b1f",
+      "size_bytes": 6475
+    },
+    "stepwise_deltas.csv": {
+      "sha256": "5aca20d03b643f449a4c38b41814a5b2cadd9ca224c144bbf485a79e01edcecd",
+      "size_bytes": 32912
+    },
+    "stepwise_metrics.csv": {
+      "sha256": "a36d03f5075fe23131adde0dc0cbc88e57521b71785ba813bcd62e9b7aa59eb6",
+      "size_bytes": 48989
+    },
+    "terminal_replay_verification.json": {
+      "sha256": "dc9de9aa34f1f4107c037dd48970ca87ea09fda145a005f674bd570a84d4f688",
+      "size_bytes": 938
+    }
+  },
+  "created_at_utc": "2026-09-03T05:13:17.364185+00:00",
+  "release_schema_version": "1.0.0",
+  "tracked_artifact_count": 8
+}

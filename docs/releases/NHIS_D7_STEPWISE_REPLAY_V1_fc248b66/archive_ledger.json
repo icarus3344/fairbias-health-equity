@@ -1,0 +1,113 @@
+{
+  "gate": "D7.2c",
+  "canonical_release_id": "NHIS_D7_STEPWISE_REPLAY_V1_fc248b66",
+  "canonical_execution_sha": "fc248b66a7c1ed48dadeb6c36afa1c59a70877f8",
+  "canonical_substantive_invocations": 1,
+  "canonical_reruns": 0,
+  "FairBiasMitigation_executions": 0,
+  "FairBias_relearning": 0,
+  "threshold_tuning": 0,
+  "model_selection": 0,
+  "training_year": 2022,
+  "validation_year": 2023,
+  "descriptive_test_year": 2024,
+  "repeated_cross_sectional": true,
+  "longitudinal": false,
+  "causal": false,
+  "post_primary": true,
+  "post_test": true,
+  "path_dependent": true,
+  "canonical_manifest_sha256": "1eb428386405d02a959444573eb2a5c148ef529bffda61db9482259349609378",
+  "canonical_source_directory": "runs/nhis_d7_stepwise_replay/releases/NHIS_D7_STEPWISE_REPLAY_V1_fc248b66",
+  "archival_destination_directory": "docs/releases/NHIS_D7_STEPWISE_REPLAY_V1_fc248b66",
+  "canonical_file_hashes": {
+    "archived_trace_inventory.json": "c92ec1acdfdfca0b8f8973d2053771d4eb54aa39f3cfc73b3edfb3fd2dde8ff5",
+    "d7_stepwise_manifest.json": "1eb428386405d02a959444573eb2a5c148ef529bffda61db9482259349609378",
+    "endpoint_reproduction.json": "385ed4823c40f3f1b8fe0db82a1eea9cc6215746760e10e90055c888ca4c7286",
+    "key_path_summary.json": "caa99c323b92c09e2c71d3537b615887909cc4b71c5eb06181f2cad60d7f9ce6",
+    "protected_fairness_stepwise.csv": "f99d7bfdb04bcede81587207043cbb8f1344eda761af4cc8fd968b7cb95cf5f7",
+    "provenance_summary.json": "7c9cbf4fee1f96abc5d0d43fc838ac488d5fe862519b3e570747b42d1c479b1f",
+    "release_state.json": "d5fb2bba07c992562e4d85152a2cdfdb9b2b6ee135cdb465d672f473901572bd",
+    "stepwise_deltas.csv": "5aca20d03b643f449a4c38b41814a5b2cadd9ca224c144bbf485a79e01edcecd",
+    "stepwise_metrics.csv": "a36d03f5075fe23131adde0dc0cbc88e57521b71785ba813bcd62e9b7aa59eb6",
+    "terminal_replay_verification.json": "dc9de9aa34f1f4107c037dd48970ca87ea09fda145a005f674bd570a84d4f688"
+  },
+  "release_dimensions": {
+    "metrics_rows": 141,
+    "protected_fairness_rows": 141,
+    "deltas_rows": 129,
+    "representation_states": 47,
+    "accepted_transitions": 43,
+    "arms": 4,
+    "years": 3,
+    "manifest_tracked_artifacts": 8
+  },
+  "upstream_barriers": {
+    "d7_1_provenance": "VERIFIED",
+    "d6_train_val_manifest_artifacts": "45 / 45 manifest artifacts",
+    "d6_test_manifest_artifacts": "41 / 41 manifest artifacts",
+    "features_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+    "preprocessing_sha256": "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9",
+    "cohort_provenance": "12 / 12 PASS",
+    "terminal_replay": "12 / 12 PASS",
+    "endpoint_reproduction": "4 / 4 PASS",
+    "terminal_matrix_max_numerical_abs_diff": 0.0,
+    "endpoint_metric_tolerance": 1e-12,
+    "decision_threshold": 0.5
+  },
+  "d_phi_diagnostic_provenance_note": "D7.2 pathwise d_phi diagnostics instantiate `FairEvaluator()` rather than reusing the frozen D6 evaluator object. Review of the frozen source confirmed that the parameters governing `calculate_epsilon()` coincide with the D6 paper-faithful diagnostic configuration for this execution: h_order=1, mds_max_components=15, mds_slope_threshold=0.01, random_seed=0, numerical divergence `num-a`, categorical divergence `cat-a`, mds_fixed_components=None, and sample_weight=None. The differing algorithm-mode identity governs mitigation/search semantics and does not alter the effective d_phi parameterization used in these archived pathwise diagnostics. This is a provenance implementation note, not a recomputation or correction of scientific results.",
+  "dphi_recomputation_required": false,
+  "canonical_scientific_results_modified": false,
+  "pi_reporting_corrections": {
+    "correction_a_sex_step_12": "In both 2023 and 2024, the archived Step-12 `notcov_a` category merge coincides with the dominant abrupt contraction in predicted-positive volume and the largest pathwise AUROC decline along the SEX accepted trajectory.",
+    "correction_b_hisp_step_11": "The HISP Step-11 `notcov_a` merge similarly coincides with a large abrupt contraction in predicted-positive volume and the largest negative AUROC pathwise change in both temporal evaluation years.",
+    "correction_c_disab_full": "`notcov_a` was not transformed in the DISAB-full accepted path, and no comparable abrupt positive-volume collapse was observed; prediction volume instead changed gradually across states.",
+    "correction_d_age_phstat": "Age removal and health-status category compression coincide with the largest or substantial negative pathwise discrimination changes in the DISAB-exclude trajectory.",
+    "no_causal_verbs": true
+  },
+  "pi_scientific_interpretation": {
+    "finding_1_sex": {
+      "status": "STRONG_DESCRIPTIVE_PATHWISE_ASSOCIATION",
+      "key_transition": "Step 12 notcov_a merge",
+      "positive_count_2023": "89 -> 2",
+      "positive_count_2024": "96 -> 3",
+      "auroc_delta_2023": -0.03895,
+      "auroc_delta_2024": -0.04459,
+      "secondary_transition": "Step 10 age drop as a secondary major negative transition"
+    },
+    "finding_2_hisp": {
+      "status": "CROSS_ARM_REPLICATION_OF_PATHWISE_PATTERN",
+      "key_transition": "Step 11 notcov_a merge",
+      "positive_count_2023": "98 -> 28",
+      "positive_count_2024": "107 -> 48",
+      "auroc_delta_2023": -0.01970,
+      "auroc_delta_2024": -0.02386
+    },
+    "finding_3_disab_full": {
+      "status": "RELATIVELY_SMOOTH_COMPARISON_PATH",
+      "notcov_transformed": false,
+      "abrupt_positive_volume_collapse": "not observed"
+    },
+    "finding_4_disab_exclude": {
+      "status": "DISTINCT_PATHWISE_DEGRADATION_PATTERN",
+      "key_transitions": "agep_a drop, phstat_a category merges"
+    }
+  },
+  "hypothesis_interpretation": {
+    "H1_distinction_information_compression": "STRONGLY_DESCRIPTIVELY_SUPPORTED",
+    "H2_geometry_reparameterization": "DESCRIPTIVELY_SUPPORTED",
+    "H3_score_separation_degradation": "DIRECTLY_OBSERVED / STRONGLY_SUPPORTED",
+    "H4_protected_arm_heterogeneity": "STRONGLY_DESCRIPTIVELY_SUPPORTED",
+    "notcov_a_merge_as_replicated_key_path_event": "STRONG_DESCRIPTIVE_PATHWISE_ASSOCIATION",
+    "notcov_a_merge_as_causal_mechanism": "NOT ESTABLISHED",
+    "no_automatic_software_adjudication": true
+  },
+  "execution_constraints_maintained": {
+    "real_nhis_get_cohort_calls": 0,
+    "model_fits": 0,
+    "FairBiasMitigation_executions": 0,
+    "scientific_recomputations": 0,
+    "d7_2b_reruns": 0,
+    "d7_3_started": false
+  }
+}

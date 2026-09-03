@@ -1,0 +1,1510 @@
+{
+  "arms": {
+    "D6_ARM_001": {
+      "largest_2023_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.04258438127520081,
+          "delta_2024": -0.04881610749280618,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_4_usualpl_a",
+          "delta_2023": -0.005215404289563241,
+          "delta_2024": -0.0008363322030460474,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "usualpl_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.09090909090909091
+          },
+          "coincides_with": "step_8_agep_a",
+          "delta_2023": -0.002642211197819627,
+          "delta_2024": -0.006512050635468919,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 8,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.038954839920892104,
+          "delta_2024": -0.0445900842005027,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.01907523467474459,
+          "delta_2024": -0.024120560178070627,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.09090909090909091
+          },
+          "coincides_with": "step_8_agep_a",
+          "delta_2023": -0.0072966385370123454,
+          "delta_2024": -0.010999857343230057,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 8,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.0579992429810261,
+          "delta_2024": -0.06055343046175382,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.04028970761279477,
+          "delta_2024": -0.038660940852769055,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.09090909090909091
+          },
+          "coincides_with": "step_8_agep_a",
+          "delta_2023": -0.011283802273377164,
+          "delta_2024": -0.016562331793606944,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 8,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.002971615944256584,
+          "delta_2024": -0.002874806800618238,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_2_empwrklsw1_a",
+          "delta_2023": -0.00034156505106397537,
+          "delta_2024": -0.00015455950540958253,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "empwrklsw1_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_4_usualpl_a",
+          "delta_2023": -0.00020493903063838496,
+          "delta_2024": -0.00040185471406491494,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "usualpl_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.04258438127520081,
+          "delta_2024": -0.04881610749280618,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.002189015244969117,
+          "delta_2024": -0.012295704346108771,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.09090909090909091
+          },
+          "coincides_with": "step_8_agep_a",
+          "delta_2023": -0.002642211197819627,
+          "delta_2024": -0.006512050635468919,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 8,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.038954839920892104,
+          "delta_2024": -0.0445900842005027,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.01907523467474459,
+          "delta_2024": -0.024120560178070627,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.09090909090909091
+          },
+          "coincides_with": "step_8_agep_a",
+          "delta_2023": -0.0072966385370123454,
+          "delta_2024": -0.010999857343230057,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 8,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.0579992429810261,
+          "delta_2024": -0.06055343046175382,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.04028970761279477,
+          "delta_2024": -0.038660940852769055,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.09090909090909091
+          },
+          "coincides_with": "step_8_agep_a",
+          "delta_2023": -0.011283802273377164,
+          "delta_2024": -0.016562331793606944,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 8,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_12_notcov_a",
+          "delta_2023": -0.002971615944256584,
+          "delta_2024": -0.002874806800618238,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 12,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_4_usualpl_a",
+          "delta_2023": -0.00020493903063838496,
+          "delta_2024": -0.00040185471406491494,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "usualpl_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_2_empwrklsw1_a",
+          "delta_2023": -0.00034156505106397537,
+          "delta_2024": -0.00015455950540958253,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrklsw1_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "protected_attribute": "SEX_A",
+      "total_accepted_steps": 15
+    },
+    "D6_ARM_002": {
+      "largest_2023_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.02660792624390415,
+          "delta_2024": -0.03470556319570978,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 5.0
+          },
+          "coincides_with": "step_2_agep_a",
+          "delta_2023": 0.008079014965854003,
+          "delta_2024": 0.008116727386648065,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_7_empwrkft1_a",
+          "delta_2023": -0.0019714284118109715,
+          "delta_2024": -0.0030254576704436265,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.01970320492498656,
+          "delta_2024": -0.02385610915692371,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 5.0
+          },
+          "coincides_with": "step_2_agep_a",
+          "delta_2023": 0.008321778909675448,
+          "delta_2024": 0.013054793951685406,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 9.0
+          },
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.001982279775386342,
+          "delta_2024": -0.0035055124805777327,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.03179043027138828,
+          "delta_2024": -0.03203419600648949,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 5.0
+          },
+          "coincides_with": "step_2_agep_a",
+          "delta_2023": 0.01608062993394971,
+          "delta_2024": 0.02588036487791623,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 9.0
+          },
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.008320605038799056,
+          "delta_2024": -0.006208502175137909,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.002390465457774135,
+          "delta_2024": -0.0018235203214340906,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_4_hypev_a",
+          "delta_2023": 0.00034149506539630494,
+          "delta_2024": 0.00040179261319734164,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "hypev_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_7_empwrkft1_a",
+          "delta_2023": -0.0001707475326981527,
+          "delta_2024": -0.00043269973728944514,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.02660792624390415,
+          "delta_2024": -0.03470556319570978,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 5.0
+          },
+          "coincides_with": "step_2_agep_a",
+          "delta_2023": 0.008079014965854003,
+          "delta_2024": 0.008116727386648065,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_7_empwrkft1_a",
+          "delta_2023": -0.0019714284118109715,
+          "delta_2024": -0.0030254576704436265,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.01970320492498656,
+          "delta_2024": -0.02385610915692371,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 5.0
+          },
+          "coincides_with": "step_2_agep_a",
+          "delta_2023": 0.008321778909675448,
+          "delta_2024": 0.013054793951685406,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 9.0
+          },
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.001982279775386342,
+          "delta_2024": -0.0035055124805777327,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.03179043027138828,
+          "delta_2024": -0.03203419600648949,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 5.0
+          },
+          "coincides_with": "step_2_agep_a",
+          "delta_2023": 0.01608062993394971,
+          "delta_2024": 0.02588036487791623,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 9.0
+          },
+          "coincides_with": "step_10_agep_a",
+          "delta_2023": -0.008320605038799056,
+          "delta_2024": -0.006208502175137909,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 10,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_11_notcov_a",
+          "delta_2023": -0.002390465457774135,
+          "delta_2024": -0.0018235203214340906,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "notcov_a",
+          "state_index": 11,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_7_empwrkft1_a",
+          "delta_2023": -0.0001707475326981527,
+          "delta_2024": -0.00043269973728944514,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "2": 1
+          },
+          "coincides_with": "step_4_hypev_a",
+          "delta_2023": 0.00034149506539630494,
+          "delta_2024": 0.00040179261319734164,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "hypev_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "protected_attribute": "HISPALLP_A",
+      "total_accepted_steps": 12
+    },
+    "D6_ARM_003": {
+      "largest_2023_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_3_empwrkft1_a",
+          "delta_2023": -0.003145863750875416,
+          "delta_2024": -0.004252849774099038,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 3,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "3": 1
+          },
+          "coincides_with": "step_6_cogmemdff_a",
+          "delta_2023": -0.002607160401327663,
+          "delta_2024": -0.0014023798417246158,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "cogmemdff_a",
+          "state_index": 6,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.3333333333333333
+          },
+          "coincides_with": "step_5_agep_a",
+          "delta_2023": -0.0023777019297642477,
+          "delta_2024": -0.004566351627808191,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": {
+            "power": 0.3333333333333333
+          },
+          "coincides_with": "step_5_agep_a",
+          "delta_2023": -0.004498608069585797,
+          "delta_2024": -0.007317318848165555,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_3_empwrkft1_a",
+          "delta_2023": -0.002651965933551881,
+          "delta_2024": -0.004529088087247057,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 3,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.14285714285714285
+          },
+          "coincides_with": "step_7_agep_a",
+          "delta_2023": -0.0018754408922002641,
+          "delta_2024": -0.0027825794771856316,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": {
+            "power": 0.3333333333333333
+          },
+          "coincides_with": "step_5_agep_a",
+          "delta_2023": -0.009526726997126034,
+          "delta_2024": -0.010170909357560709,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.14285714285714285
+          },
+          "coincides_with": "step_7_agep_a",
+          "delta_2023": -0.004535264474541667,
+          "delta_2024": -0.006152303105050938,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_3_empwrkft1_a",
+          "delta_2023": -0.004190398896096903,
+          "delta_2024": -0.005111667991389457,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 3,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "power": 0.14285714285714285
+          },
+          "coincides_with": "step_7_agep_a",
+          "delta_2023": -0.00020490403660952108,
+          "delta_2024": -0.00012363231748779152,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "3": 1
+          },
+          "coincides_with": "step_6_cogmemdff_a",
+          "delta_2023": -0.00017075336384126793,
+          "delta_2024": -0.00030908079371947837,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "cogmemdff_a",
+          "state_index": 6,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "1": 2
+          },
+          "coincides_with": "step_4_hypev_a",
+          "delta_2023": -0.0001366026910730139,
+          "delta_2024": -3.090807937194788e-05,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "hypev_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": {
+            "power": 0.3333333333333333
+          },
+          "coincides_with": "step_5_agep_a",
+          "delta_2023": -0.0023777019297642477,
+          "delta_2024": -0.004566351627808191,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_3_empwrkft1_a",
+          "delta_2023": -0.003145863750875416,
+          "delta_2024": -0.004252849774099038,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 3,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.14285714285714285
+          },
+          "coincides_with": "step_7_agep_a",
+          "delta_2023": -0.0009105102135166521,
+          "delta_2024": -0.0014943865819326274,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": {
+            "power": 0.3333333333333333
+          },
+          "coincides_with": "step_5_agep_a",
+          "delta_2023": -0.004498608069585797,
+          "delta_2024": -0.007317318848165555,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_3_empwrkft1_a",
+          "delta_2023": -0.002651965933551881,
+          "delta_2024": -0.004529088087247057,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 3,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.14285714285714285
+          },
+          "coincides_with": "step_7_agep_a",
+          "delta_2023": -0.0018754408922002641,
+          "delta_2024": -0.0027825794771856316,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": {
+            "power": 0.3333333333333333
+          },
+          "coincides_with": "step_5_agep_a",
+          "delta_2023": -0.009526726997126034,
+          "delta_2024": -0.010170909357560709,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.14285714285714285
+          },
+          "coincides_with": "step_7_agep_a",
+          "delta_2023": -0.004535264474541667,
+          "delta_2024": -0.006152303105050938,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 7,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_3_empwrkft1_a",
+          "delta_2023": -0.004190398896096903,
+          "delta_2024": -0.005111667991389457,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 3,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "3": 1
+          },
+          "coincides_with": "step_6_cogmemdff_a",
+          "delta_2023": -0.00017075336384126793,
+          "delta_2024": -0.00030908079371947837,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "cogmemdff_a",
+          "state_index": 6,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_3_empwrkft1_a",
+          "delta_2023": -3.4150672768253586e-05,
+          "delta_2024": -0.00015454039685973897,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 3,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "power": 0.3333333333333333
+          },
+          "coincides_with": "step_5_agep_a",
+          "delta_2023": 0.0,
+          "delta_2024": -0.00015454039685973897,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": null,
+          "selected_feature": "agep_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "protected_attribute": "DISAB3_A",
+      "total_accepted_steps": 7
+    },
+    "D6_ARM_004": {
+      "largest_2023_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.010545853387487647,
+          "delta_2024": -0.011958047599672117,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2,
+            "5": 1
+          },
+          "coincides_with": "step_9_phstat_a",
+          "delta_2023": -0.008289230905926509,
+          "delta_2024": -0.00822470928834329,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 9,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_4_agep_a",
+          "delta_2023": -0.006751348986898831,
+          "delta_2024": -0.016077779215613902,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_4_agep_a",
+          "delta_2023": -0.024384906566212727,
+          "delta_2024": -0.03545477242267314,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.012000106561078194,
+          "delta_2024": -0.015732375004834487,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2,
+            "5": 1
+          },
+          "coincides_with": "step_9_phstat_a",
+          "delta_2023": -0.011271958128539872,
+          "delta_2024": -0.009552273870298889,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 9,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_4_agep_a",
+          "delta_2023": -0.04563614492692869,
+          "delta_2024": -0.048077075075752485,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.02367125218222521,
+          "delta_2024": -0.03229841586069515,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2,
+            "5": 1
+          },
+          "coincides_with": "step_9_phstat_a",
+          "delta_2023": -0.02059845708723096,
+          "delta_2024": -0.016297595055934755,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 9,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2023_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.0005122600915238029,
+          "delta_2024": -0.00037089695246337413,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_4_agep_a",
+          "delta_2023": -0.00020490403660952108,
+          "delta_2024": 9.272423811584364e-05,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": false,
+          "selected_feature": "agep_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_2_empwrkft1_a",
+          "delta_2023": -0.00017075336384126793,
+          "delta_2024": -0.0002472646349755826,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2023,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auprc_changes": [
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_4_agep_a",
+          "delta_2023": -0.006751348986898831,
+          "delta_2024": -0.016077779215613902,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.010545853387487647,
+          "delta_2024": -0.011958047599672117,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2,
+            "5": 1
+          },
+          "coincides_with": "step_9_phstat_a",
+          "delta_2023": -0.008289230905926509,
+          "delta_2024": -0.00822470928834329,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 9,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_auroc_changes": [
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_4_agep_a",
+          "delta_2023": -0.024384906566212727,
+          "delta_2024": -0.03545477242267314,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.012000106561078194,
+          "delta_2024": -0.015732375004834487,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2,
+            "5": 1
+          },
+          "coincides_with": "step_9_phstat_a",
+          "delta_2023": -0.011271958128539872,
+          "delta_2024": -0.009552273870298889,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 9,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_ks_statistic_changes": [
+        {
+          "accepted_transformation": "dropped",
+          "coincides_with": "step_4_agep_a",
+          "delta_2023": -0.04563614492692869,
+          "delta_2024": -0.048077075075752485,
+          "feature_semantic_type": "numerical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "agep_a",
+          "state_index": 4,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.02367125218222521,
+          "delta_2024": -0.03229841586069515,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2,
+            "5": 1
+          },
+          "coincides_with": "step_9_phstat_a",
+          "delta_2023": -0.02059845708723096,
+          "delta_2024": -0.016297595055934755,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 9,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "largest_2024_pathwise_selection_rate_changes": [
+        {
+          "accepted_transformation": {
+            "4": 2
+          },
+          "coincides_with": "step_5_phstat_a",
+          "delta_2023": -0.0005122600915238029,
+          "delta_2024": -0.00037089695246337413,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 5,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "-1": 1
+          },
+          "coincides_with": "step_2_empwrkft1_a",
+          "delta_2023": -0.00017075336384126793,
+          "delta_2024": -0.0002472646349755826,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "empwrkft1_a",
+          "state_index": 2,
+          "status": "PI_REVIEW_REQUIRED"
+        },
+        {
+          "accepted_transformation": {
+            "4": 2,
+            "5": 1
+          },
+          "coincides_with": "step_9_phstat_a",
+          "delta_2023": -0.00013660269107301434,
+          "delta_2024": -0.00015454039685973897,
+          "feature_semantic_type": "categorical",
+          "pathwise_association": true,
+          "ranking_year": 2024,
+          "same_direction": true,
+          "selected_feature": "phstat_a",
+          "state_index": 9,
+          "status": "PI_REVIEW_REQUIRED"
+        }
+      ],
+      "protected_attribute": "DISAB3_A",
+      "total_accepted_steps": 9
+    }
+  },
+  "causal_claims": false,
+  "documentation": "Descriptive pathwise summary identifying transformation steps associated with the largest absolute pathwise changes in AUROC, AUPRC, KS separation, and selection rate. These steps coincide with path-dependent shifts along the greedily chosen FairBias trajectory. All reported metrics remain descriptive and order-dependent.",
+  "status": "PI_REVIEW_REQUIRED"
+}

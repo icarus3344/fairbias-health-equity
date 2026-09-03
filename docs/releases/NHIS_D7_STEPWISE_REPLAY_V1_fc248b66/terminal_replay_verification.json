@@ -1,0 +1,50 @@
+{
+  "D6_ARM_001_2022": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_001_2023": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_001_2024": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_002_2022": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_002_2023": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_002_2024": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_003_2022": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_003_2023": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_003_2024": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_004_2022": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_004_2023": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  },
+  "D6_ARM_004_2024": {
+    "max_numeric_diff": 0.0,
+    "verified": true
+  }
+}
