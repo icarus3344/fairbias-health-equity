@@ -1,4 +1,4 @@
-"""Gate D7.2a: Frozen-Design Path-Dependent Stepwise FairBias Representation Replay Audit Harness.
+"""Gate D7.2a.1: Frozen-Design Path-Dependent Stepwise FairBias Representation Replay Audit Harness.
 
 Scientific Question:
 "Along the actual accepted FairBias transformation path learned from NHIS 2022,
@@ -92,6 +92,7 @@ D7_2_REFITS_INTERMEDIATE_CLASSIFIERS: bool = True
 TRAINING_YEAR: int = 2022
 VALIDATION_YEAR: int = 2023
 DESCRIPTIVE_TEST_YEAR: int = 2024
+TEMPORAL_YEARS: Tuple[int, ...] = (2022, 2023, 2024)
 
 CANONICAL_DECISION_THRESHOLD: float = 0.5
 LR_RANDOM_STATE: int = 0
@@ -104,9 +105,9 @@ MATRIX_NUMERICAL_TOLERANCE: float = 1e-12
 METRIC_REPRODUCTION_TOLERANCE: float = 1e-12
 
 # -----------------------------------------------------------------------------
-# Starting Identity & Tag Constants
+# Starting Identity, Tags, and Upstream Anchors
 # -----------------------------------------------------------------------------
-STARTING_HEAD_COMMIT: str = "a5f0d81c4cceb50b02d40ad6a2f2e4f88f2eefd9"
+STARTING_HEAD_COMMIT: str = "b1fcbb07d04d0d53bfc61ebcd80b8ed16ed985c3"
 D7_1_TAG: str = "nhis-d7-terminal-mechanism-v1"
 D7_1_TAG_OBJECT: str = "bd1067ee1e4530d303e8ea4d6e605d4afcc45d53"
 D7_1_COMMIT: str = "a5f0d81c4cceb50b02d40ad6a2f2e4f88f2eefd9"
@@ -160,9 +161,38 @@ TOTAL_EXPECTED_ACCEPTED_STEPS: int = 43
 TOTAL_EXPECTED_BASELINE_STATES: int = 4
 TOTAL_EXPECTED_REPRESENTATION_STATES: int = 47
 
-# -----------------------------------------------------------------------------
-# Expected Upstream Anchors (20 State Hashes)
-# -----------------------------------------------------------------------------
+# Prepared data and preprocessing anchors
+FROZEN_FEATURES_PARQUET_PATH: Path = Path("data/processed/nhis/nhis_2022_2024_features.parquet")
+FROZEN_FEATURES_PARQUET_SHA256: str = (
+    "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383"
+)
+PREPROCESSING_STATE_SHA256: str = (
+    "f106967a8ed9bf46ff1c3ff009e40763280fa1dbc78983d3a479a1508fd83db9"
+)
+
+# 12 Mandatory Expected Cohort Source-Row Digests
+EXPECTED_COHORT_SOURCE_ROW_DIGESTS: Dict[int, Dict[str, str]] = {
+    2022: {
+        "D6_ARM_001": "fbf4c5b0cadd74b7dfa565082e5d6577c8ec75fbdbf5abbdc8e48d712896ff6e",
+        "D6_ARM_002": "30a71c454f54871cde9c03e34eabe936ce0c1a55a789e31017d9b31e81f23aa4",
+        "D6_ARM_003": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+        "D6_ARM_004": "e54056b34627b15440af95bcdb8e3f6ca1f282a909d3a59a3f47d62e7959185d",
+    },
+    2023: {
+        "D6_ARM_001": "f66e94714e614c8ffd6ddeb2f9d466e616164e7b9aaf023e58b34c776006716a",
+        "D6_ARM_002": "31197a19f03bf65a75cb7a6db2c97de8c7bb6a4878aa5260f9d1ee5ab56d82ad",
+        "D6_ARM_003": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+        "D6_ARM_004": "b24ede4a8a5a71c798612be991a1b3032a868b24da5f5793a201372b211d747a",
+    },
+    2024: {
+        "D6_ARM_001": "f1d4386c9c14d939482bebaae94001f126fd388a8e55c494c65532f306b2ad4f",
+        "D6_ARM_002": "0162b49440230ce4047ff2ebc1c2e0261479344615af282d9674f07e91786708",
+        "D6_ARM_003": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+        "D6_ARM_004": "0a9efcfd5a18647c55614d515066177ea6fabf8f5292472f4558ad87692079e9",
+    },
+}
+
+# 20 Mandatory Expected Training State Anchors
 EXPECTED_TRAINING_STATE_ANCHORS: Dict[str, Dict[str, str]] = {
     "D6_ARM_001": {
         "changed_dict": "40511e6c0d55b0ffdcef534f6b0eb120a16cdfe24ca75bf135ce1ce803f85f79",
@@ -577,7 +607,13 @@ class SequentialReplayStateMachine:
             )
             df_out[feat] = s_transformed
         elif step.feature_semantic_type == "numerical":
-            # The accepted power in the frozen FairBias implementation is applied to baseline values
+            # Frozen _make_candidate() semantics from fairbias/mitigation.py:
+            #   temp_changed[attr] = change
+            #   FairTransform.transform_data(raw_X, temp_changed, ...)
+            # In the original FairBias training, candidate transforms are applied directly to the
+            # baseline raw feature matrix via the updated changed_dict entry. Therefore, numerical
+            # revisits update the positive power relative to base_df[feat], rather than compounding
+            # powers (i.e. power 3 followed by power 5 produces x^5, not x^15).
             power = float(step.numerical_exponent)
             s_transformed = apply_power_transform(base_df[feat], power)
             df_out[feat] = s_transformed
@@ -605,7 +641,7 @@ class SequentialReplayStateMachine:
 
 
 # -----------------------------------------------------------------------------
-# Terminal Replay Barrier (Section 7)
+# Terminal Replay Barrier (Section 7 & 8)
 # -----------------------------------------------------------------------------
 def verify_terminal_replay_barrier(
     arm_id: str,
@@ -783,7 +819,7 @@ def predict_proba_fitted_model(
 
 
 # -----------------------------------------------------------------------------
-# Endpoint Model-Reproduction Barrier (Section 8)
+# Endpoint Model-Reproduction Barrier (Section 8 & 10)
 # -----------------------------------------------------------------------------
 def verify_endpoint_model_reproduction_barrier(
     arm_id: str,
@@ -902,11 +938,8 @@ def compute_stepwise_metrics(
 ) -> Dict[str, Any]:
     """Compute utility, score separation, and representation dependence for a given arm x state x year.
 
-    Metrics:
-    - Representation dependence: max d_phi (if X_state and O_df are provided).
-    - Utility: AUROC, AUPRC, balanced accuracy, F1, accuracy, count predicted positive, selection rate.
-    - Score separation: KS(Y0, Y1), score mean, median, IQR, Y0 mean/median, Y1 mean/median.
-    - Optional protected fairness gaps: DP gap, TPR gap, FPR gap, EO max gap.
+    P1-C Fix: Active semantic lists (active_cate_attrs, active_num_attrs) are strictly filtered
+    internally to match X_state.columns so that dropped features never enter calculate_epsilon.
     """
     y_arr = np.asarray(y_true, dtype=int)
     scores = np.asarray(probs, dtype=float)
@@ -950,15 +983,17 @@ def compute_stepwise_metrics(
     y1_mean = float(np.mean(scores_y1)) if len(scores_y1) > 0 else None
     y1_median = float(np.median(scores_y1)) if len(scores_y1) > 0 else None
 
-    # 4. Representation dependence (max d_phi)
+    # 4. Representation dependence (max d_phi) - P1-C INTERNAL FILTERING
     max_d_phi = None
     if X_state is not None and O_df is not None:
         evaluator = FairEvaluator()
+        active_cate_attrs = [f for f in (cate_attrs or []) if f in X_state.columns]
+        active_num_attrs = [f for f in (num_attrs or []) if f in X_state.columns]
         eps_dict = evaluator.calculate_epsilon(
             X_state,
             O_df,
-            cate_attrs=list(cate_attrs or []),
-            num_attrs=list(num_attrs or []),
+            cate_attrs=active_cate_attrs,
+            num_attrs=active_num_attrs,
             sample_weight=None,
         )
         if eps_dict:
@@ -1072,7 +1107,6 @@ def compute_stepwise_deltas(
             }
 
             for m in tracked_metrics:
-                # Resolve field name (max_d_phi vs d_phi)
                 col_name = "max_d_phi" if m == "d_phi" else m
                 curr_val = curr_row.get(col_name)
                 prev_val = prev_row.get(col_name)
@@ -1098,7 +1132,7 @@ def compute_stepwise_deltas(
 
 
 # -----------------------------------------------------------------------------
-# Key Path Summary Generator (Section 15)
+# Key Path Temporal Summary Generator (Section 13 & 15 Repair)
 # -----------------------------------------------------------------------------
 def generate_key_path_summary(
     deltas_df: pd.DataFrame,
@@ -1106,7 +1140,10 @@ def generate_key_path_summary(
 ) -> Dict[str, Any]:
     """Generate descriptive key path summary identifying largest pathwise changes.
 
-    Guarantees:
+    Repair:
+    - Retains separate 2023 and 2024 rankings (does NOT rank 2023 and 2024 together or drop duplicates).
+    - For each selected transformation step, records the corresponding delta in BOTH years where available,
+      plus same_direction = True/False/None.
     - Descriptive language only (coincides_with, pathwise_association, PI_REVIEW_REQUIRED).
     - Absolutely NO causal assertions or hypotheses declarations.
     """
@@ -1123,10 +1160,10 @@ def generate_key_path_summary(
     }
 
     metrics_to_rank = [
-        ("pathwise_marginal_delta_auroc", "largest_absolute_pathwise_auroc_changes"),
-        ("pathwise_marginal_delta_auprc", "largest_absolute_pathwise_auprc_changes"),
-        ("pathwise_marginal_delta_ks_statistic", "largest_absolute_pathwise_ks_changes"),
-        ("pathwise_marginal_delta_selection_rate", "largest_absolute_pathwise_selection_rate_changes"),
+        ("pathwise_marginal_delta_auroc", "auroc"),
+        ("pathwise_marginal_delta_auprc", "auprc"),
+        ("pathwise_marginal_delta_ks_statistic", "ks_statistic"),
+        ("pathwise_marginal_delta_selection_rate", "selection_rate"),
     ]
 
     for arm_id in D6_ARM_IDS:
@@ -1137,44 +1174,60 @@ def generate_key_path_summary(
             "protected_attribute": ARM_PROTECTED_ATTRIBUTES[arm_id],
         }
 
-        for delta_col, rank_key in metrics_to_rank:
-            if delta_col not in arm_deltas.columns or arm_deltas[delta_col].dropna().empty:
-                arm_summary[rank_key] = []
+        # Build lookup for state_index -> year -> delta
+        for delta_col, metric_name in metrics_to_rank:
+            if delta_col not in arm_deltas.columns:
+                arm_summary[f"largest_2023_pathwise_{metric_name}_changes"] = []
+                arm_summary[f"largest_2024_pathwise_{metric_name}_changes"] = []
                 continue
 
-            valid_df = arm_deltas.dropna(subset=[delta_col]).copy()
-            valid_df["abs_delta"] = valid_df[delta_col].abs()
-            top_steps = (
-                valid_df.sort_values("abs_delta", ascending=False)
-                .drop_duplicates(subset=["state_index"])
-                .head(3)
-            )
+            # Separate rankings for 2023 and 2024
+            for year in (2023, 2024):
+                year_df = arm_deltas[arm_deltas["year"] == year].dropna(subset=[delta_col]).copy()
+                if year_df.empty:
+                    arm_summary[f"largest_{year}_pathwise_{metric_name}_changes"] = []
+                    continue
 
-            ranked_list: List[Dict[str, Any]] = []
-            for _, r in top_steps.iterrows():
-                st_idx = int(r["state_index"])
-                step_obj = arm_trace[st_idx - 1] if 0 < st_idx <= len(arm_trace) else None
+                year_df["abs_delta"] = year_df[delta_col].abs()
+                top_steps = year_df.sort_values("abs_delta", ascending=False).head(3)
 
-                ranked_list.append({
-                    "state_index": st_idx,
-                    "year": int(r["year"]),
-                    "selected_feature": step_obj.selected_feature if step_obj else None,
-                    "feature_semantic_type": step_obj.feature_semantic_type if step_obj else None,
-                    "accepted_transformation": (
-                        "dropped"
-                        if step_obj and step_obj.dropped
-                        else (step_obj.accepted_transformation if step_obj else None)
-                    ),
-                    "absolute_pathwise_marginal_change": float(r["abs_delta"]),
-                    "signed_pathwise_marginal_change": float(r[delta_col]),
-                    "coincides_with": (
-                        f"step_{st_idx}_{step_obj.selected_feature}" if step_obj else f"step_{st_idx}"
-                    ),
-                    "pathwise_association": True,
-                    "status": "PI_REVIEW_REQUIRED",
-                })
+                ranked_list: List[Dict[str, Any]] = []
+                for _, r in top_steps.iterrows():
+                    st_idx = int(r["state_index"])
+                    step_obj = arm_trace[st_idx - 1] if 0 < st_idx <= len(arm_trace) else None
 
-            arm_summary[rank_key] = ranked_list
+                    # Find deltas for both years
+                    row_2023 = arm_deltas[(arm_deltas["year"] == 2023) & (arm_deltas["state_index"] == st_idx)]
+                    row_2024 = arm_deltas[(arm_deltas["year"] == 2024) & (arm_deltas["state_index"] == st_idx)]
+
+                    d23 = float(row_2023[delta_col].iloc[0]) if not row_2023.empty and pd.notna(row_2023[delta_col].iloc[0]) else None
+                    d24 = float(row_2024[delta_col].iloc[0]) if not row_2024.empty and pd.notna(row_2024[delta_col].iloc[0]) else None
+
+                    same_dir = None
+                    if d23 is not None and d24 is not None:
+                        same_dir = bool((d23 >= 0 and d24 >= 0) or (d23 <= 0 and d24 <= 0))
+
+                    ranked_list.append({
+                        "state_index": st_idx,
+                        "selected_feature": step_obj.selected_feature if step_obj else None,
+                        "feature_semantic_type": step_obj.feature_semantic_type if step_obj else None,
+                        "accepted_transformation": (
+                            "dropped"
+                            if step_obj and step_obj.dropped
+                            else (step_obj.accepted_transformation if step_obj else None)
+                        ),
+                        "ranking_year": year,
+                        "delta_2023": d23,
+                        "delta_2024": d24,
+                        "same_direction": same_dir,
+                        "coincides_with": (
+                            f"step_{st_idx}_{step_obj.selected_feature}" if step_obj else f"step_{st_idx}"
+                        ),
+                        "pathwise_association": True,
+                        "status": "PI_REVIEW_REQUIRED",
+                    })
+
+                arm_summary[f"largest_{year}_pathwise_{metric_name}_changes"] = ranked_list
 
         summary["arms"][arm_id] = arm_summary
 
@@ -1188,93 +1241,199 @@ def generate_key_path_summary(
 
 
 # -----------------------------------------------------------------------------
-# Upstream Provenance Verification
+# Fail-Closed Upstream Provenance Verification (P1-A)
 # -----------------------------------------------------------------------------
-def verify_upstream_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
-    """Verify repository HEAD, D7.1 frozen tag, and D6 upstream releases."""
-    root = Path(repo_root or ".")
+def verify_git_execution_preconditions(
+    repo_root: Path,
+    expected_sha: str,
+) -> Dict[str, Any]:
+    """Verify local Git HEAD, tracked worktree cleanliness, and expected execution SHA."""
+    root = Path(repo_root)
 
-    # 1. Verify Git HEAD if git is available
-    git_head = None
-    try:
-        res = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        git_head = res.stdout.strip()
-    except Exception:
-        pass
-
-    # 2. Verify D7.1 tag dereference if git is available
-    d7_1_tag_commit = None
-    d7_1_tag_object = None
-    try:
-        res_tag = subprocess.run(
-            ["git", "rev-parse", D7_1_TAG],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        d7_1_tag_object = res_tag.stdout.strip()
-
-        res_commit = subprocess.run(
-            ["git", "rev-parse", f"{D7_1_TAG}^{{commit}}"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        d7_1_tag_commit = res_commit.stdout.strip()
-    except Exception:
-        pass
-
-    # 3. Verify D6 train/val manifest
-    train_val_manifest = (
-        root / "docs" / "releases" / D6_TRAIN_VAL_RELEASE_ID / "d6_temporal_train_val_manifest.json"
+    # 1. Local HEAD
+    res_head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
     )
-    if not train_val_manifest.is_file():
-        raise ProvenanceVerificationError(f"Missing D6 train/val manifest at {train_val_manifest}")
-    tv_sha = compute_sha256(train_val_manifest)
-    if tv_sha != D6_TRAIN_VAL_MANIFEST_SHA256:
+    if res_head.returncode != 0:
+        raise ProvenanceVerificationError(f"Failed to query git HEAD: {res_head.stderr.strip()}")
+    current_head = res_head.stdout.strip()
+    if current_head != expected_sha:
         raise ProvenanceVerificationError(
-            f"D6 train/val manifest SHA mismatch: observed {tv_sha}, expected {D6_TRAIN_VAL_MANIFEST_SHA256}"
+            f"Git HEAD mismatch: current {current_head} != expected {expected_sha}"
         )
 
-    # 4. Verify D6 test manifest
-    test_manifest = (
-        root / "docs" / "releases" / D6_TEST_RELEASE_ID / "d6_temporal_test_manifest.json"
+    # 2. Tracked worktree cleanliness (ignoring untracked files)
+    res_status = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=no"],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
     )
-    if not test_manifest.is_file():
-        raise ProvenanceVerificationError(f"Missing D6 test manifest at {test_manifest}")
-    test_sha = compute_sha256(test_manifest)
-    if test_sha != D6_TEST_MANIFEST_SHA256:
+    if res_status.returncode != 0:
+        raise ProvenanceVerificationError(f"Failed to query git status: {res_status.stderr.strip()}")
+    if res_status.stdout.strip():
         raise ProvenanceVerificationError(
-            f"D6 test manifest SHA mismatch: observed {test_sha}, expected {D6_TEST_MANIFEST_SHA256}"
+            f"Tracked git worktree is dirty:\n{res_status.stdout.strip()}"
         )
 
     return {
-        "git_head": git_head,
-        "starting_head_commit": STARTING_HEAD_COMMIT,
+        "git_head": current_head,
+        "expected_head": expected_sha,
+        "tracked_worktree_clean": True,
+    }
+
+
+def verify_upstream_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
+    """Verify repository HEAD, D7.1 frozen tag, and D6 upstream releases. Fail-closed on any error."""
+    root = Path(repo_root or ".")
+
+    def run_git_cmd(cmd: List[str]) -> str:
+        res = subprocess.run(
+            ["git"] + cmd,
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+        )
+        if res.returncode != 0:
+            raise ProvenanceVerificationError(
+                f"Git command {' '.join(cmd)} failed: {res.stderr.strip()}"
+            )
+        return res.stdout.strip()
+
+    # 1. Verify D7.1 tag object and commit
+    d7_1_tag_obj = run_git_cmd(["rev-parse", D7_1_TAG])
+    if d7_1_tag_obj != D7_1_TAG_OBJECT:
+        raise ProvenanceVerificationError(
+            f"D7.1 tag object mismatch: observed {d7_1_tag_obj}, expected {D7_1_TAG_OBJECT}"
+        )
+    d7_1_commit = run_git_cmd(["rev-parse", f"{D7_1_TAG}^{{commit}}"])
+    if d7_1_commit != D7_1_COMMIT:
+        raise ProvenanceVerificationError(
+            f"D7.1 dereferenced commit mismatch: observed {d7_1_commit}, expected {D7_1_COMMIT}"
+        )
+
+    # 2. Verify D6 Train/Val tag object and commit
+    d6_tv_tag_obj = run_git_cmd(["rev-parse", D6_TRAIN_VAL_TAG])
+    if d6_tv_tag_obj != D6_TRAIN_VAL_TAG_OBJECT:
+        raise ProvenanceVerificationError(
+            f"D6 train/val tag object mismatch: observed {d6_tv_tag_obj}, expected {D6_TRAIN_VAL_TAG_OBJECT}"
+        )
+    d6_tv_commit = run_git_cmd(["rev-parse", f"{D6_TRAIN_VAL_TAG}^{{commit}}"])
+    if d6_tv_commit != D6_TRAIN_VAL_COMMIT:
+        raise ProvenanceVerificationError(
+            f"D6 train/val commit mismatch: observed {d6_tv_commit}, expected {D6_TRAIN_VAL_COMMIT}"
+        )
+
+    # 3. Verify D6 Test tag object and commit
+    d6_test_tag_obj = run_git_cmd(["rev-parse", D6_TEST_TAG])
+    if d6_test_tag_obj != D6_TEST_TAG_OBJECT:
+        raise ProvenanceVerificationError(
+            f"D6 test tag object mismatch: observed {d6_test_tag_obj}, expected {D6_TEST_TAG_OBJECT}"
+        )
+    d6_test_commit = run_git_cmd(["rev-parse", f"{D6_TEST_TAG}^{{commit}}"])
+    if d6_test_commit != D6_TEST_COMMIT:
+        raise ProvenanceVerificationError(
+            f"D6 test commit mismatch: observed {d6_test_commit}, expected {D6_TEST_COMMIT}"
+        )
+
+    # 4. Verify D6 Train/Val manifest and every tracked artifact
+    tv_base = root / "docs" / "releases" / D6_TRAIN_VAL_RELEASE_ID
+    tv_manifest_path = tv_base / "d6_temporal_train_val_manifest.json"
+    if not tv_manifest_path.is_file():
+        raise ProvenanceVerificationError(f"Missing D6 train/val manifest: {tv_manifest_path}")
+    tv_manifest_sha = compute_sha256(tv_manifest_path)
+    if tv_manifest_sha != D6_TRAIN_VAL_MANIFEST_SHA256:
+        raise ProvenanceVerificationError(
+            f"D6 train/val manifest SHA mismatch: observed {tv_manifest_sha}, expected {D6_TRAIN_VAL_MANIFEST_SHA256}"
+        )
+    tv_manifest_data = json.loads(tv_manifest_path.read_text(encoding="utf-8"))
+    tv_artifacts = tv_manifest_data.get("artifacts", {})
+    for rel_p, spec in tv_artifacts.items():
+        art_path = tv_base / rel_p
+        if not art_path.is_file():
+            raise ProvenanceVerificationError(f"Missing D6 train/val artifact: {art_path}")
+        if art_path.stat().st_size != spec["size_bytes"]:
+            raise ProvenanceVerificationError(
+                f"Size mismatch on {art_path}: observed {art_path.stat().st_size}, expected {spec['size_bytes']}"
+            )
+        art_sha = compute_sha256(art_path)
+        if art_sha != spec["sha256"]:
+            raise ProvenanceVerificationError(
+                f"SHA-256 mismatch on {art_path}: observed {art_sha}, expected {spec['sha256']}"
+            )
+
+    # 5. Verify D6 Test manifest and every tracked artifact
+    test_base = root / "docs" / "releases" / D6_TEST_RELEASE_ID
+    test_manifest_path = test_base / "d6_temporal_test_manifest.json"
+    if not test_manifest_path.is_file():
+        raise ProvenanceVerificationError(f"Missing D6 test manifest: {test_manifest_path}")
+    test_manifest_sha = compute_sha256(test_manifest_path)
+    if test_manifest_sha != D6_TEST_MANIFEST_SHA256:
+        raise ProvenanceVerificationError(
+            f"D6 test manifest SHA mismatch: observed {test_manifest_sha}, expected {D6_TEST_MANIFEST_SHA256}"
+        )
+    test_manifest_data = json.loads(test_manifest_path.read_text(encoding="utf-8"))
+    test_artifacts = test_manifest_data.get("artifacts", {})
+    for rel_p, spec in test_artifacts.items():
+        art_path = test_base / rel_p
+        if not art_path.is_file():
+            raise ProvenanceVerificationError(f"Missing D6 test artifact: {art_path}")
+        if art_path.stat().st_size != spec["size_bytes"]:
+            raise ProvenanceVerificationError(
+                f"Size mismatch on {art_path}: observed {art_path.stat().st_size}, expected {spec['size_bytes']}"
+            )
+        art_sha = compute_sha256(art_path)
+        if art_sha != spec["sha256"]:
+            raise ProvenanceVerificationError(
+                f"SHA-256 mismatch on {art_path}: observed {art_sha}, expected {spec['sha256']}"
+            )
+
+    return {
         "d7_1_tag": D7_1_TAG,
-        "d7_1_tag_object": d7_1_tag_object,
-        "expected_d7_1_tag_object": D7_1_TAG_OBJECT,
-        "d7_1_tag_commit": d7_1_tag_commit,
-        "expected_d7_1_commit": D7_1_COMMIT,
-        "d6_train_val_manifest_sha256": tv_sha,
-        "d6_test_manifest_sha256": test_sha,
+        "d7_1_tag_object": d7_1_tag_obj,
+        "d7_1_commit": d7_1_commit,
+        "d6_train_val_tag": D6_TRAIN_VAL_TAG,
+        "d6_train_val_tag_object": d6_tv_tag_obj,
+        "d6_train_val_commit": d6_tv_commit,
+        "d6_train_val_manifest_sha256": tv_manifest_sha,
+        "d6_train_val_artifacts_verified": len(tv_artifacts),
+        "d6_test_tag": D6_TEST_TAG,
+        "d6_test_tag_object": d6_test_tag_obj,
+        "d6_test_commit": d6_test_commit,
+        "d6_test_manifest_sha256": test_manifest_sha,
+        "d6_test_artifacts_verified": len(test_artifacts),
         "provenance_status": "VERIFIED",
     }
+
+
+def verify_12_cohort_provenance_barrier(
+    observed_digests: Dict[int, Dict[str, str]],
+) -> Dict[str, Any]:
+    """Verify that all 12 arm x year cohorts match frozen source-row digests."""
+    for year in (2022, 2023, 2024):
+        if year not in observed_digests:
+            raise ProvenanceVerificationError(f"Missing cohort digests for year {year}")
+        for arm_id in D6_ARM_IDS:
+            if arm_id not in observed_digests[year]:
+                raise ProvenanceVerificationError(f"Missing cohort digest for {arm_id} in {year}")
+            obs = observed_digests[year][arm_id]
+            exp = EXPECTED_COHORT_SOURCE_ROW_DIGESTS[year][arm_id]
+            if obs != exp:
+                raise ProvenanceVerificationError(
+                    f"Cohort source-row digest mismatch for {arm_id} ({year}): "
+                    f"observed {obs}, expected {exp}"
+                )
+    return {"cohort_provenance_barrier": "PASS", "cohorts_verified": 12}
 
 
 # -----------------------------------------------------------------------------
 # D7.2 Stepwise Replay Harness (Audit-Only & Production Guard)
 # -----------------------------------------------------------------------------
 class NHISD7StepwiseReplayHarness:
-    """Harness orchestrating Gate D7.2a design audit and verification.
+    """Harness orchestrating Gate D7.2a/a.1 design audit and verification.
 
     Guarantees:
     - Zero real NHIS cohort access.
@@ -1293,7 +1452,7 @@ class NHISD7StepwiseReplayHarness:
 
     def run_audit_only(self) -> Dict[str, Any]:
         """Execute strict read-only audit of archived traces and state invariants."""
-        # 1. Verify upstream provenance
+        # 1. Verify upstream provenance fail-closed
         prov_results = verify_upstream_provenance(self.repo_root)
 
         # 2. Load archived traces and verify step counts
@@ -1346,7 +1505,7 @@ class NHISD7StepwiseReplayHarness:
 
 
 # -----------------------------------------------------------------------------
-# Release Manager & Manifest Builder (Future Substantive Guard)
+# Release Manager & Manifest Builder (P1-B)
 # -----------------------------------------------------------------------------
 def build_d7_stepwise_manifest(release_dir: Path) -> Dict[str, Any]:
     """Construct deterministic SHA-256 manifest tracking exactly the 8 primary release artifacts."""
@@ -1369,51 +1528,474 @@ def build_d7_stepwise_manifest(release_dir: Path) -> Dict[str, Any]:
     return manifest
 
 
-class D7StepwiseReplayReleaseManager:
-    """Manager for future substantive D7.2 execution with strict preflight guards."""
+class ProductionD7StepwiseReplayRuntime:
+    """Production runtime orchestrating complete 12-cohort, 47-state replay, barriers, and diagnostics."""
 
-    def __init__(self, repo_root: Optional[Path] = None) -> None:
+    def __init__(
+        self,
+        repo_root: Path,
+        adapter_factory: Optional[Callable[[], Any]] = None,
+        train_val_dir: Optional[Path] = None,
+        test_dir: Optional[Path] = None,
+    ) -> None:
+        self.repo_root = Path(repo_root)
+        self.adapter_factory = adapter_factory
+        self.train_val_dir = train_val_dir or (
+            self.repo_root / "docs" / "releases" / D6_TRAIN_VAL_RELEASE_ID
+        )
+        self.test_dir = test_dir or (
+            self.repo_root / "docs" / "releases" / D6_TEST_RELEASE_ID
+        )
+
+        self.adapter: Optional[Any] = None
+        self.traces: Dict[str, List[ArchivedTraceStep]] = {}
+        self.raw_cohorts: Dict[int, Dict[str, Dict[str, Any]]] = {2022: {}, 2023: {}, 2024: {}}
+        self.cohort_digests: Dict[int, Dict[str, str]] = {2022: {}, 2023: {}, 2024: {}}
+        self.observed_preprocessing_sha256: Optional[str] = None
+        self.replayed_states: Dict[str, Dict[int, Dict[int, pd.DataFrame]]] = {}
+        self.fitted_models: Dict[str, Dict[int, Tuple[MinMaxScaler, LogisticRegression]]] = {}
+        self.endpoint_barrier_results: Dict[str, Any] = {}
+        self.terminal_matrix_results: Dict[str, Any] = {}
+        self.metrics_records: List[Dict[str, Any]] = []
+        self.deltas_df: Optional[pd.DataFrame] = None
+        self.key_path_summary: Optional[Dict[str, Any]] = None
+
+    def construct_adapter(self) -> Any:
+        """Construct real NHISStudyAdapter or test adapter factory, verifying preprocessing anchor."""
+        if self.adapter_factory is not None:
+            self.adapter = self.adapter_factory()
+        else:
+            from nhis_fairbias.adapter import NHISStudyAdapter
+            pq_path = self.repo_root / FROZEN_FEATURES_PARQUET_PATH
+            if not pq_path.is_file():
+                raise FileNotFoundError(f"Prepared features parquet not found: {pq_path}")
+            pq_sha = compute_sha256(pq_path)
+            if pq_sha != FROZEN_FEATURES_PARQUET_SHA256:
+                raise ProvenanceVerificationError(
+                    f"Features parquet SHA mismatch: observed {pq_sha}, expected {FROZEN_FEATURES_PARQUET_SHA256}"
+                )
+            self.adapter = NHISStudyAdapter(features_parquet_path=pq_path)
+
+        if not hasattr(self.adapter, "preprocessor") or getattr(self.adapter.preprocessor, "fitted_record", None) is None:
+            raise ProvenanceVerificationError("Adapter preprocessor missing required fitted_record")
+
+        fitted_rec = self.adapter.preprocessor.fitted_record
+        if hasattr(fitted_rec, "to_dict") and callable(fitted_rec.to_dict):
+            rec_dict = fitted_rec.to_dict()
+        elif isinstance(fitted_rec, dict):
+            rec_dict = fitted_rec
+        else:
+            rec_dict = dict(fitted_rec)
+
+        obs_hash = compute_canonical_json_sha256(rec_dict)
+        if obs_hash != PREPROCESSING_STATE_SHA256:
+            raise ProvenanceVerificationError(
+                f"Preprocessing state hash mismatch: observed {obs_hash}, expected {PREPROCESSING_STATE_SHA256}"
+            )
+        self.observed_preprocessing_sha256 = obs_hash
+        return self.adapter
+
+    def build_all_cohorts(self) -> Dict[int, Dict[str, Dict[str, Any]]]:
+        """Construct 12 cohorts and enforce global 12/12 source-row digest barrier."""
+        if self.adapter is None:
+            self.construct_adapter()
+
+        for year in TEMPORAL_YEARS:
+            for arm_id in D6_ARM_IDS:
+                prot_attr = ARM_PROTECTED_ATTRIBUTES[arm_id]
+                disab_policy = ARM_DISABILITY_POLICIES[arm_id]
+                X_orig, y, a, w, meta = self.adapter.get_cohort(
+                    year=year,
+                    outcome="MEDDL12M_A",
+                    protected_attribute=prot_attr,
+                    feature_set="primary_core",
+                    disability_arm=disab_policy,
+                )
+                digest = compute_cohort_source_row_digest(year, X_orig.index)
+                self.cohort_digests[year][arm_id] = digest
+                self.raw_cohorts[year][arm_id] = {
+                    "X": X_orig,
+                    "y": y,
+                    "a": a,
+                    "w": w,
+                    "digest": digest,
+                }
+
+        # Enforce 12/12 provenance barrier
+        verify_12_cohort_provenance_barrier(self.cohort_digests)
+        return self.raw_cohorts
+
+    def replay_and_verify_terminal_matrices(self) -> Dict[str, Any]:
+        """Replay representations for all arms x years and verify 12/12 terminal matrix barrier."""
+        self.traces = load_all_archived_traces(self.repo_root)
+        transformer = FairTransform()
+
+        for arm_id in D6_ARM_IDS:
+            self.replayed_states[arm_id] = {}
+            steps = self.traces[arm_id]
+            cd_path = self.train_val_dir / arm_id / "final_changed_dict.json"
+            final_cd = json.loads(cd_path.read_text(encoding="utf-8"))
+
+            for year in TEMPORAL_YEARS:
+                cohort_dict = self.raw_cohorts[year][arm_id]
+                X_orig = cohort_dict["X"]
+
+                all_cats, all_nums = self.adapter.preprocessor.get_feature_family_lists("primary_core")
+                active_cols = set(X_orig.columns)
+                cate_attrs = [c for c in all_cats if c in active_cols]
+                num_attrs = [c for c in all_nums if c in active_cols]
+
+                r_machine = SequentialReplayStateMachine(
+                    arm_id=arm_id,
+                    trace_steps=steps,
+                    base_feature_order=list(X_orig.columns),
+                    num_attrs=num_attrs,
+                    cate_attrs=cate_attrs,
+                    validate_step_count=True,
+                )
+                replayed = r_machine.replay_all(X_orig)
+                self.replayed_states[arm_id][year] = replayed
+
+                # Verify terminal matrix equivalence for this arm x year (12 total checks)
+                X_k = replayed[len(steps)]
+                X_term = transformer.transform_data(
+                    X_orig,
+                    final_cd,
+                    num_attrs=num_attrs,
+                    cate_attrs=cate_attrs,
+                )
+
+                if list(X_k.columns) != list(X_term.columns):
+                    raise TerminalReplayBarrierError(
+                        f"Terminal matrix column order mismatch for {arm_id} ({year})"
+                    )
+                if not X_k.index.equals(X_term.index):
+                    raise TerminalReplayBarrierError(
+                        f"Terminal matrix index mismatch for {arm_id} ({year})"
+                    )
+
+                max_diff = 0.0
+                for col in X_k.columns:
+                    s_k = X_k[col]
+                    s_t = X_term[col]
+                    if col in num_attrs:
+                        d = float(np.max(np.abs(s_k.to_numpy() - s_t.to_numpy())))
+                        if d > max_diff:
+                            max_diff = d
+                        if d > MATRIX_NUMERICAL_TOLERANCE:
+                            raise TerminalReplayBarrierError(
+                                f"Terminal matrix numeric diff {d:.3e} > tolerance on {col} for {arm_id} ({year})"
+                            )
+                    else:
+                        if not s_k.equals(s_t):
+                            raise TerminalReplayBarrierError(
+                                f"Terminal matrix categorical mismatch on {col} for {arm_id} ({year})"
+                            )
+
+                self.terminal_matrix_results[f"{arm_id}_{year}"] = {
+                    "verified": True,
+                    "max_numeric_diff": max_diff,
+                }
+
+        return self.terminal_matrix_results
+
+    def fit_and_verify_endpoints(self) -> Dict[str, Any]:
+        """Fit state 0 and state K on 2022 for all arms, enforcing endpoint reproduction BEFORE intermediates."""
+        for arm_id in D6_ARM_IDS:
+            steps = self.traces[arm_id]
+            k_terminal = len(steps)
+            self.fitted_models[arm_id] = {}
+
+            # 2022 Data for arm
+            X_2022_0 = self.replayed_states[arm_id][2022][0]
+            X_2022_K = self.replayed_states[arm_id][2022][k_terminal]
+            y_2022 = self.raw_cohorts[2022][arm_id]["y"]
+
+            # Fit state 0 on 2022 only
+            scaler_0, lr_0 = fit_intermediate_model_2022(X_2022_0, y_2022, arm_id, 0)
+            self.fitted_models[arm_id][0] = (scaler_0, lr_0)
+
+            # Fit state K on 2022 only
+            scaler_K, lr_K = fit_intermediate_model_2022(X_2022_K, y_2022, arm_id, k_terminal)
+            self.fitted_models[arm_id][k_terminal] = (scaler_K, lr_K)
+
+            # Evaluate state 0 and state K on 2023 and 2024
+            obs_2023_0 = self._evaluate_model(arm_id, 0, 2023, scaler_0, lr_0)
+            obs_2023_K = self._evaluate_model(arm_id, k_terminal, 2023, scaler_K, lr_K)
+            obs_2024_0 = self._evaluate_model(arm_id, 0, 2024, scaler_0, lr_0)
+            obs_2024_K = self._evaluate_model(arm_id, k_terminal, 2024, scaler_K, lr_K)
+
+            # Load archived baseline and FairBias metrics
+            val_base_path = self.train_val_dir / arm_id / "validation_metrics_baseline.json"
+            val_fb_path = self.train_val_dir / arm_id / "validation_metrics_fairbias.json"
+            test_base_path = self.test_dir / arm_id / "test_metrics_baseline.json"
+            test_fb_path = self.test_dir / arm_id / "test_metrics_fairbias.json"
+
+            arch_2023_base = json.loads(val_base_path.read_text(encoding="utf-8"))
+            arch_2023_fb = json.loads(val_fb_path.read_text(encoding="utf-8"))
+            arch_2024_base = json.loads(test_base_path.read_text(encoding="utf-8"))
+            arch_2024_fb = json.loads(test_fb_path.read_text(encoding="utf-8"))
+
+            ep_res = verify_endpoint_model_reproduction_barrier(
+                arm_id=arm_id,
+                state_0_scaler=scaler_0,
+                state_0_lr=lr_0,
+                state_0_features=list(X_2022_0.columns),
+                state_K_scaler=scaler_K,
+                state_K_lr=lr_K,
+                state_K_features=list(X_2022_K.columns),
+                archived_2023_baseline_metrics=arch_2023_base,
+                archived_2023_fairbias_metrics=arch_2023_fb,
+                archived_2024_baseline_metrics=arch_2024_base,
+                archived_2024_fairbias_metrics=arch_2024_fb,
+                observed_2023_state_0_metrics=obs_2023_0,
+                observed_2023_state_K_metrics=obs_2023_K,
+                observed_2024_state_0_metrics=obs_2024_0,
+                observed_2024_state_K_metrics=obs_2024_K,
+            )
+            self.endpoint_barrier_results[arm_id] = ep_res
+
+        return self.endpoint_barrier_results
+
+    def fit_and_evaluate_all_intermediate_states(self) -> List[Dict[str, Any]]:
+        """Fit intermediate models 1..K-1 on 2022 and evaluate all 47 states on 2022, 2023, and 2024."""
+        # Check endpoint barrier was already verified
+        if len(self.endpoint_barrier_results) != len(D6_ARM_IDS):
+            raise EndpointReproductionBarrierError("Cannot fit intermediate models: endpoint barrier not verified.")
+
+        self.metrics_records = []
+
+        for arm_id in D6_ARM_IDS:
+            steps = self.traces[arm_id]
+            k_terminal = len(steps)
+            y_2022 = self.raw_cohorts[2022][arm_id]["y"]
+
+            all_cats, all_nums = self.adapter.preprocessor.get_feature_family_lists("primary_core")
+
+            for k in range(k_terminal + 1):
+                if k in (0, k_terminal):
+                    scaler_k, lr_k = self.fitted_models[arm_id][k]
+                else:
+                    X_2022_k = self.replayed_states[arm_id][2022][k]
+                    scaler_k, lr_k = fit_intermediate_model_2022(X_2022_k, y_2022, arm_id, k)
+                    self.fitted_models[arm_id][k] = (scaler_k, lr_k)
+
+                # Evaluate on 2022, 2023, 2024
+                for year in TEMPORAL_YEARS:
+                    X_year_k = self.replayed_states[arm_id][year][k]
+                    y_year = self.raw_cohorts[year][arm_id]["y"]
+                    a_year = self.raw_cohorts[year][arm_id]["a"]
+                    probs_year = predict_proba_fitted_model(scaler_k, lr_k, X_year_k)
+
+                    O_df = pd.DataFrame({ARM_PROTECTED_ATTRIBUTES[arm_id]: a_year})
+                    metrics = compute_stepwise_metrics(
+                        arm_id=arm_id,
+                        state_index=k,
+                        year=year,
+                        probs=probs_year,
+                        y_true=y_year,
+                        X_state=X_year_k,
+                        O_df=O_df,
+                        cate_attrs=all_cats,
+                        num_attrs=all_nums,
+                        protected_attr_series=a_year,
+                    )
+                    self.metrics_records.append(metrics)
+
+        self.deltas_df = compute_stepwise_deltas(self.metrics_records)
+        self.key_path_summary = generate_key_path_summary(self.deltas_df, self.traces)
+        return self.metrics_records
+
+    def _evaluate_model(
+        self,
+        arm_id: str,
+        state_index: int,
+        year: int,
+        scaler: MinMaxScaler,
+        lr: LogisticRegression,
+    ) -> Dict[str, Any]:
+        X_df = self.replayed_states[arm_id][year][state_index]
+        y_series = self.raw_cohorts[year][arm_id]["y"]
+        probs = predict_proba_fitted_model(scaler, lr, X_df)
+        return compute_stepwise_metrics(
+            arm_id=arm_id,
+            state_index=state_index,
+            year=year,
+            probs=probs,
+            y_true=y_series,
+        )
+
+
+class D7StepwiseReplayReleaseManager:
+    """Manager for substantive D7.2 execution enforcing strict preflight and release lifecycle."""
+
+    def __init__(
+        self,
+        repo_root: Optional[Path] = None,
+        releases_parent_dir: Optional[Path] = None,
+        adapter_factory: Optional[Callable[[], Any]] = None,
+    ) -> None:
         self.repo_root = Path(repo_root or ".")
+        self.releases_parent_dir = releases_parent_dir or (
+            self.repo_root / "runs" / "nhis_d7_stepwise_replay" / "releases"
+        )
+        self.adapter_factory = adapter_factory
 
     def execute_release(
         self,
         release_id: str,
         expected_execution_head: str,
     ) -> Dict[str, Any]:
-        """Execute substantive D7.2 analysis.
-
-        Must NOT be called during Gate D7.2a.
-        Guarded against unauthorized execution.
-        """
-        # Guard: Fail closed if parameters missing
-        if not release_id or not expected_execution_head:
-            raise ValueError("Substantive execution requires release_id and expected_execution_head.")
-
-        # Guard: Check current git HEAD matches expected execution head
-        res = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(self.repo_root),
-            capture_output=True,
-            text=True,
-            check=True,
+        """Execute complete substantive D7.2 analysis."""
+        # 1. Preconditions BEFORE directory creation
+        verify_git_execution_preconditions(
+            repo_root=self.repo_root,
+            expected_sha=expected_execution_head,
         )
-        current_head = res.stdout.strip()
-        if current_head != expected_execution_head:
-            raise ProvenanceVerificationError(
-                f"Current HEAD {current_head} does not match reviewed execution head {expected_execution_head}"
-            )
+        verify_upstream_provenance(self.repo_root)
 
-        # Guard: Check worktree cleanliness
-        res_diff = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=str(self.repo_root),
-            capture_output=True,
-            text=True,
-            check=True,
+        # 2. Collision check
+        target_release_dir = self.releases_parent_dir / release_id
+        if target_release_dir.exists():
+            raise FileExistsError(f"Release directory collision: {target_release_dir} already exists.")
+
+        # 3. Create directory & STARTED state
+        target_release_dir.mkdir(parents=True, exist_ok=False)
+        state_file = target_release_dir / "release_state.json"
+        state_payload: Dict[str, Any] = {
+            "release_id": release_id,
+            "status": "STARTED",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "execution_head": expected_execution_head,
+            "manifest_sha256": None,
+            "error": None,
+        }
+        state_file.write_text(json.dumps(state_payload, indent=2), encoding="utf-8")
+
+        runtime = ProductionD7StepwiseReplayRuntime(
+            repo_root=self.repo_root,
+            adapter_factory=self.adapter_factory,
         )
-        if res_diff.stdout.strip():
-            raise ProvenanceVerificationError("Cannot execute release: tracked git worktree is dirty.")
 
-        raise NotImplementedError(
-            "Gate D7.2a is DESIGN + HARNESS ONLY. Substantive execution is not authorized during Gate D7.2a."
+        try:
+            # 4. Construct cohorts & enforce 12/12 cohort barrier
+            runtime.build_all_cohorts()
+
+            # 5. Replay representation states & enforce 12/12 terminal matrix barrier
+            runtime.replay_and_verify_terminal_matrices()
+
+            # 6. Fit & verify endpoint reproduction BEFORE any intermediate models
+            runtime.fit_and_verify_endpoints()
+
+            # 7. Fit & evaluate intermediate states (states 1..K-1 on 2022 only)
+            runtime.fit_and_evaluate_all_intermediate_states()
+
+            # 8. Write all 10 release artifacts
+            self._write_release_artifacts(target_release_dir, release_id, expected_execution_head, runtime)
+
+            # 9. Build and verify manifest tracking the 8 primary artifacts
+            manifest = build_d7_stepwise_manifest(target_release_dir)
+            manifest_file = target_release_dir / "d7_stepwise_manifest.json"
+            manifest_file.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+            manifest_sha = compute_sha256(manifest_file)
+
+            # 10. Update release_state.json to COMPLETE
+            state_payload["status"] = "COMPLETE"
+            state_payload["completed_at"] = datetime.now(timezone.utc).isoformat()
+            state_payload["manifest_sha256"] = manifest_sha
+            state_file.write_text(json.dumps(state_payload, indent=2), encoding="utf-8")
+
+            return {
+                "release_id": release_id,
+                "release_dir": str(target_release_dir),
+                "manifest_sha256": manifest_sha,
+                "status": "COMPLETE",
+            }
+
+        except Exception as exc:
+            # On failure: preserve directory and write FAILED state
+            state_payload["status"] = "FAILED"
+            state_payload["completed_at"] = datetime.now(timezone.utc).isoformat()
+            state_payload["error"] = str(exc)
+            state_file.write_text(json.dumps(state_payload, indent=2), encoding="utf-8")
+            raise
+
+    def _write_release_artifacts(
+        self,
+        release_dir: Path,
+        release_id: str,
+        execution_head: str,
+        runtime: ProductionD7StepwiseReplayRuntime,
+    ) -> None:
+        """Write all 8 manifest-tracked release artifacts."""
+        # 1. provenance_summary.json
+        prov_summary = {
+            "release_id": release_id,
+            "execution_head": execution_head,
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+            "scientific_question": D7_2_SCIENTIFIC_QUESTION,
+            "mandatory_disclosure": MANDATORY_D7_2_DISCLOSURE,
+            "scientific_terminology": D7_2_SCIENTIFIC_TERMINOLOGY,
+            "refit_configuration": {
+                "D7_2_refits_intermediate_classifiers": D7_2_REFITS_INTERMEDIATE_CLASSIFIERS,
+                "training_year": TRAINING_YEAR,
+                "validation_year": VALIDATION_YEAR,
+                "descriptive_test_year": DESCRIPTIVE_TEST_YEAR,
+                "threshold": CANONICAL_DECISION_THRESHOLD,
+                "solver": LR_SOLVER,
+                "max_iter": LR_MAX_ITER,
+                "random_state": LR_RANDOM_STATE,
+                "survey_weights": SURVEY_WEIGHTS,
+            },
+            "observed_cohort_source_row_digests": runtime.cohort_digests,
+            "expected_cohort_source_row_digests": EXPECTED_COHORT_SOURCE_ROW_DIGESTS,
+            "observed_preprocessing_sha256": runtime.observed_preprocessing_sha256,
+            "expected_preprocessing_sha256": PREPROCESSING_STATE_SHA256,
+        }
+        (release_dir / "provenance_summary.json").write_text(
+            json.dumps(prov_summary, indent=2, sort_keys=True), encoding="utf-8"
+        )
+
+        # 2. archived_trace_inventory.json
+        trace_inv = {
+            arm_id: [s.to_dict() for s in steps]
+            for arm_id, steps in runtime.traces.items()
+        }
+        (release_dir / "archived_trace_inventory.json").write_text(
+            json.dumps(trace_inv, indent=2, sort_keys=True), encoding="utf-8"
+        )
+
+        # 3. terminal_replay_verification.json
+        (release_dir / "terminal_replay_verification.json").write_text(
+            json.dumps(runtime.terminal_matrix_results, indent=2, sort_keys=True), encoding="utf-8"
+        )
+
+        # 4. endpoint_reproduction.json
+        (release_dir / "endpoint_reproduction.json").write_text(
+            json.dumps(runtime.endpoint_barrier_results, indent=2, sort_keys=True), encoding="utf-8"
+        )
+
+        # 5. stepwise_metrics.csv
+        metrics_df = pd.DataFrame(runtime.metrics_records)
+        primary_metrics_cols = [
+            "arm_id", "state_index", "year", "threshold", "max_d_phi",
+            "auroc", "auprc", "balanced_accuracy", "f1", "accuracy",
+            "count_predicted_positive", "selection_rate",
+            "ks_statistic", "ks_pvalue", "score_mean", "score_median", "score_iqr",
+            "y0_mean", "y0_median", "y1_mean", "y1_median",
+        ]
+        metrics_df[primary_metrics_cols].to_csv(release_dir / "stepwise_metrics.csv", index=False)
+
+        # 6. stepwise_deltas.csv
+        runtime.deltas_df.to_csv(release_dir / "stepwise_deltas.csv", index=False)
+
+        # 7. protected_fairness_stepwise.csv
+        fairness_cols = [
+            "arm_id", "state_index", "year", "dp_gap", "tpr_gap", "fpr_gap", "equalized_odds_max_gap"
+        ]
+        metrics_df[fairness_cols].to_csv(release_dir / "protected_fairness_stepwise.csv", index=False)
+
+        # 8. key_path_summary.json
+        (release_dir / "key_path_summary.json").write_text(
+            json.dumps(runtime.key_path_summary, indent=2, sort_keys=True), encoding="utf-8"
         )
