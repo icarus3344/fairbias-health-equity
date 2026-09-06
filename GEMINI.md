@@ -19,7 +19,7 @@ This document provides direct routing and execution constraints specifically for
 
 ## Environment & Branch Constraints
 
-- **Active Branch**: `research/meps-hc252-longitudinal`
+- **Active Branch**: `research/nhis-fairbias`
 - **Protected Tag**: `inherited-code-v0.3-baseline-20260828` (commit `038897e9f751edac6e36445b7706eec5fdb15988`)
 - **Baseline Immutability**: The 14 inherited root files (`app.py`, `classifiers.py`, `config.py`, `data_COMPAS.csv`, `data_Credit_Card.csv`, `eval.py`, `main.py`, `module_AE.py`, `module_BM.py`, `module_load.py`, `module_transform.py`, `requirements.txt`, `results/all_results.json`, `start.sh`) and `.gitignore` are permanent historical baselines. Never alter, move, rename, reformat, or delete them.
 

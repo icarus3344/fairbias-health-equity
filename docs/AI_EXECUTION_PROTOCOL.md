@@ -46,7 +46,7 @@ flowchart LR
 ## 4. Baseline Immutability & Branch Architecture
 
 - **Protected Baseline Tag**: `inherited-code-v0.3-baseline-20260828` (commit `038897e9f751edac6e36445b7706eec5fdb15988`, tree `9e43047f69326a844cec1e7acdb6726af555dff3`).
-- **Active Research Branch**: `research/meps-hc252-longitudinal`.
+- **Active Research Branch**: `research/nhis-fairbias`.
 - **Immutability Mandate**: The 14 inherited root files (`app.py`, `classifiers.py`, `config.py`, `data_COMPAS.csv`, `data_Credit_Card.csv`, `eval.py`, `main.py`, `module_AE.py`, `module_BM.py`, `module_load.py`, `module_transform.py`, `requirements.txt`, `results/all_results.json`, `start.sh`) and `.gitignore` are permanent historical baseline artifacts. They must never be altered, moved, renamed, reformatted, or deleted.
 - **Additive Development**: All new implementation code, data, configurations, scripts, and tests must reside strictly within additive subdirectories (`src/`, `configs/`, `docs/`, `scripts/`, `tests/`). Root-level governance or build metadata (such as `pyproject.toml`) is permitted only when explicitly authorized by a gate specification.
 

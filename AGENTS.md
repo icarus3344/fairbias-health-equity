@@ -17,7 +17,7 @@ This repository operates under a strict gated AI supervision model. All AI agent
 
 ## Branch & Baseline Integrity
 
-- **Active Research Branch**: `research/meps-hc252-longitudinal`
+- **Active Research Branch**: `research/nhis-fairbias`
 - **Protected Baseline Tag**: `inherited-code-v0.3-baseline-20260828` (resolving to commit `038897e9f751edac6e36445b7706eec5fdb15988`)
 - **Immutability Rule**: The 14 inherited root files and `.gitignore` are frozen and must never be modified, moved, renamed, reformatted, or deleted. All new work is strictly additive.
 

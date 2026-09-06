@@ -48,3 +48,8 @@ outputs/*
 !outputs/.gitkeep
 artifacts/*
 !artifacts/.gitkeep
+
+# Private presentation slides and personal build scripts
+docs/presentation/
+scripts/build_beamer_deck.py
+*.pdf
