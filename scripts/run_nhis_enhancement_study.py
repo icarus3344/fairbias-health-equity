@@ -53,26 +53,26 @@ def build_comparison_dataframe(results: Dict[str, Any]) -> pd.DataFrame:
     for arm_id, arm_data in results.items():
         conds = arm_data["conditions"]
         for cond_name, cond_res in conds.items():
-            test_res = cond_res["test"]
-            train_res = cond_res["train"]
+            test_res = cond_res.get("test")
+            train_res = cond_res.get("train")
             rows.append({
                 "arm_id": arm_id,
                 "protected_attribute": arm_data["protected_attribute"],
                 "condition": cond_name,
                 "num_transforms": cond_res.get("num_transforms", 0),
-                "test_auroc": round(test_res["auroc"], 4),
-                "test_auprc": round(test_res.get("auprc_trapezoidal", test_res["auprc"]), 4),
-                "test_average_precision": round(test_res.get("average_precision", test_res["auprc"]), 4),
-                "test_accuracy": round(test_res["accuracy"], 4),
-                "test_positives_0_5": test_res["predicted_positive_count"],
-                "test_positive_rate": round(test_res["predicted_positive_rate"], 5),
-                "test_max_dphi": round(test_res["max_dphi"], 5),
-                "train_max_dphi": round(train_res["max_dphi"], 5),
+                "test_auroc": round(test_res["auroc"], 4) if test_res and "auroc" in test_res else None,
+                "test_auprc": round(test_res.get("auprc_trapezoidal", test_res.get("auprc")), 4) if test_res else None,
+                "test_average_precision": round(test_res.get("average_precision", test_res.get("auprc")), 4) if test_res else None,
+                "test_accuracy": round(test_res["accuracy"], 4) if test_res and "accuracy" in test_res else None,
+                "test_positives_0_5": test_res.get("predicted_positive_count") if test_res else None,
+                "test_positive_rate": round(test_res["predicted_positive_rate"], 5) if test_res and "predicted_positive_rate" in test_res else None,
+                "test_max_dphi": round(test_res["max_dphi"], 5) if test_res and "max_dphi" in test_res else None,
+                "train_max_dphi": round(train_res["max_dphi"], 5) if train_res and "max_dphi" in train_res else None,
                 "epsilon_threshold": round(arm_data["epsilon_threshold"], 5),
                 "fairness_feasible": cond_res.get("fairness_feasible", False),
                 "termination_reason": cond_res.get("termination_reason", "unknown"),
-                "test_dp_difference": round(test_res["demographic_parity_difference"], 4),
-                "test_eo_difference": round(test_res["equal_opportunity_difference"], 4),
+                "test_dp_difference": round(test_res["demographic_parity_difference"], 4) if test_res and "demographic_parity_difference" in test_res else None,
+                "test_eo_difference": round(test_res["equal_opportunity_difference"], 4) if test_res and "equal_opportunity_difference" in test_res else None,
             })
     return pd.DataFrame(rows)
 
@@ -83,12 +83,12 @@ def main() -> None:
     # Collision-proof output directory resolution
     if args.output_dir is not None:
         out_dir = pathlib.Path(args.output_dir)
-        if out_dir.exists() and any(out_dir.iterdir()):
+        if out_dir.exists():
             raise FileExistsError(
-                f"Output directory {out_dir} already exists and is not empty. "
-                "Refusing to overwrite existing findings."
+                f"Output directory {out_dir} already exists. "
+                "Refusing to reuse or overwrite existing directory."
             )
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(parents=True, exist_ok=False)
     else:
         utc_ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         rand_suffix = secrets.token_hex(4)

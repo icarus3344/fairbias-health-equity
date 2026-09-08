@@ -42,6 +42,9 @@ def hash_transform_state(changed_dict: Dict[str, Any]) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
 
 
+changed_dict_hash = hash_transform_state
+
+
 def normalize_category_mapping(
     mapping: Dict[Any, Any],
     col_sample: Optional[pd.Series] = None,

@@ -35,13 +35,20 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import MinMaxScaler
 
+import sklearn.base
+
 from fairbias.config import (
     ALGORITHM_MODE_ENGINEERING,
     FairBiasConfig,
 )
 from fairbias.evaluator import FairEvaluator
 from fairbias.enhancement import FairAccuracyEnhancement
-from fairbias.enhancement_contracts import CandidateAuditEvent, EvaluationPartition
+from fairbias.enhancement_contracts import (
+    CandidateAuditEvent,
+    EnhancementStatus,
+    EvaluationPartition,
+)
+from fairbias.enhancement_state import changed_dict_hash
 from fairbias.mitigation import FairBiasMitigation
 from fairbias.transform import (
     FairTransform,
@@ -85,8 +92,8 @@ def compute_group_fairness_gaps(
 
 
 def evaluate_representation(
-    model: LogisticRegression,
-    scaler: MinMaxScaler,
+    model: Optional[Any],
+    scaler: Optional[MinMaxScaler],
     X_train_raw: pd.DataFrame,
     y_train: np.ndarray,
     X_val_raw: pd.DataFrame,
@@ -112,18 +119,70 @@ def evaluate_representation(
     if X_tr_t.shape[1] == 0 or X_val_t.shape[1] == 0 or X_te_t.shape[1] == 0:
         raise ValueError("Cannot evaluate representation: all features dropped")
 
+    # Enforce model-ready numeric representation contract
+    for df, name in [(X_tr_t, "train"), (X_val_t, "val"), (X_te_t, "test")]:
+        for col in df.columns:
+            if not pd.api.types.is_numeric_dtype(df[col]):
+                raise ValueError(
+                    f"Non-numeric representation encountered in {name} column '{col}' with dtype '{df[col].dtype}'. "
+                    "Features must have numeric representation prior to evaluation."
+                )
+
+    # Validate target label diversity
+    if len(np.unique(y_train)) < 2 or len(np.unique(y_val)) < 2 or len(np.unique(y_test)) < 2:
+        raise ValueError("Single class encountered in target labels during evaluation")
+
+    # Model resolution
+    if model is not None:
+        try:
+            model_inst = sklearn.base.clone(model)
+        except Exception:
+            model_inst = copy.deepcopy(model)
+    elif hasattr(evaluator, "model"):
+        model_inst = sklearn.base.clone(evaluator.model)
+    else:
+        model_inst = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=42)
+
+    # Require probabilistic predictor
+    if not hasattr(model_inst, "predict_proba"):
+        raise ValueError(
+            f"{EnhancementStatus.MISSING_PROBABILITIES}: Model does not support predict_proba; "
+            "probabilistic predictor required for utility evaluation."
+        )
+
+    # Scaler resolution
+    if scaler is not None:
+        try:
+            scaler_inst = sklearn.base.clone(scaler)
+        except Exception:
+            scaler_inst = copy.deepcopy(scaler)
+    elif hasattr(evaluator, "_get_scaler"):
+        scaler_inst = evaluator._get_scaler()
+    else:
+        scaler_inst = MinMaxScaler(feature_range=(0, 1))
+
     # Scale strictly on train
-    X_tr_s = scaler.fit_transform(X_tr_t)
-    X_val_s = scaler.transform(X_val_t)
-    X_te_s = scaler.transform(X_te_t)
+    X_tr_s = scaler_inst.fit_transform(X_tr_t)
+    X_val_s = scaler_inst.transform(X_val_t)
+    X_te_s = scaler_inst.transform(X_te_t)
 
     # Fit model on train
-    model.fit(X_tr_s, y_train)
+    model_inst.fit(X_tr_s, y_train)
 
     # Predictions
-    p_tr = model.predict_proba(X_tr_s)[:, 1]
-    p_val = model.predict_proba(X_val_s)[:, 1]
-    p_te = model.predict_proba(X_te_s)[:, 1]
+    proba_tr = model_inst.predict_proba(X_tr_s)
+    proba_val = model_inst.predict_proba(X_val_s)
+    proba_te = model_inst.predict_proba(X_te_s)
+
+    if proba_tr.shape[1] < 2 or proba_val.shape[1] < 2 or proba_te.shape[1] < 2:
+        raise ValueError("Model predicted fewer than 2 probability classes")
+
+    p_tr = proba_tr[:, 1]
+    p_val = proba_val[:, 1]
+    p_te = proba_te[:, 1]
+
+    if np.isnan(p_tr).any() or np.isnan(p_val).any() or np.isnan(p_te).any():
+        raise ValueError("NaN probabilities encountered during prediction")
 
     pred_tr = (p_tr >= 0.5).astype(int)
     pred_val = (p_val >= 0.5).astype(int)
@@ -154,6 +213,7 @@ def evaluate_representation(
     test_gaps = compute_group_fairness_gaps(y_test, pred_te, o_test)
 
     return {
+        "terminal_evaluation_performed": True,
         "changed_dict": copy.deepcopy(changed_dict),
         "num_transforms": len(changed_dict),
         "train": {
@@ -339,49 +399,79 @@ class D8EnhancementRunner:
         # -------------------------------------------------------------
         # Condition 1: Baseline (untransformed)
         # -------------------------------------------------------------
-        res_baseline = evaluate_representation(
-            model=fresh_model(),
-            scaler=fresh_scaler(),
-            X_train_raw=X_train, y_train=y_tr,
-            X_val_raw=X_val, y_val=y_v,
-            X_test_raw=X_test, y_test=y_te,
-            o_train=o_tr, o_val=o_v, o_test=o_te,
-            changed_dict={},
-            evaluator=evaluator,
-            transformer=transformer,
-            cate_attrs=cate_attrs,
-            num_attrs=num_attrs,
-            protected_attr=protected_attr,
-        )
-        res_baseline["terminal_state"] = {}
-        res_baseline["terminal_train_max_dphi"] = res_baseline["train"]["max_dphi"]
-        res_baseline["final_epsilon"] = eps_thresh
-        res_baseline["fairness_feasible"] = bool(res_baseline["train"]["max_dphi"] <= eps_thresh)
-        res_baseline["termination_reason"] = "baseline_untransformed"
+        try:
+            res_baseline = evaluate_representation(
+                model=fresh_model(),
+                scaler=fresh_scaler(),
+                X_train_raw=X_train, y_train=y_tr,
+                X_val_raw=X_val, y_val=y_v,
+                X_test_raw=X_test, y_test=y_te,
+                o_train=o_tr, o_val=o_v, o_test=o_te,
+                changed_dict={},
+                evaluator=evaluator,
+                transformer=transformer,
+                cate_attrs=cate_attrs,
+                num_attrs=num_attrs,
+                protected_attr=protected_attr,
+            )
+            res_baseline["terminal_state"] = {}
+            res_baseline["terminal_train_max_dphi"] = res_baseline["train"]["max_dphi"]
+            res_baseline["final_epsilon"] = eps_thresh
+            res_baseline["fairness_feasible"] = bool(res_baseline["train"]["max_dphi"] <= eps_thresh)
+            res_baseline["termination_reason"] = "baseline_untransformed"
+        except Exception as exc:
+            res_baseline = {
+                "terminal_evaluation_performed": False,
+                "terminal_state": {},
+                "num_transforms": 0,
+                "train": None,
+                "validation": None,
+                "test": None,
+                "terminal_train_max_dphi": None,
+                "final_epsilon": eps_thresh,
+                "fairness_feasible": False,
+                "termination_reason": "evaluation_failed",
+                "error": str(exc),
+            }
 
         # -------------------------------------------------------------
         # Condition 2: Canonical FairBias (D6 mitigation only)
         # -------------------------------------------------------------
         d6_changed = self.load_canonical_d6_changed_dict(arm_id)
-        res_canonical = evaluate_representation(
-            model=fresh_model(),
-            scaler=fresh_scaler(),
-            X_train_raw=X_train, y_train=y_tr,
-            X_val_raw=X_val, y_val=y_v,
-            X_test_raw=X_test, y_test=y_te,
-            o_train=o_tr, o_val=o_v, o_test=o_te,
-            changed_dict=d6_changed,
-            evaluator=evaluator,
-            transformer=transformer,
-            cate_attrs=cate_attrs,
-            num_attrs=num_attrs,
-            protected_attr=protected_attr,
-        )
-        res_canonical["terminal_state"] = copy.deepcopy(d6_changed)
-        res_canonical["terminal_train_max_dphi"] = res_canonical["train"]["max_dphi"]
-        res_canonical["final_epsilon"] = eps_thresh
-        res_canonical["fairness_feasible"] = bool(res_canonical["train"]["max_dphi"] <= eps_thresh)
-        res_canonical["termination_reason"] = "d6_canonical_frozen"
+        try:
+            res_canonical = evaluate_representation(
+                model=fresh_model(),
+                scaler=fresh_scaler(),
+                X_train_raw=X_train, y_train=y_tr,
+                X_val_raw=X_val, y_val=y_v,
+                X_test_raw=X_test, y_test=y_te,
+                o_train=o_tr, o_val=o_v, o_test=o_te,
+                changed_dict=d6_changed,
+                evaluator=evaluator,
+                transformer=transformer,
+                cate_attrs=cate_attrs,
+                num_attrs=num_attrs,
+                protected_attr=protected_attr,
+            )
+            res_canonical["terminal_state"] = copy.deepcopy(d6_changed)
+            res_canonical["terminal_train_max_dphi"] = res_canonical["train"]["max_dphi"]
+            res_canonical["final_epsilon"] = eps_thresh
+            res_canonical["fairness_feasible"] = bool(res_canonical["train"]["max_dphi"] <= eps_thresh)
+            res_canonical["termination_reason"] = "d6_canonical_frozen"
+        except Exception as exc:
+            res_canonical = {
+                "terminal_evaluation_performed": False,
+                "terminal_state": copy.deepcopy(d6_changed),
+                "num_transforms": len(d6_changed),
+                "train": None,
+                "validation": None,
+                "test": None,
+                "terminal_train_max_dphi": None,
+                "final_epsilon": eps_thresh,
+                "fairness_feasible": False,
+                "termination_reason": "evaluation_failed",
+                "error": str(exc),
+            }
 
         # -------------------------------------------------------------
         # Condition 3: Post-Mitigation Bounded Accuracy Enhancement
@@ -403,6 +493,7 @@ class D8EnhancementRunner:
         current_eps_post = evaluator.calculate_epsilon(
             t_X_init, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
         )
+        post_runner_refresh_geometry_evals = 1
 
         ae_steps_accepted = 0
         post_term_reason = "budget_exhausted"
@@ -431,31 +522,88 @@ class D8EnhancementRunner:
             current_eps_post = evaluator.calculate_epsilon(
                 t_X_curr, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
             )
+            post_runner_refresh_geometry_evals += 1
 
         self.audit_events.extend(ae_engine_post.audit_trail)
 
-        res_posthoc_ae = evaluate_representation(
-            model=fresh_model(),
-            scaler=fresh_scaler(),
-            X_train_raw=X_train, y_train=y_tr,
-            X_val_raw=X_val, y_val=y_v,
-            X_test_raw=X_test, y_test=y_te,
-            o_train=o_tr, o_val=o_v, o_test=o_te,
-            changed_dict=post_changed,
-            evaluator=evaluator,
-            transformer=transformer,
-            cate_attrs=cate_attrs,
-            num_attrs=num_attrs,
-            protected_attr=protected_attr,
-        )
-        res_posthoc_ae["terminal_state"] = copy.deepcopy(post_changed)
-        res_posthoc_ae["terminal_train_max_dphi"] = res_posthoc_ae["train"]["max_dphi"]
-        res_posthoc_ae["final_epsilon"] = eps_thresh
-        res_posthoc_ae["fairness_feasible"] = bool(res_posthoc_ae["train"]["max_dphi"] <= eps_thresh) and (post_term_reason != "evaluation_failed")
-        res_posthoc_ae["termination_reason"] = post_term_reason
-        res_posthoc_ae["ae_steps_accepted"] = ae_steps_accepted
-        res_posthoc_ae["model_fit_count"] = ae_engine_post.total_model_fits
-        res_posthoc_ae["geometry_eval_count"] = ae_engine_post.total_geometry_evals
+        if post_term_reason == "evaluation_failed":
+            res_posthoc_ae = {
+                "terminal_evaluation_performed": False,
+                "terminal_state": copy.deepcopy(post_changed),
+                "num_transforms": len(post_changed),
+                "train": None,
+                "validation": None,
+                "test": None,
+                "terminal_train_max_dphi": None,
+                "final_epsilon": eps_thresh,
+                "fairness_feasible": False,
+                "termination_reason": "evaluation_failed",
+                "ae_steps_accepted": ae_steps_accepted,
+                "model_fit_count": ae_engine_post.total_model_fits,
+                "geometry_eval_count": ae_engine_post.total_geometry_evals,
+                "geometry_eval_breakdown": {
+                    "ae_guard_geometry_evals": ae_engine_post.total_geometry_evals,
+                    "runner_state_refresh_geometry_evals": post_runner_refresh_geometry_evals,
+                    "terminal_evaluation_geometry_evals": 0,
+                    "bm_geometry_evals": None,
+                    "total_observable_geometry_evals": ae_engine_post.total_geometry_evals + post_runner_refresh_geometry_evals,
+                },
+            }
+        else:
+            try:
+                res_posthoc_ae = evaluate_representation(
+                    model=fresh_model(),
+                    scaler=fresh_scaler(),
+                    X_train_raw=X_train, y_train=y_tr,
+                    X_val_raw=X_val, y_val=y_v,
+                    X_test_raw=X_test, y_test=y_te,
+                    o_train=o_tr, o_val=o_v, o_test=o_te,
+                    changed_dict=post_changed,
+                    evaluator=evaluator,
+                    transformer=transformer,
+                    cate_attrs=cate_attrs,
+                    num_attrs=num_attrs,
+                    protected_attr=protected_attr,
+                )
+                res_posthoc_ae["terminal_state"] = copy.deepcopy(post_changed)
+                res_posthoc_ae["terminal_train_max_dphi"] = res_posthoc_ae["train"]["max_dphi"]
+                res_posthoc_ae["final_epsilon"] = eps_thresh
+                res_posthoc_ae["fairness_feasible"] = bool(res_posthoc_ae["train"]["max_dphi"] <= eps_thresh)
+                res_posthoc_ae["termination_reason"] = post_term_reason
+                res_posthoc_ae["ae_steps_accepted"] = ae_steps_accepted
+                res_posthoc_ae["model_fit_count"] = ae_engine_post.total_model_fits
+                res_posthoc_ae["geometry_eval_count"] = ae_engine_post.total_geometry_evals
+                res_posthoc_ae["geometry_eval_breakdown"] = {
+                    "ae_guard_geometry_evals": ae_engine_post.total_geometry_evals,
+                    "runner_state_refresh_geometry_evals": post_runner_refresh_geometry_evals,
+                    "terminal_evaluation_geometry_evals": 3,
+                    "bm_geometry_evals": None,
+                    "total_observable_geometry_evals": ae_engine_post.total_geometry_evals + post_runner_refresh_geometry_evals + 3,
+                }
+            except Exception as exc:
+                res_posthoc_ae = {
+                    "terminal_evaluation_performed": False,
+                    "terminal_state": copy.deepcopy(post_changed),
+                    "num_transforms": len(post_changed),
+                    "train": None,
+                    "validation": None,
+                    "test": None,
+                    "terminal_train_max_dphi": None,
+                    "final_epsilon": eps_thresh,
+                    "fairness_feasible": False,
+                    "termination_reason": "evaluation_failed",
+                    "error": str(exc),
+                    "ae_steps_accepted": ae_steps_accepted,
+                    "model_fit_count": ae_engine_post.total_model_fits,
+                    "geometry_eval_count": ae_engine_post.total_geometry_evals,
+                    "geometry_eval_breakdown": {
+                        "ae_guard_geometry_evals": ae_engine_post.total_geometry_evals,
+                        "runner_state_refresh_geometry_evals": post_runner_refresh_geometry_evals,
+                        "terminal_evaluation_geometry_evals": 0,
+                        "bm_geometry_evals": None,
+                        "total_observable_geometry_evals": ae_engine_post.total_geometry_evals + post_runner_refresh_geometry_evals,
+                    },
+                }
 
         # -------------------------------------------------------------
         # Condition 4: Joint Interleaved Mitigation + Enhancement
@@ -485,8 +633,11 @@ class D8EnhancementRunner:
         )
 
         joint_changed: Dict[str, Any] = {}
+        current_parent_state_hash = changed_dict_hash(joint_changed)
+        committed_joint_states_set = {current_parent_state_hash}
         current_eps_joint = copy.deepcopy(init_eps_dict)
         nmi_org = calculate_nmi_dict(X_train, y_train_s)
+        joint_runner_refresh_geometry_evals = 0
 
         bm_steps_accepted = 0
         ae_joint_steps_accepted = 0
@@ -496,7 +647,8 @@ class D8EnhancementRunner:
         max_iter = 10 if not self.smoke_test else 3
         for it in range(1, max_iter + 1):
             # Step A: Mitigation
-            _, joint_changed, sel_o, sel_attr = mit_engine.mitigate_step(
+            parent_state_hash = current_parent_state_hash
+            _, candidate_changed, sel_o, sel_attr = mit_engine.mitigate_step(
                 X=X_train,
                 Y=y_train_s,
                 O=O_tr_df,
@@ -507,24 +659,58 @@ class D8EnhancementRunner:
                 iteration=it,
             )
             if sel_attr is not None:
+                bm_hash = changed_dict_hash(candidate_changed)
+                if bm_hash in committed_joint_states_set:
+                    joint_term_reason = "cycle_detected"
+                    joint_events.append({
+                        "iteration": it,
+                        "engine": "BM",
+                        "selected_attribute": sel_attr,
+                        "parent_state_hash": parent_state_hash,
+                        "resulting_state_hash": bm_hash,
+                        "engine_accepted": True,
+                        "trajectory_committed": False,
+                        "cycle_detected": True,
+                        "changed_dict_snapshot": copy.deepcopy(candidate_changed),
+                    })
+                    break
+                committed_joint_states_set.add(bm_hash)
                 bm_steps_accepted += 1
-                # Recalculate training geometry metrics immediately after BM
+                joint_changed = candidate_changed
+                current_parent_state_hash = bm_hash
                 t_X_bm = transformer.transform_data(X_train, joint_changed, num_attrs, cate_attrs)
                 current_eps_joint = evaluator.calculate_epsilon(
                     t_X_bm, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
                 )
-
-            joint_events.append({
-                "iteration": it,
-                "engine": "BM",
-                "selected_attribute": sel_attr,
-                "selected_label_O": sel_o,
-                "changed_dict_snapshot": copy.deepcopy(joint_changed),
-            })
+                joint_runner_refresh_geometry_evals += 1
+                joint_events.append({
+                    "iteration": it,
+                    "engine": "BM",
+                    "selected_attribute": sel_attr,
+                    "parent_state_hash": parent_state_hash,
+                    "resulting_state_hash": bm_hash,
+                    "engine_accepted": True,
+                    "trajectory_committed": True,
+                    "cycle_detected": False,
+                    "changed_dict_snapshot": copy.deepcopy(joint_changed),
+                })
+            else:
+                joint_events.append({
+                    "iteration": it,
+                    "engine": "BM",
+                    "selected_attribute": None,
+                    "parent_state_hash": parent_state_hash,
+                    "resulting_state_hash": parent_state_hash,
+                    "engine_accepted": False,
+                    "trajectory_committed": False,
+                    "cycle_detected": False,
+                    "changed_dict_snapshot": copy.deepcopy(joint_changed),
+                })
 
             # Step B: Enhancement (passes updated current_eps_joint)
+            parent_state_hash = current_parent_state_hash
             try:
-                _, joint_changed, ae_attr = ae_engine_joint.enhance_step(
+                _, candidate_changed, ae_attr = ae_engine_joint.enhance_step(
                     X_train=X_train,
                     Y_train=y_train_s,
                     changed_dict=joint_changed,
@@ -539,59 +725,152 @@ class D8EnhancementRunner:
                 break
 
             if ae_attr is not None:
+                ae_hash = changed_dict_hash(candidate_changed)
+                if ae_hash in committed_joint_states_set:
+                    joint_term_reason = "cycle_detected"
+                    joint_events.append({
+                        "iteration": it,
+                        "engine": "AE",
+                        "selected_attribute": ae_attr,
+                        "parent_state_hash": parent_state_hash,
+                        "resulting_state_hash": ae_hash,
+                        "engine_accepted": True,
+                        "trajectory_committed": False,
+                        "cycle_detected": True,
+                        "changed_dict_snapshot": copy.deepcopy(candidate_changed),
+                    })
+                    break
+                committed_joint_states_set.add(ae_hash)
                 ae_joint_steps_accepted += 1
-                # Recalculate training geometry metrics immediately after AE acceptance
+                joint_changed = candidate_changed
+                current_parent_state_hash = ae_hash
                 t_X_ae = transformer.transform_data(X_train, joint_changed, num_attrs, cate_attrs)
                 current_eps_joint = evaluator.calculate_epsilon(
                     t_X_ae, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
                 )
-
-            joint_events.append({
-                "iteration": it,
-                "engine": "AE",
-                "selected_attribute": ae_attr,
-                "changed_dict_snapshot": copy.deepcopy(joint_changed),
-            })
+                joint_runner_refresh_geometry_evals += 1
+                joint_events.append({
+                    "iteration": it,
+                    "engine": "AE",
+                    "selected_attribute": ae_attr,
+                    "parent_state_hash": parent_state_hash,
+                    "resulting_state_hash": ae_hash,
+                    "engine_accepted": True,
+                    "trajectory_committed": True,
+                    "cycle_detected": False,
+                    "changed_dict_snapshot": copy.deepcopy(joint_changed),
+                })
+            else:
+                joint_events.append({
+                    "iteration": it,
+                    "engine": "AE",
+                    "selected_attribute": None,
+                    "parent_state_hash": parent_state_hash,
+                    "resulting_state_hash": parent_state_hash,
+                    "engine_accepted": False,
+                    "trajectory_committed": False,
+                    "cycle_detected": False,
+                    "changed_dict_snapshot": copy.deepcopy(joint_changed),
+                })
 
             # Check convergence/termination
-            t_X = transformer.transform_data(X_train, joint_changed, num_attrs, cate_attrs)
-            current_eps_joint = evaluator.calculate_epsilon(t_X, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs)
+            if sel_attr is None and ae_attr is None:
+                joint_term_reason = "candidate_exhausted"
+                break
+
             all_eps = [float(v) for gd in current_eps_joint.values() for v in gd.values()]
             max_e = float(max(all_eps)) if all_eps else 0.0
 
             if max_e <= eps_thresh:
                 joint_term_reason = "epsilon_reached"
                 break
-            if sel_attr is None and ae_attr is None:
-                joint_term_reason = "candidate_exhausted"
-                break
 
         self.audit_events.extend(ae_engine_joint.audit_trail)
 
-        res_joint_ae = evaluate_representation(
-            model=fresh_model(),
-            scaler=fresh_scaler(),
-            X_train_raw=X_train, y_train=y_tr,
-            X_val_raw=X_val, y_val=y_v,
-            X_test_raw=X_test, y_test=y_te,
-            o_train=o_tr, o_val=o_v, o_test=o_te,
-            changed_dict=joint_changed,
-            evaluator=evaluator,
-            transformer=transformer,
-            cate_attrs=cate_attrs,
-            num_attrs=num_attrs,
-            protected_attr=protected_attr,
-        )
-        res_joint_ae["terminal_state"] = copy.deepcopy(joint_changed)
-        res_joint_ae["terminal_train_max_dphi"] = res_joint_ae["train"]["max_dphi"]
-        res_joint_ae["final_epsilon"] = eps_thresh
-        res_joint_ae["fairness_feasible"] = bool(res_joint_ae["train"]["max_dphi"] <= eps_thresh) and (joint_term_reason != "evaluation_failed")
-        res_joint_ae["termination_reason"] = joint_term_reason
-        res_joint_ae["bm_steps_accepted"] = bm_steps_accepted
-        res_joint_ae["ae_steps_accepted"] = ae_joint_steps_accepted
-        res_joint_ae["iteration_events"] = joint_events
-        res_joint_ae["model_fit_count"] = ae_engine_joint.total_model_fits
-        res_joint_ae["geometry_eval_count"] = ae_engine_joint.total_geometry_evals
+        if joint_term_reason == "evaluation_failed":
+            res_joint_ae = {
+                "terminal_evaluation_performed": False,
+                "terminal_state": copy.deepcopy(joint_changed),
+                "num_transforms": len(joint_changed),
+                "train": None,
+                "validation": None,
+                "test": None,
+                "terminal_train_max_dphi": None,
+                "final_epsilon": eps_thresh,
+                "fairness_feasible": False,
+                "termination_reason": "evaluation_failed",
+                "bm_steps_accepted": bm_steps_accepted,
+                "ae_steps_accepted": ae_joint_steps_accepted,
+                "iteration_events": joint_events,
+                "model_fit_count": ae_engine_joint.total_model_fits,
+                "geometry_eval_count": ae_engine_joint.total_geometry_evals,
+                "geometry_eval_breakdown": {
+                    "ae_guard_geometry_evals": ae_engine_joint.total_geometry_evals,
+                    "runner_state_refresh_geometry_evals": joint_runner_refresh_geometry_evals,
+                    "terminal_evaluation_geometry_evals": 0,
+                    "bm_geometry_evals": None,
+                    "total_observable_geometry_evals": ae_engine_joint.total_geometry_evals + joint_runner_refresh_geometry_evals,
+                },
+            }
+        else:
+            try:
+                res_joint_ae = evaluate_representation(
+                    model=fresh_model(),
+                    scaler=fresh_scaler(),
+                    X_train_raw=X_train, y_train=y_tr,
+                    X_val_raw=X_val, y_val=y_v,
+                    X_test_raw=X_test, y_test=y_te,
+                    o_train=o_tr, o_val=o_v, o_test=o_te,
+                    changed_dict=joint_changed,
+                    evaluator=evaluator,
+                    transformer=transformer,
+                    cate_attrs=cate_attrs,
+                    num_attrs=num_attrs,
+                    protected_attr=protected_attr,
+                )
+                res_joint_ae["terminal_state"] = copy.deepcopy(joint_changed)
+                res_joint_ae["terminal_train_max_dphi"] = res_joint_ae["train"]["max_dphi"]
+                res_joint_ae["final_epsilon"] = eps_thresh
+                res_joint_ae["fairness_feasible"] = bool(res_joint_ae["train"]["max_dphi"] <= eps_thresh)
+                res_joint_ae["termination_reason"] = joint_term_reason
+                res_joint_ae["bm_steps_accepted"] = bm_steps_accepted
+                res_joint_ae["ae_steps_accepted"] = ae_joint_steps_accepted
+                res_joint_ae["iteration_events"] = joint_events
+                res_joint_ae["model_fit_count"] = ae_engine_joint.total_model_fits
+                res_joint_ae["geometry_eval_count"] = ae_engine_joint.total_geometry_evals
+                res_joint_ae["geometry_eval_breakdown"] = {
+                    "ae_guard_geometry_evals": ae_engine_joint.total_geometry_evals,
+                    "runner_state_refresh_geometry_evals": joint_runner_refresh_geometry_evals,
+                    "terminal_evaluation_geometry_evals": 3,
+                    "bm_geometry_evals": None,
+                    "total_observable_geometry_evals": ae_engine_joint.total_geometry_evals + joint_runner_refresh_geometry_evals + 3,
+                }
+            except Exception as exc:
+                res_joint_ae = {
+                    "terminal_evaluation_performed": False,
+                    "terminal_state": copy.deepcopy(joint_changed),
+                    "num_transforms": len(joint_changed),
+                    "train": None,
+                    "validation": None,
+                    "test": None,
+                    "terminal_train_max_dphi": None,
+                    "final_epsilon": eps_thresh,
+                    "fairness_feasible": False,
+                    "termination_reason": "evaluation_failed",
+                    "error": str(exc),
+                    "bm_steps_accepted": bm_steps_accepted,
+                    "ae_steps_accepted": ae_joint_steps_accepted,
+                    "iteration_events": joint_events,
+                    "model_fit_count": ae_engine_joint.total_model_fits,
+                    "geometry_eval_count": ae_engine_joint.total_geometry_evals,
+                    "geometry_eval_breakdown": {
+                        "ae_guard_geometry_evals": ae_engine_joint.total_geometry_evals,
+                        "runner_state_refresh_geometry_evals": joint_runner_refresh_geometry_evals,
+                        "terminal_evaluation_geometry_evals": 0,
+                        "bm_geometry_evals": None,
+                        "total_observable_geometry_evals": ae_engine_joint.total_geometry_evals + joint_runner_refresh_geometry_evals,
+                    },
+                }
 
         return {
             "arm_id": arm_id,

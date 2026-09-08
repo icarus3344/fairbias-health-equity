@@ -43,10 +43,10 @@ class TestFairAccuracyEnhancement(unittest.TestCase):
         n = 200
         # Synthetic dataset with 1 protected, 1 numeric, 1 categorical
         x_num = np.random.randn(n) * 2.0 + 5.0
-        x_cat = np.random.choice(["A", "B", "C", "D"], size=n)
+        x_cat = np.random.choice([0, 1, 2, 3], size=n)
         o_prot = np.random.choice([0, 1], size=n)
         # Target correlated with x_num and x_cat
-        prob = 1.0 / (1.0 + np.exp(-(0.5 * x_num + (x_cat == "A").astype(float) * 1.5 - 2.0)))
+        prob = 1.0 / (1.0 + np.exp(-(0.5 * x_num + (x_cat == 0).astype(float) * 1.5 - 2.0)))
         y = (np.random.rand(n) < prob).astype(int)
 
         self.df = pd.DataFrame({

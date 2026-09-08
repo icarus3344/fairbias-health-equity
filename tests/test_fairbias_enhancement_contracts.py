@@ -36,8 +36,11 @@ from fairbias.config import FairBiasConfig
 from fairbias.evaluator import FairEvaluator
 from fairbias.enhancement import FairAccuracyEnhancement
 from fairbias.enhancement_contracts import (
+    CandidateAuditEvent,
     CandidateEvaluationResult,
+    EnhancementStatus,
     EvaluationPartition,
+    compute_configuration_fingerprint,
     evaluate_candidate_utility,
 )
 from fairbias.enhancement_state import (
@@ -512,6 +515,300 @@ class TestFairBiasEnhancementContracts(unittest.TestCase):
         model = LogisticRegression(max_iter=1000, solver='lbfgs', random_state=42).fit(a, Y)
         self.assertTrue(result.is_valid)
         self.assertAlmostEqual(result.utility_score, roc_auc_score(W, model.predict_proba(b)[:, 1]), places=12)
+
+    # -------------------------------------------------------------------------
+    # 13. R1C Contract Closure Tests
+    # -------------------------------------------------------------------------
+    def test_r1c_01_disabled_guard_contract(self):
+        ae = FairAccuracyEnhancement(self.evaluator, self.transformer, "target", ["cat1"], ["num1", "num2"])
+        res = ae._is_fairness_acceptable(self.df_tr, self.o_tr, 0.10, 0.10, fairness_guard_enabled=False)
+        self.assertTrue(res.is_acceptable)
+        self.assertEqual(res.evaluation_status, "NOT_EVALUATED")
+        self.assertIsNone(res.candidate_max_dphi)
+        self.assertIsNone(res.cap_applied)
+        self.assertEqual(res.rejection_reason, "")
+
+    def test_r1c_01_min_gain_and_slack_validation(self):
+        # Negative / NaN / Inf rejected at initialization
+        for bad_val in [-0.01, float("nan"), float("inf"), float("-inf")]:
+            with self.assertRaises(ValueError):
+                FairAccuracyEnhancement(
+                    self.evaluator, self.transformer, "target", ["cat1"], ["num1", "num2"],
+                    min_utility_gain=bad_val,
+                )
+            with self.assertRaises(ValueError):
+                FairAccuracyEnhancement(
+                    self.evaluator, self.transformer, "target", ["cat1"], ["num1", "num2"],
+                    max_fairness_degradation=bad_val,
+                )
+
+        # Rejected at start of enhance_step if modified post-init
+        ae = FairAccuracyEnhancement(self.evaluator, self.transformer, "target", ["cat1"], ["num1", "num2"])
+        ae.min_utility_gain = -1.0
+        with self.assertRaises(ValueError):
+            ae.enhance_step(self.df_tr, self.y_tr, {}, partition=self.partition)
+
+        ae.min_utility_gain = 0.0
+        ae.max_fairness_degradation = float("nan")
+        with self.assertRaises(ValueError):
+            ae.enhance_step(self.df_tr, self.y_tr, {}, partition=self.partition)
+
+    def test_r1c_02_partition_immutability_and_caching(self):
+        df_x = self.df_tr.copy()
+        s_y = self.y_tr.copy()
+        part = EvaluationPartition(df_x, s_y, self.df_sel, self.y_sel)
+
+        # Mutating external df_x should not affect partition's defensive snapshot
+        df_x.iloc[0, 0] += 999.0
+        # verify_not_mutated should succeed because internal copy is protected
+        part.verify_not_mutated()
+
+        # If internal partition array is directly tampered with, verify_not_mutated fails
+        part.fit_X.iloc[0, 0] += 12345.0
+        with self.assertRaises(ValueError):
+            part.verify_not_mutated()
+
+        # Ranking cache test
+        ae = FairAccuracyEnhancement(self.evaluator, self.transformer, "target", ["cat1"], ["num1", "num2"])
+        call_counts = []
+        def counted_nmi(X, y):
+            call_counts.append(len(y))
+            return {"num1": 0.8, "num2": 0.2, "cat1": 0.1}
+
+        with unittest.mock.patch("fairbias.enhancement.calculate_nmi_dict", side_effect=counted_nmi):
+            attr1 = ae.find_target_correlated_attribute(self.df_tr, self.y_tr, {}, partition=self.partition)
+            attr2 = ae.find_target_correlated_attribute(self.df_tr, self.y_tr, {}, partition=self.partition)
+            self.assertEqual(attr1, attr2)
+            # Reused cache: calculate_nmi_dict called only once
+            self.assertEqual(len(call_counts), 1)
+
+            # Different partition data invalidates cache
+            diff_tr = self.df_tr.copy()
+            diff_tr.iloc[0, 0] += 5.0
+            diff_part = EvaluationPartition(diff_tr, self.y_tr, self.df_sel, self.y_sel)
+            attr3 = ae.find_target_correlated_attribute(diff_tr, self.y_tr, {}, partition=diff_part)
+            # Called again for new partition
+            self.assertEqual(len(call_counts), 2)
+
+    def test_r1c_03_category_mapping_invalid_audit_event(self):
+        ae = FairAccuracyEnhancement(
+            self.evaluator, self.transformer, "target", ["cat1"], ["num1", "num2"],
+            arm_id="TEST_ARM", condition="test_cond",
+        )
+        with unittest.mock.patch(
+            "fairbias.enhancement.safe_compose_category_mapping",
+            side_effect=ValueError("Synthetic category composition conflict"),
+        ):
+            res = ae._try_categorical_enhancement(
+                target_attr="cat1",
+                X_train=self.df_tr,
+                Y_train=self.y_tr,
+                changed_dict={"cat1": {3: 1}},
+                current_utility=0.5,
+                O_train=self.o_tr,
+                epsilon_threshold=0.1,
+                curr_max_eps=0.1,
+                partition=self.partition,
+                parent_state_hash=hash_transform_state({"cat1": {3: 1}}),
+                iteration=1,
+            )
+            self.assertIsNone(res)
+            # Audit trail must contain the category invalid event
+            matching_events = [
+                ev for ev in ae.audit_trail
+                if ev.validity_status == EnhancementStatus.CATEGORY_MAPPING_INVALID
+            ]
+            self.assertGreater(len(matching_events), 0)
+            ev = matching_events[0]
+            self.assertFalse(ev.accepted)
+            self.assertEqual(ev.model_fit_count, 0)
+            self.assertEqual(ev.geometry_eval_count, 0)
+            self.assertIn("Synthetic category composition conflict", ev.rejection_reason)
+
+    def test_r1c_07_non_numeric_features_rejected(self):
+        # Candidate utility evaluation must reject non-numeric feature representation
+        str_df = self.df_tr.copy()
+        str_df["str_col"] = ["A", "B"] * (len(str_df) // 2)
+        str_sel = self.df_sel.copy()
+        str_sel["str_col"] = ["A", "B"] * (len(str_sel) // 2)
+
+        part_str = EvaluationPartition(str_df, self.y_tr, str_sel, self.y_sel)
+        res = evaluate_candidate_utility(
+            part_str, {}, ["num1", "num2"], ["cat1", "str_col"], self.transformer, self.evaluator
+        )
+        self.assertFalse(res.is_valid)
+        self.assertEqual(res.validity_status, EnhancementStatus.NON_NUMERIC_FEATURE)
+        self.assertIn("Model-ready features must be numeric", res.error_message)
+
+    def test_r1c_p2_01_configuration_fingerprint_sensitivity(self):
+        base_kwargs = {
+            "algorithm_mode": "engineering_bounded",
+            "classifier": "LR",
+            "random_seed": 42,
+            "min_utility_gain": 0.001,
+            "max_fairness_degradation": 0.02,
+            "poly_exponents": (1/3, 3.0),
+            "label_O": ("protected",),
+            "label_Y": "target",
+            "cate_attrs": ("cat1",),
+            "num_attrs": ("num1", "num2"),
+            "transform_n_bins": 5,
+            "transform_log_epsilon": 1e-5,
+        }
+        base_fp = compute_configuration_fingerprint(**base_kwargs)
+        self.assertEqual(len(base_fp), 16)
+
+        # Altering each of the 12 fields must yield a different fingerprint
+        mutations = [
+            ("algorithm_mode", "standard"),
+            ("classifier", "DT"),
+            ("random_seed", 43),
+            ("min_utility_gain", 0.005),
+            ("max_fairness_degradation", 0.05),
+            ("poly_exponents", (1/2, 2.0)),
+            ("label_O", ("other_prot",)),
+            ("label_Y", "other_target"),
+            ("cate_attrs", ("cat1", "cat2")),
+            ("num_attrs", ("num1",)),
+            ("transform_n_bins", 10),
+            ("transform_log_epsilon", 1e-4),
+        ]
+        for key, new_val in mutations:
+            kwargs = copy.deepcopy(base_kwargs)
+            kwargs[key] = new_val
+            new_fp = compute_configuration_fingerprint(**kwargs)
+            self.assertNotEqual(base_fp, new_fp, msg=f"Fingerprint failed to change on {key}")
+
+    def test_r1c_p2_02_canonical_status_vocabulary(self):
+        # All required canonical status constants must exist
+        self.assertEqual(EnhancementStatus.VALID, "VALID")
+        self.assertEqual(EnhancementStatus.EXCEEDS_FAIRNESS_CAP, "EXCEEDS_FAIRNESS_CAP")
+        self.assertEqual(EnhancementStatus.NO_UTILITY_GAIN, "NO_UTILITY_GAIN")
+        self.assertEqual(EnhancementStatus.ELIGIBLE_NOT_COMMITTED, "ELIGIBLE_NOT_COMMITTED")
+        self.assertEqual(EnhancementStatus.MISSING_PROBABILITIES, "MISSING_PROBABILITIES")
+        self.assertEqual(EnhancementStatus.NOT_EVALUATED, "NOT_EVALUATED")
+        self.assertEqual(EnhancementStatus.CATEGORY_MAPPING_INVALID, "CATEGORY_MAPPING_INVALID")
+        self.assertEqual(EnhancementStatus.NON_NUMERIC_FEATURE, "NON_NUMERIC_FEATURE")
+        self.assertEqual(EnhancementStatus.ALL_FEATURES_DROPPED, "ALL_FEATURES_DROPPED")
+        self.assertEqual(EnhancementStatus.SINGLE_CLASS_FIT_TARGET, "SINGLE_CLASS_FIT_TARGET")
+        self.assertEqual(EnhancementStatus.SINGLE_CLASS_SELECTION_TARGET, "SINGLE_CLASS_SELECTION_TARGET")
+        self.assertEqual(EnhancementStatus.NON_FINITE_OUTPUT, "NON_FINITE_OUTPUT")
+
+    def test_r1d_01_authoritative_partition_binding(self):
+        """R1D-01: Explicit EvaluationPartition is strictly authoritative over external arguments."""
+        # Partition with 20 train rows and 10 selection rows
+        fit_X = self.df_tr.iloc[:20].copy()
+        fit_Y = self.y_tr.iloc[:20].copy()
+        sel_X = self.df_sel.iloc[:10].copy()
+        sel_Y = self.y_sel.iloc[:10].copy()
+        o_fit = self.o_tr.iloc[:20].copy()
+        partition = EvaluationPartition(fit_X, fit_Y, sel_X, sel_Y, protected_fit=o_fit)
+
+        # External arguments with 100 rows containing corrupted/divergent values
+        corrupted_X = pd.DataFrame({
+            "num1": np.full(100, 99999.0),
+            "num2": np.full(100, -99999.0),
+            "cat1": np.full(100, 0),
+        })
+        corrupted_Y = pd.Series(np.zeros(100, dtype=int), name="target")
+        corrupted_O = pd.DataFrame({"protected": np.zeros(100, dtype=int)})
+
+        ae = FairAccuracyEnhancement(
+            self.evaluator,
+            self.transformer,
+            "target",
+            ["cat1"],
+            ["num1", "num2"],
+            poly_exponents=(2.0,),
+            min_utility_gain=0.0,
+            max_fairness_degradation=1.0,
+        )
+
+        transformed_df, changed, attr = ae.enhance_step(
+            X_train=corrupted_X,
+            Y_train=corrupted_Y,
+            changed_dict={},
+            O_train=corrupted_O,
+            partition=partition,
+        )
+
+        # Output representation must strictly match partition.fit_X shape and index
+        self.assertEqual(len(transformed_df), 20)
+        self.assertEqual(list(transformed_df.index), list(fit_X.index))
+        # Corrupted external values must not appear in the transformed output
+        self.assertFalse((transformed_df["num1"] == 99999.0).any())
+        self.assertFalse((transformed_df["num2"] == -99999.0).any())
+
+    def test_r1d_02_model_contract_symmetry_and_oracles(self):
+        """R1D-02: Non-probabilistic models fail with MISSING_PROBABILITIES in candidate and terminal evals."""
+        from sklearn.tree import DecisionTreeClassifier
+        from sklearn.ensemble import RandomForestClassifier
+        from nhis_fairbias.d8_enhancement_runner import evaluate_representation
+
+        class DecisionFunctionOnlyModel:
+            def fit(self, X, y):
+                return self
+            def decision_function(self, X):
+                return np.zeros(len(X))
+            # Has fit and decision_function, but NOT predict_proba
+
+        model = DecisionFunctionOnlyModel()
+
+        # 1. evaluate_candidate_utility fails with MISSING_PROBABILITIES
+        res = evaluate_candidate_utility(
+            self.partition,
+            {},
+            ["num1", "num2"],
+            ["cat1"],
+            self.transformer,
+            self.evaluator,
+            model_factory=lambda: model,
+        )
+        self.assertFalse(res.is_valid)
+        self.assertEqual(res.validity_status, EnhancementStatus.MISSING_PROBABILITIES)
+        self.assertIsNone(res.utility_score)
+
+        # 2. evaluate_representation fails with MISSING_PROBABILITIES prefix
+        with self.assertRaises(ValueError) as ctx:
+            evaluate_representation(
+                model=model,
+                scaler=None,
+                X_train_raw=self.df_tr,
+                y_train=self.y_tr.values,
+                X_val_raw=self.df_sel,
+                y_val=self.y_sel.values,
+                X_test_raw=self.df_sel,
+                y_test=self.y_sel.values,
+                o_train=self.o_tr.values,
+                o_val=self.o_tr.values[:len(self.y_sel)],
+                o_test=self.o_tr.values[:len(self.y_sel)],
+                changed_dict={},
+                evaluator=self.evaluator,
+                transformer=self.transformer,
+                cate_attrs=["cat1"],
+                num_attrs=["num1", "num2"],
+                protected_attr="protected",
+            )
+        self.assertIn(EnhancementStatus.MISSING_PROBABILITIES, str(ctx.exception))
+
+        # 3. Standard oracle models with predict_proba (LR, DT, RF) succeed
+        for factory in [
+            lambda: LogisticRegression(max_iter=1000, random_state=42),
+            lambda: DecisionTreeClassifier(max_depth=3, random_state=42),
+            lambda: RandomForestClassifier(n_estimators=5, max_depth=3, random_state=42),
+        ]:
+            res_oracle = evaluate_candidate_utility(
+                self.partition,
+                {},
+                ["num1", "num2"],
+                ["cat1"],
+                self.transformer,
+                self.evaluator,
+                model_factory=factory,
+            )
+            self.assertTrue(res_oracle.is_valid)
+            self.assertEqual(res_oracle.validity_status, EnhancementStatus.VALID)
+            self.assertIsNotNone(res_oracle.utility_score)
 
 
 if __name__ == "__main__":
