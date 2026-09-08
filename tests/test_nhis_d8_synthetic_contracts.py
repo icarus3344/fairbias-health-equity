@@ -662,5 +662,460 @@ class TestNHISD8SyntheticContracts(unittest.TestCase):
         )
 
 
+class TestD8R2BaselineReproductionContracts(unittest.TestCase):
+    """Rigorous preflight contracts for Gate D8-R2 baseline reproduction mode."""
+
+    def test_baseline_reproduction_only_structural_bypass(self):
+        """Verify baseline_reproduction_only executes only conditions 1 & 2 with 0 enhancement calls."""
+        fake_adapter = FakeNHISStudyAdapter(n_rows=100)
+        canonical_dict = {"num1": {"power": 3.0}}
+        runner = D8EnhancementRunner(
+            adapter=fake_adapter,
+            canonical_provider=lambda arm_id: canonical_dict,
+            smoke_test=True,
+            random_seed=0,
+            allow_real_data=False,
+            baseline_reproduction_only=True,
+        )
+
+        with unittest.mock.patch("nhis_fairbias.d8_enhancement_runner.FairAccuracyEnhancement") as mock_ae, \
+             unittest.mock.patch("nhis_fairbias.d8_enhancement_runner.FairBiasMitigation") as mock_bm:
+            res = runner.run_arm("D6_ARM_001")
+
+            # 1. Structural bypass: 0 construction / calls of AE and BM
+            self.assertEqual(mock_ae.call_count, 0)
+            self.assertEqual(mock_bm.call_count, 0)
+
+        # 2. Conditions in result strictly limited to baseline and canonical_fairbias
+        self.assertIn("conditions", res)
+        conds = res["conditions"]
+        self.assertEqual(set(conds.keys()), {"baseline", "canonical_fairbias"})
+
+        # Baseline executed
+        self.assertTrue(conds["baseline"]["terminal_evaluation_performed"])
+        self.assertEqual(conds["baseline"]["termination_reason"], "baseline_untransformed")
+        self.assertIn("auroc", conds["baseline"]["test"])
+        self.assertIn("auprc", conds["baseline"]["test"])
+        self.assertIn("accuracy", conds["baseline"]["test"])
+        self.assertIn("balanced_accuracy", conds["baseline"]["test"])
+
+        # Canonical FairBias executed
+        self.assertTrue(conds["canonical_fairbias"]["terminal_evaluation_performed"])
+        self.assertEqual(conds["canonical_fairbias"]["termination_reason"], "d6_canonical_frozen")
+        self.assertIn("auroc", conds["canonical_fairbias"]["test"])
+        self.assertIn("auprc", conds["canonical_fairbias"]["test"])
+
+        # 3. Candidate model fit count == 0 and candidate audit events == 0
+        self.assertEqual(len(runner.audit_events), 0)
+        self.assertIn("audit", res)
+        self.assertTrue(res["audit"]["baseline_reproduction_only"])
+        self.assertFalse(res["audit"]["posthoc_enhancement_called"])
+        self.assertFalse(res["audit"]["joint_enhancement_called"])
+        self.assertEqual(res["audit"]["candidate_fits_performed"], 0)
+
+    def test_real_data_authorization_guards_and_defaults(self):
+        """Verify real-data authorization defaults to OFF and prevents full 4-condition study on real data."""
+        # 1. Defaults to OFF
+        runner_default = D8EnhancementRunner(allow_real_data=False)
+        self.assertFalse(runner_default.allow_real_data)
+        self.assertFalse(runner_default.baseline_reproduction_only)
+
+        # 2. Real data cannot be accessed without explicit authorization
+        with self.assertRaises(RuntimeError) as ctx:
+            _ = runner_default.adapter
+        self.assertIn("prohibited", str(ctx.exception).lower())
+
+        # 3. baseline-only mode cannot silently fall through to the full four-condition study on real data
+        with self.assertRaises(RuntimeError) as ctx_fallthrough:
+            D8EnhancementRunner(allow_real_data=True, baseline_reproduction_only=False)
+        self.assertIn("restricted to --baseline-reproduction-only", str(ctx_fallthrough.exception))
+
+        # 4. CLI parser defaults
+        cli_args = cli.parse_args.__wrapped__() if hasattr(cli.parse_args, "__wrapped__") else None
+        # Test CLI flag enforcement directly
+        with unittest.mock.patch("sys.argv", ["cli", "--allow-real-data"]):
+            with self.assertRaises(ValueError) as ctx_cli:
+                cli.main()
+            self.assertIn("strictly prohibited without --baseline-reproduction-only", str(ctx_cli.exception))
+
+    def test_cli_lifecycle_and_directory_exclusivity_in_baseline_only(self):
+        """Verify RUNNING -> COMPLETED lifecycle and directory exclusivity in baseline-only mode."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_dir = pathlib.Path(tmpdir) / "repro_run"
+
+            # 1. Output directory exclusive creation: fails if exists
+            run_dir.mkdir()
+            with unittest.mock.patch("sys.argv", [
+                "cli",
+                "--output-dir", str(run_dir),
+                "--baseline-reproduction-only",
+            ]):
+                with self.assertRaises(FileExistsError):
+                    cli.main()
+
+            # Remove to test clean run
+            run_dir.rmdir()
+
+            # Mock D8EnhancementRunner to verify lifecycle
+            mock_runner = unittest.mock.MagicMock()
+            mock_runner.audit_events = []
+            mock_runner.run_arm.return_value = {
+                "arm_id": "D6_ARM_001",
+                "protected_attribute": "SEX_A",
+                "epsilon_threshold": 0.005,
+                "conditions": {
+                    "baseline": {
+                        "num_transforms": 0,
+                        "termination_reason": "baseline_untransformed",
+                        "test": {"auroc": 0.75, "auprc": 0.21, "accuracy": 0.92, "predicted_positive_count": 100, "predicted_positive_rate": 0.01, "max_dphi": 0.003, "demographic_parity_difference": 0.001, "equal_opportunity_difference": 0.001},
+                        "train": {"max_dphi": 0.004},
+                    },
+                    "canonical_fairbias": {
+                        "num_transforms": 5,
+                        "termination_reason": "d6_canonical_frozen",
+                        "test": {"auroc": 0.66, "auprc": 0.14, "accuracy": 0.92, "predicted_positive_count": 5, "predicted_positive_rate": 0.001, "max_dphi": 0.001, "demographic_parity_difference": 0.0001, "equal_opportunity_difference": 0.0},
+                        "train": {"max_dphi": 0.0004},
+                    },
+                },
+            }
+
+            with unittest.mock.patch("scripts.run_nhis_enhancement_study.D8EnhancementRunner", return_value=mock_runner), \
+                 unittest.mock.patch("sys.argv", [
+                     "cli",
+                     "--output-dir", str(run_dir),
+                     "--arm", "D6_ARM_001",
+                     "--baseline-reproduction-only",
+                 ]):
+                cli.main()
+
+            # Verify manifest lifecycle COMPLETED
+            manifest_path = run_dir / "execution_manifest.json"
+            self.assertTrue(manifest_path.exists())
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+
+            self.assertEqual(manifest["status"], "COMPLETED")
+            self.assertTrue(manifest["baseline_reproduction_only"])
+            self.assertIn("started_at_utc", manifest)
+            self.assertIn("completed_at_utc", manifest)
+            self.assertIn("results_json", manifest["output_files"])
+            self.assertIn("comparison_csv", manifest["output_files"])
+
+
+class TestD8R2BEvidenceIntegrityContracts(unittest.TestCase):
+    """R2B evidence integrity, cohort/schema barrier, and complete temporal metric contracts."""
+
+    def test_r2b_01_observed_n_cannot_be_sourced_from_reference(self):
+        """Test 1: Observed N must derive directly from partition DataFrames, not reference variables."""
+        import scripts.reproduce_d6_baselines as repro
+
+        # Test with size 80
+        adapter_80 = FakeNHISStudyAdapter(n_rows=80)
+        runner_80 = D8EnhancementRunner(
+            adapter=adapter_80,
+            canonical_provider=lambda arm_id: {},
+            smoke_test=False,
+            baseline_reproduction_only=True,
+            random_seed=42,
+        )
+        res_80 = runner_80.run_arm("D6_ARM_001")
+        obs_80 = res_80["observed_cohort"]
+        self.assertEqual(obs_80["train_n"], 80)
+        self.assertEqual(obs_80["validation_n"], 80)
+        self.assertEqual(obs_80["test_n"], 80)
+
+        # Test with size 115
+        adapter_115 = FakeNHISStudyAdapter(n_rows=115)
+        runner_115 = D8EnhancementRunner(
+            adapter=adapter_115,
+            canonical_provider=lambda arm_id: {},
+            smoke_test=False,
+            baseline_reproduction_only=True,
+            random_seed=42,
+        )
+        res_115 = runner_115.run_arm("D6_ARM_001")
+        obs_115 = res_115["observed_cohort"]
+        self.assertEqual(obs_115["train_n"], 115)
+        self.assertEqual(obs_115["validation_n"], 115)
+        self.assertEqual(obs_115["test_n"], 115)
+
+        # Confirm compare_cohorts preserves independent observed values vs fixed reference
+        tv_prov = {
+            "train_n": 27450,
+            "train_outcome_positive_count": 1769,
+            "validation_n": 29277,
+            "validation_outcome_positive_count": 1929,
+        }
+        te_prov = {
+            "test_n": 32350,
+            "test_outcome_positive_count": 2563,
+        }
+        c_rec, c_match = repro.compare_cohorts(obs_80, tv_prov, te_prov)
+        self.assertFalse(c_match)
+        self.assertEqual(c_rec["train_n_observed"], 80)
+        self.assertEqual(c_rec["train_n_reference"], 27450)
+        self.assertNotEqual(c_rec["train_n_observed"], c_rec["train_n_reference"])
+
+    def test_r2b_02_wrong_observed_n_fails_barrier(self):
+        """Test 2: Perturbed observed N or positive counts must fail the cohort barrier."""
+        import scripts.reproduce_d6_baselines as repro
+
+        tv_prov = {
+            "train_n": 27450,
+            "train_outcome_positive_count": 1769,
+            "validation_n": 29277,
+            "validation_outcome_positive_count": 1929,
+        }
+        te_prov = {
+            "test_n": 32350,
+            "test_outcome_positive_count": 2563,
+        }
+
+        exact_cohort = {
+            "train_n": 27450,
+            "train_positives": 1769,
+            "validation_n": 29277,
+            "validation_positives": 1929,
+            "test_n": 32350,
+            "test_positives": 2563,
+        }
+        _, match = repro.compare_cohorts(exact_cohort, tv_prov, te_prov)
+        self.assertTrue(match)
+
+        # Perturb each field individually
+        for field in ["train_n", "train_positives", "validation_n", "validation_positives", "test_n", "test_positives"]:
+            bad_cohort = copy.deepcopy(exact_cohort)
+            bad_cohort[field] += 1
+            rec, match = repro.compare_cohorts(bad_cohort, tv_prov, te_prov)
+            self.assertFalse(match, f"Cohort barrier should fail when {field} is perturbed")
+
+    def test_r2b_03_wrong_observed_feature_order_fails_barrier(self):
+        """Test 3: Wrong observed feature order must fail schema barrier and hash equality."""
+        import scripts.reproduce_d6_baselines as repro
+
+        d6_cfg = {
+            "expected_predictors": 3,
+            "protected_attribute": "prot_a",
+            "outcome": "out_y",
+            "disability_arm": "full_feature",
+            "categorical_features": ["cat1"],
+            "numerical_features": ["num1", "num2"],
+        }
+        tv_prov = {
+            "frozen_2022_training_state": {
+                "baseline_logistic_regression": {
+                    "state": {"feature_order": ["num1", "num2", "cat1"]}
+                }
+            }
+        }
+        valid_schema = {
+            "feature_order": ["num1", "num2", "cat1"],
+            "categorical_features": ["cat1"],
+            "numerical_features": ["num1", "num2"],
+            "protected_attribute": "prot_a",
+            "outcome": "out_y",
+            "disability_arm": "full_feature",
+            "feature_count": 3,
+        }
+        rec, match = repro.compare_schemas(valid_schema, d6_cfg, tv_prov)
+        self.assertTrue(match)
+        self.assertTrue(rec["schema_hashes_match"])
+
+        # Perturb feature order
+        bad_order_schema = copy.deepcopy(valid_schema)
+        bad_order_schema["feature_order"] = ["num2", "num1", "cat1"]
+        bad_rec, bad_match = repro.compare_schemas(bad_order_schema, d6_cfg, tv_prov)
+        self.assertFalse(bad_match)
+        self.assertFalse(bad_rec["feature_order_match"])
+        self.assertFalse(bad_rec["schema_hashes_match"])
+
+    def test_r2b_04_wrong_categorical_numerical_family_fails_barrier(self):
+        """Test 4: Wrong categorical or numerical family assignment must fail schema barrier."""
+        import scripts.reproduce_d6_baselines as repro
+
+        d6_cfg = {
+            "expected_predictors": 3,
+            "protected_attribute": "prot_a",
+            "outcome": "out_y",
+            "disability_arm": "full_feature",
+            "categorical_features": ["cat1"],
+            "numerical_features": ["num1", "num2"],
+        }
+        tv_prov = {
+            "frozen_2022_training_state": {
+                "baseline_logistic_regression": {
+                    "state": {"feature_order": ["num1", "num2", "cat1"]}
+                }
+            }
+        }
+        # Swap family
+        bad_family_schema = {
+            "feature_order": ["num1", "num2", "cat1"],
+            "categorical_features": ["cat1", "num2"],
+            "numerical_features": ["num1"],
+            "protected_attribute": "prot_a",
+            "outcome": "out_y",
+            "disability_arm": "full_feature",
+            "feature_count": 3,
+        }
+        bad_rec, bad_match = repro.compare_schemas(bad_family_schema, d6_cfg, tv_prov)
+        self.assertFalse(bad_match)
+        self.assertFalse(bad_rec["categorical_features_match"])
+        self.assertFalse(bad_rec["numerical_features_match"])
+        self.assertFalse(bad_rec["schema_hashes_match"])
+
+    def test_r2b_05_schema_failure_forces_global_barrier_false(self):
+        """Test 5: Any schema failure forces global reproduction barrier to False."""
+        import scripts.reproduce_d6_baselines as repro
+
+        # Test with mismatched feature count
+        d6_cfg = {
+            "expected_predictors": 21,
+            "protected_attribute": "SEX_A",
+            "outcome": "MEDDL12M_A",
+            "disability_arm": "full_feature",
+            "categorical_features": ["c1"],
+            "numerical_features": ["n1"],
+        }
+        tv_prov = {
+            "frozen_2022_training_state": {
+                "baseline_logistic_regression": {
+                    "state": {"feature_order": ["n1", "c1"]}
+                }
+            }
+        }
+        mismatched_schema = {
+            "feature_order": ["n1", "c1"],
+            "categorical_features": ["c1"],
+            "numerical_features": ["n1"],
+            "protected_attribute": "SEX_A",
+            "outcome": "MEDDL12M_A",
+            "disability_arm": "full_feature",
+            "feature_count": 2, # expected 21
+        }
+        rec, match = repro.compare_schemas(mismatched_schema, d6_cfg, tv_prov)
+        self.assertFalse(match)
+        self.assertFalse(rec["feature_count_match"])
+
+    def test_r2b_06_validation_metric_mismatch_forces_global_barrier_false(self):
+        """Test 6: Validation metric mismatch beyond tolerance forces barrier FAIL."""
+        import scripts.reproduce_d6_baselines as repro
+
+        base_res = {
+            "train": {"N": 27450, "count_predicted_positive": 10, "count_outcome_positive": 100, "accuracy": 0.9, "max_dphi": 0.005},
+            "validation": {
+                "auroc": 0.779,
+                "auprc": 0.200,
+                "accuracy": 0.932,
+                "predicted_positive_count": 111,
+                "selection_rate": 0.00379,
+                "max_dphi": 0.00419,
+                "demographic_parity_gap": 0.00101,
+                "equal_opportunity_gap": 0.00048,
+            },
+            "test": {
+                "auroc": 0.751, "auprc": 0.215, "accuracy": 0.919, "predicted_positive_count": 130,
+                "selection_rate": 0.00401, "max_dphi": 0.00392, "demographic_parity_gap": 0.00058, "equal_opportunity_gap": 0.00029
+            }
+        }
+        canon_res = copy.deepcopy(base_res)
+        canon_res["train"]["max_dphi"] = 0.0005
+        canon_res["validation"]["max_dphi"] = 0.00082
+        canon_res["test"]["max_dphi"] = 0.00140
+        tv_prov = {"train_n": 27450, "train_outcome_positive_count": 100}
+        d6_train_dphi = {"initial_max_dphi": 0.005, "final_max_dphi": 0.0005}
+
+        d6_val_base = {
+            "utility": {"auroc": 0.779, "auprc": 0.200, "accuracy": 0.932, "count_predicted_positive": 111, "selection_rate": 0.00379},
+            "fairness_gaps": {"demographic_parity_gap": 0.00101, "equal_opportunity_gap": 0.00048},
+        }
+        d6_val_fb = copy.deepcopy(d6_val_base)
+        d6_val_dphi = {"original_validation_max_dphi": 0.00419, "transformed_validation_max_dphi": 0.00082}
+
+        d6_test_base = {
+            "utility": {"auroc": 0.751, "auprc": 0.215, "accuracy": 0.919, "count_predicted_positive": 130, "selection_rate": 0.00401},
+            "fairness_gaps": {"demographic_parity_gap": 0.00058, "equal_opportunity_gap": 0.00029},
+        }
+        d6_test_fb = copy.deepcopy(d6_test_base)
+        d6_test_dphi = {"original_test_max_dphi": 0.00392, "transformed_test_max_dphi": 0.00140}
+
+        # Clean check passes
+        rows_clean = repro.compare_temporal_metrics(
+            "D6_ARM_001", "SEX", base_res, canon_res, tv_prov,
+            d6_train_dphi, d6_val_base, d6_val_fb, d6_val_dphi,
+            d6_test_base, d6_test_fb, d6_test_dphi
+        )
+        self.assertTrue(all(r["status"] == "PASS" for r in rows_clean))
+
+        # Perturb validation AUROC by 0.01 (beyond 1e-10)
+        bad_base_res = copy.deepcopy(base_res)
+        bad_base_res["validation"]["auroc"] = 0.769
+        rows_bad = repro.compare_temporal_metrics(
+            "D6_ARM_001", "SEX", bad_base_res, canon_res, tv_prov,
+            d6_train_dphi, d6_val_base, d6_val_fb, d6_val_dphi,
+            d6_test_base, d6_test_fb, d6_test_dphi
+        )
+        val_auroc_row = [r for r in rows_bad if r["condition_row"] == "SEX validation baseline" and r["metric"] == "auroc"][0]
+        self.assertEqual(val_auroc_row["status"], "FAIL")
+        self.assertFalse(all(r["status"] == "PASS" for r in rows_bad))
+
+    def test_r2b_07_train_dphi_mismatch_forces_global_barrier_false(self):
+        """Test 7: Train max dphi mismatch beyond tolerance forces barrier FAIL."""
+        import scripts.reproduce_d6_baselines as repro
+
+        base_res = {
+            "train": {"N": 27450, "count_predicted_positive": 10, "count_outcome_positive": 100, "accuracy": 0.9, "max_dphi": 0.009}, # Mismatched: expected 0.005
+            "validation": {"auroc": 0.7, "auprc": 0.2, "accuracy": 0.9, "predicted_positive_count": 10, "selection_rate": 0.01, "max_dphi": 0.01, "demographic_parity_gap": 0.001, "equal_opportunity_gap": 0.001},
+            "test": {"auroc": 0.7, "auprc": 0.2, "accuracy": 0.9, "predicted_positive_count": 10, "selection_rate": 0.01, "max_dphi": 0.01, "demographic_parity_gap": 0.001, "equal_opportunity_gap": 0.001}
+        }
+        canon_res = copy.deepcopy(base_res)
+        canon_res["train"]["max_dphi"] = 0.0005
+        tv_prov = {"train_n": 27450, "train_outcome_positive_count": 100}
+        d6_train_dphi = {"initial_max_dphi": 0.005, "final_max_dphi": 0.0005}
+
+        d6_val = {"utility": {"auroc": 0.7, "auprc": 0.2, "accuracy": 0.9, "count_predicted_positive": 10, "selection_rate": 0.01}, "fairness_gaps": {"demographic_parity_gap": 0.001, "equal_opportunity_gap": 0.001}}
+        d6_val_dphi = {"original_validation_max_dphi": 0.01, "transformed_validation_max_dphi": 0.01}
+        d6_test = {"utility": {"auroc": 0.7, "auprc": 0.2, "accuracy": 0.9, "count_predicted_positive": 10, "selection_rate": 0.01}, "fairness_gaps": {"demographic_parity_gap": 0.001, "equal_opportunity_gap": 0.001}}
+        d6_test_dphi = {"original_test_max_dphi": 0.01, "transformed_test_max_dphi": 0.01}
+
+        rows = repro.compare_temporal_metrics(
+            "D6_ARM_001", "SEX", base_res, canon_res, tv_prov,
+            d6_train_dphi, d6_val, d6_val, d6_val_dphi, d6_test, d6_test, d6_test_dphi
+        )
+        train_dphi_row = [r for r in rows if r["condition_row"] == "SEX train baseline" and r["metric"] == "max_dphi"][0]
+        self.assertEqual(train_dphi_row["status"], "FAIL")
+        self.assertFalse(all(r["status"] == "PASS" for r in rows))
+
+    def test_r2b_08_conditions_3_4_call_count_remains_zero(self):
+        """Test 8: Structural bypass guarantees 0 candidate fits and 0 calls to enhancement engines."""
+        fake_adapter = FakeNHISStudyAdapter(n_rows=50)
+        runner = D8EnhancementRunner(
+            adapter=fake_adapter,
+            canonical_provider=lambda arm_id: {},
+            baseline_reproduction_only=True,
+            random_seed=42,
+        )
+        with unittest.mock.patch("nhis_fairbias.d8_enhancement_runner.FairAccuracyEnhancement") as mock_ae, \
+             unittest.mock.patch("nhis_fairbias.d8_enhancement_runner.FairBiasMitigation") as mock_bm:
+            res = runner.run_arm("D6_ARM_001")
+            self.assertEqual(mock_ae.call_count, 0)
+            self.assertEqual(mock_bm.call_count, 0)
+            self.assertEqual(res["audit"]["candidate_fits_performed"], 0)
+            self.assertFalse(res["audit"]["posthoc_enhancement_called"])
+            self.assertFalse(res["audit"]["joint_enhancement_called"])
+            self.assertTrue(res["audit"]["baseline_reproduction_only"])
+
+    def test_r2b_09_no_real_data_access_in_synthetic_preflight(self):
+        """Test 9: Process-level audit hook confirms 0 real data access attempts in preflight."""
+        # Confirm audit hook intercepted any blocked attempts
+        self.assertEqual(len(BLOCKED_ACCESS), 0)
+        with self.assertRaises(RuntimeError) as ctx:
+            with open(ROOT / "data" / "processed" / "nhis" / "nhis_2022_2024_features.parquet", "rb"):
+                pass
+        self.assertIn("DATA_ACCESS_BLOCKED", str(ctx.exception))
+        # Clear sentinel list after verify
+        BLOCKED_ACCESS.clear()
+
+
 if __name__ == "__main__":
     unittest.main()

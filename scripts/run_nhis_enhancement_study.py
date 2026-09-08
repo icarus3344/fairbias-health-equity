@@ -45,6 +45,17 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Explicit permission flag required to read real NHIS microdata parquet.",
     )
+    parser.add_argument(
+        "--baseline-reproduction-only",
+        action="store_true",
+        help="Execute only baseline and canonical FairBias conditions without enhancement search.",
+    )
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=0,
+        help="Random seed for model fitting and evaluation (default: 0).",
+    )
     return parser.parse_args()
 
 
@@ -61,7 +72,8 @@ def build_comparison_dataframe(results: Dict[str, Any]) -> pd.DataFrame:
                 "condition": cond_name,
                 "num_transforms": cond_res.get("num_transforms", 0),
                 "test_auroc": round(test_res["auroc"], 4) if test_res and "auroc" in test_res else None,
-                "test_auprc": round(test_res.get("auprc_trapezoidal", test_res.get("auprc")), 4) if test_res else None,
+                "test_auprc": round(test_res["auprc"], 4) if test_res and "auprc" in test_res else None,
+                "test_auprc_trapezoidal": round(test_res.get("auprc_trapezoidal", test_res.get("auprc")), 4) if test_res else None,
                 "test_average_precision": round(test_res.get("average_precision", test_res.get("auprc")), 4) if test_res else None,
                 "test_accuracy": round(test_res["accuracy"], 4) if test_res and "accuracy" in test_res else None,
                 "test_positives_0_5": test_res.get("predicted_positive_count") if test_res else None,
@@ -79,6 +91,11 @@ def build_comparison_dataframe(results: Dict[str, Any]) -> pd.DataFrame:
 
 def main() -> None:
     args = parse_args()
+
+    if args.allow_real_data and not args.baseline_reproduction_only:
+        raise ValueError(
+            "--allow-real-data is strictly prohibited without --baseline-reproduction-only at Gate D8-R2."
+        )
 
     # Collision-proof output directory resolution
     if args.output_dir is not None:
@@ -107,6 +124,8 @@ def main() -> None:
     print(f"Target arms: {target_arms}")
     print(f"Smoke test mode: {args.smoke_test}")
     print(f"Allow real data: {args.allow_real_data}")
+    print(f"Baseline reproduction only: {args.baseline_reproduction_only}")
+    print(f"Random seed: {args.random_seed}")
     print(f"Output directory: {out_dir}")
 
     # Write initial startup manifest
@@ -118,6 +137,8 @@ def main() -> None:
         "started_at_utc": started_at,
         "smoke_test": args.smoke_test,
         "allow_real_data": args.allow_real_data,
+        "baseline_reproduction_only": args.baseline_reproduction_only,
+        "random_seed": args.random_seed,
         "target_arms": target_arms,
     }
     with open(manifest_path, "w", encoding="utf-8") as f:
@@ -128,6 +149,8 @@ def main() -> None:
             smoke_test=args.smoke_test,
             run_id=run_id,
             allow_real_data=args.allow_real_data,
+            baseline_reproduction_only=args.baseline_reproduction_only,
+            random_seed=args.random_seed,
         )
 
         study_results: Dict[str, Any] = {}
@@ -174,6 +197,8 @@ def main() -> None:
             "duration_seconds": total_time,
             "smoke_test": args.smoke_test,
             "allow_real_data": args.allow_real_data,
+            "baseline_reproduction_only": args.baseline_reproduction_only,
+            "random_seed": args.random_seed,
             "target_arms": target_arms,
             "output_files": {
                 "results_json": {"path": str(json_path), "sha256": _file_sha(json_path)},
@@ -193,6 +218,8 @@ def main() -> None:
             "failed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "smoke_test": args.smoke_test,
             "allow_real_data": args.allow_real_data,
+            "baseline_reproduction_only": args.baseline_reproduction_only,
+            "random_seed": args.random_seed,
             "target_arms": target_arms,
             "error": str(exc),
             "error_type": type(exc).__name__,

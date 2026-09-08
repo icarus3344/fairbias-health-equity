@@ -27,6 +27,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
+    balanced_accuracy_score,
     brier_score_loss,
     f1_score,
     precision_recall_curve,
@@ -39,6 +40,7 @@ import sklearn.base
 
 from fairbias.config import (
     ALGORITHM_MODE_ENGINEERING,
+    ALGORITHM_MODE_PAPER_FAITHFUL,
     FairBiasConfig,
 )
 from fairbias.evaluator import FairEvaluator
@@ -209,7 +211,8 @@ def evaluate_representation(
         vals = [float(v) for gd in ed.values() for v in gd.values()]
         return float(max(vals)) if vals else 0.0
 
-    # Group fairness gaps on test
+    # Group fairness gaps on validation and test
+    val_gaps = compute_group_fairness_gaps(y_val, pred_val, o_val)
     test_gaps = compute_group_fairness_gaps(y_test, pred_te, o_test)
 
     return {
@@ -217,39 +220,69 @@ def evaluate_representation(
         "changed_dict": copy.deepcopy(changed_dict),
         "num_transforms": len(changed_dict),
         "train": {
+            "N": int(len(X_train_raw)),
+            "n": int(len(X_train_raw)),
             "auroc": float(roc_auc_score(y_train, p_tr)),
-            "auprc": get_auprc_trap(y_train, p_tr),
+            "auprc": get_avg_prec(y_train, p_tr),
             "auprc_trapezoidal": get_auprc_trap(y_train, p_tr),
             "average_precision": get_avg_prec(y_train, p_tr),
             "brier": float(brier_score_loss(y_train, p_tr)),
             "accuracy": float(accuracy_score(y_train, pred_tr)),
+            "balanced_accuracy": float(balanced_accuracy_score(y_train, pred_tr)),
+            "f1": float(f1_score(y_train, pred_tr, zero_division=0)),
             "predicted_positive_count": int(np.sum(pred_tr)),
+            "count_predicted_positive": int(np.sum(pred_tr)),
             "predicted_positive_rate": float(np.mean(pred_tr)),
+            "selection_rate": float(np.mean(pred_tr)),
+            "count_outcome_positive": int(np.sum(y_train == 1)),
+            "prevalence": float(np.mean(y_train == 1)),
             "max_dphi": get_max_eps(eps_tr),
         },
         "validation": {
+            "N": int(len(X_val_raw)),
+            "n": int(len(X_val_raw)),
             "auroc": float(roc_auc_score(y_val, p_val)),
-            "auprc": get_auprc_trap(y_val, p_val),
+            "auprc": get_avg_prec(y_val, p_val),
             "auprc_trapezoidal": get_auprc_trap(y_val, p_val),
             "average_precision": get_avg_prec(y_val, p_val),
             "brier": float(brier_score_loss(y_val, p_val)),
             "accuracy": float(accuracy_score(y_val, pred_val)),
+            "balanced_accuracy": float(balanced_accuracy_score(y_val, pred_val)),
+            "f1": float(f1_score(y_val, pred_val, zero_division=0)),
             "predicted_positive_count": int(np.sum(pred_val)),
+            "count_predicted_positive": int(np.sum(pred_val)),
             "predicted_positive_rate": float(np.mean(pred_val)),
+            "selection_rate": float(np.mean(pred_val)),
+            "count_outcome_positive": int(np.sum(y_val == 1)),
+            "prevalence": float(np.mean(y_val == 1)),
             "max_dphi": get_max_eps(eps_val),
+            "demographic_parity_difference": val_gaps["demographic_parity_difference"],
+            "demographic_parity_gap": val_gaps["demographic_parity_difference"],
+            "equal_opportunity_difference": val_gaps["equal_opportunity_difference"],
+            "equal_opportunity_gap": val_gaps["equal_opportunity_difference"],
         },
         "test": {
+            "N": int(len(X_test_raw)),
+            "n": int(len(X_test_raw)),
             "auroc": float(roc_auc_score(y_test, p_te)),
-            "auprc": get_auprc_trap(y_test, p_te),
+            "auprc": get_avg_prec(y_test, p_te),
             "auprc_trapezoidal": get_auprc_trap(y_test, p_te),
             "average_precision": get_avg_prec(y_test, p_te),
             "brier": float(brier_score_loss(y_test, p_te)),
             "accuracy": float(accuracy_score(y_test, pred_te)),
+            "balanced_accuracy": float(balanced_accuracy_score(y_test, pred_te)),
+            "f1": float(f1_score(y_test, pred_te, zero_division=0)),
             "predicted_positive_count": int(np.sum(pred_te)),
+            "count_predicted_positive": int(np.sum(pred_te)),
             "predicted_positive_rate": float(np.mean(pred_te)),
+            "selection_rate": float(np.mean(pred_te)),
+            "count_outcome_positive": int(np.sum(y_test == 1)),
+            "prevalence": float(np.mean(y_test == 1)),
             "max_dphi": get_max_eps(eps_te),
             "demographic_parity_difference": test_gaps["demographic_parity_difference"],
+            "demographic_parity_gap": test_gaps["demographic_parity_difference"],
             "equal_opportunity_difference": test_gaps["equal_opportunity_difference"],
+            "equal_opportunity_gap": test_gaps["equal_opportunity_difference"],
         },
     }
 
@@ -262,17 +295,25 @@ class D8EnhancementRunner:
         adapter: Optional[Any] = None,
         canonical_provider: Optional[Callable[[str], Dict[str, Any]]] = None,
         smoke_test: bool = False,
-        random_seed: int = 42,
+        random_seed: int = 0,
         run_id: str = "d8_study",
         allow_real_data: bool = False,
+        baseline_reproduction_only: bool = False,
     ):
         self.smoke_test = smoke_test
         self.random_seed = random_seed
         self.run_id = run_id
         self.allow_real_data = allow_real_data
+        self.baseline_reproduction_only = baseline_reproduction_only
         self.canonical_provider = canonical_provider
         self._adapter = adapter
         self.audit_events: List[CandidateAuditEvent] = []
+
+        if self.allow_real_data and not self.baseline_reproduction_only:
+            raise RuntimeError(
+                "Access to real NHIS microdata is restricted to --baseline-reproduction-only mode during Gate D8-R2. "
+                "Full four-condition enhancement on real data is NOT authorized."
+            )
 
     @property
     def adapter(self) -> Any:
@@ -280,7 +321,7 @@ class D8EnhancementRunner:
             return self._adapter
         if not self.allow_real_data:
             raise RuntimeError(
-                "Access to real NHIS parquet is prohibited in Gate D8-R1. "
+                "Access to real NHIS parquet is prohibited without explicit allow_real_data authorization. "
                 "In synthetic verification, an explicit adapter must be injected into D8EnhancementRunner."
             )
         from nhis_fairbias.adapter import NHISStudyAdapter
@@ -348,18 +389,52 @@ class D8EnhancementRunner:
         cate_attrs = [c for c in all_cats if c in active_cols]
         num_attrs = [c for c in all_nums if c in active_cols]
 
-        fb_config = FairBiasConfig(
-            algorithm_mode=ALGORITHM_MODE_ENGINEERING,
-            random_seed=self.random_seed,
-            classifier="LR",
-            eval_norm="min-max",
-            label_O=(protected_attr,),
-            label_Y=outcome,
-            use_bias_mitigation=True,
-            use_accuracy_enhancement=True,
-            failed_attribute_mode="stop",
-            mds_fixed_components=2,
-        ).resolved()
+        # Observed cohort sizes and outcome-positive counts directly from actual partitions
+        observed_cohort = {
+            "train_n": int(len(X_train)),
+            "train_positives": int(np.sum(y_tr == 1)),
+            "validation_n": int(len(X_val)),
+            "validation_positives": int(np.sum(y_v == 1)),
+            "test_n": int(len(X_test)),
+            "test_positives": int(np.sum(y_te == 1)),
+        }
+
+        # Observed schema from actual execution configuration and data frame
+        observed_schema = {
+            "disability_arm": str(disability_arm),
+            "feature_count": int(len(X_train.columns)),
+            "feature_order": list(X_train.columns),
+            "categorical_features": list(cate_attrs),
+            "numerical_features": list(num_attrs),
+            "outcome": str(outcome),
+            "protected_attribute": str(protected_attr),
+        }
+
+        if self.baseline_reproduction_only:
+            fb_config = FairBiasConfig(
+                algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL,
+                random_seed=self.random_seed,
+                classifier="LR",
+                eval_norm="min-max",
+                label_O=(protected_attr,),
+                label_Y=outcome,
+                use_bias_mitigation=True,
+                use_accuracy_enhancement=False,
+                failed_attribute_mode="stop",
+            ).resolved()
+        else:
+            fb_config = FairBiasConfig(
+                algorithm_mode=ALGORITHM_MODE_ENGINEERING,
+                random_seed=self.random_seed,
+                classifier="LR",
+                eval_norm="min-max",
+                label_O=(protected_attr,),
+                label_Y=outcome,
+                use_bias_mitigation=True,
+                use_accuracy_enhancement=True,
+                failed_attribute_mode="stop",
+                mds_fixed_components=2,
+            ).resolved()
 
         evaluator = FairEvaluator(
             config=fb_config,
@@ -471,6 +546,28 @@ class D8EnhancementRunner:
                 "fairness_feasible": False,
                 "termination_reason": "evaluation_failed",
                 "error": str(exc),
+            }
+
+        if self.baseline_reproduction_only:
+            return {
+                "arm_id": arm_id,
+                "protected_attribute": protected_attr,
+                "disability_arm": disability_arm,
+                "feature_set": feature_set,
+                "epsilon_threshold": eps_thresh,
+                "initial_train_max_dphi": float(max([float(v) for gd in init_eps_dict.values() for v in gd.values()])) if init_eps_dict else 0.0,
+                "conditions": {
+                    "baseline": res_baseline,
+                    "canonical_fairbias": res_canonical,
+                },
+                "audit": {
+                    "baseline_reproduction_only": True,
+                    "posthoc_enhancement_called": False,
+                    "joint_enhancement_called": False,
+                    "candidate_fits_performed": 0,
+                },
+                "observed_cohort": observed_cohort,
+                "observed_schema": observed_schema,
             }
 
         # -------------------------------------------------------------
@@ -883,4 +980,6 @@ class D8EnhancementRunner:
                 "posthoc_enhancement": res_posthoc_ae,
                 "joint_enhancement": res_joint_ae,
             },
+            "observed_cohort": observed_cohort,
+            "observed_schema": observed_schema,
         }
