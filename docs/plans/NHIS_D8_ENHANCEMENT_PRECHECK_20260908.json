@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-09-08T06:03:26.520606+00:00",
+  "purpose": "Read-only source and aggregate-result fingerprint for D8 repair plan; not experimental validation or gate acceptance. No microdata opened.",
+  "branch": "research/nhis-fairbias",
+  "head": "b595e59b67d8781a3dca41199487909fdb9ed42d",
+  "protected_tag": "inherited-code-v0.3-baseline-20260828",
+  "protected_commit": "038897e9f751edac6e36445b7706eec5fdb15988",
+  "status_before_plan_files": [
+    " M src/fairbias/enhancement.py",
+    " M src/fairbias/pipeline.py",
+    "?? archive/baseline_v0.3/",
+    "?? scripts/run_nhis_enhancement_study.py",
+    "?? src/nhis_fairbias/d8_enhancement_runner.py",
+    "?? tests/test_fairbias_enhancement.py",
+    "?? tests/test_nhis_d8_enhancement.py"
+  ],
+  "protected_files": [
+    {
+      "path": "app.py",
+      "bytes": 3241,
+      "mtime_ns": 1787571347437539643,
+      "sha256": "842aaf07a012c0b0ecea5dc4ab70b6b63d3647d9cc4c0f59f738adef72ffeb2e",
+      "baseline_sha256": "842aaf07a012c0b0ecea5dc4ab70b6b63d3647d9cc4c0f59f738adef72ffeb2e",
+      "head_sha256": "842aaf07a012c0b0ecea5dc4ab70b6b63d3647d9cc4c0f59f738adef72ffeb2e",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "classifiers.py",
+      "bytes": 29515,
+      "mtime_ns": 1787571345975569114,
+      "sha256": "93b12f6c2d444a6c11e48ff9e58434a164187b68b03359bc71cdbf91757b42f4",
+      "baseline_sha256": "93b12f6c2d444a6c11e48ff9e58434a164187b68b03359bc71cdbf91757b42f4",
+      "head_sha256": "93b12f6c2d444a6c11e48ff9e58434a164187b68b03359bc71cdbf91757b42f4",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "config.py",
+      "bytes": 3899,
+      "mtime_ns": 1787571347366570144,
+      "sha256": "93c1a1ee5e77fddb85d271d155d05f86674c4d753583a18e2e7ab755cf9aa09f",
+      "baseline_sha256": "93c1a1ee5e77fddb85d271d155d05f86674c4d753583a18e2e7ab755cf9aa09f",
+      "head_sha256": "93c1a1ee5e77fddb85d271d155d05f86674c4d753583a18e2e7ab755cf9aa09f",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "data_COMPAS.csv",
+      "bytes": 1002705,
+      "mtime_ns": 1787571347593109957,
+      "sha256": "4b2bc1d55553f1c2061768bd245b725ee57b3f7e438f612b78c60f308848cb27",
+      "baseline_sha256": "4b2bc1d55553f1c2061768bd245b725ee57b3f7e438f612b78c60f308848cb27",
+      "head_sha256": "4b2bc1d55553f1c2061768bd245b725ee57b3f7e438f612b78c60f308848cb27",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "data_Credit_Card.csv",
+      "bytes": 2728312,
+      "mtime_ns": 1787571343654004771,
+      "sha256": "303cf916663273a345671688c96e9be7a83c76e39f0a2727f8d0ed33b8d6df1e",
+      "baseline_sha256": "303cf916663273a345671688c96e9be7a83c76e39f0a2727f8d0ed33b8d6df1e",
+      "head_sha256": "303cf916663273a345671688c96e9be7a83c76e39f0a2727f8d0ed33b8d6df1e",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "eval.py",
+      "bytes": 53376,
+      "mtime_ns": 1787571345977818979,
+      "sha256": "7dda1b6766ba2d177231fdef2ef676b40c2fbb5189616c683bcbb4e443bfc3df",
+      "baseline_sha256": "7dda1b6766ba2d177231fdef2ef676b40c2fbb5189616c683bcbb4e443bfc3df",
+      "head_sha256": "7dda1b6766ba2d177231fdef2ef676b40c2fbb5189616c683bcbb4e443bfc3df",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "main.py",
+      "bytes": 13148,
+      "mtime_ns": 1787571341856529590,
+      "sha256": "bea9f24ba512e6cd81fc0a1b94e4543bfcb3a119c504f54335cd4a8553894d3e",
+      "baseline_sha256": "bea9f24ba512e6cd81fc0a1b94e4543bfcb3a119c504f54335cd4a8553894d3e",
+      "head_sha256": "bea9f24ba512e6cd81fc0a1b94e4543bfcb3a119c504f54335cd4a8553894d3e",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "module_AE.py",
+      "bytes": 12206,
+      "mtime_ns": 1787571346011040050,
+      "sha256": "1d920357af16cbe46c23c2c8a7a079171b101c4c19453cb6c2a6571f6bb99914",
+      "baseline_sha256": "1d920357af16cbe46c23c2c8a7a079171b101c4c19453cb6c2a6571f6bb99914",
+      "head_sha256": "1d920357af16cbe46c23c2c8a7a079171b101c4c19453cb6c2a6571f6bb99914",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "module_BM.py",
+      "bytes": 12721,
+      "mtime_ns": 1787571344521174221,
+      "sha256": "892cfb4009feba683acf759c978964e92d0760646fd0f9cf6f52752424028531",
+      "baseline_sha256": "892cfb4009feba683acf759c978964e92d0760646fd0f9cf6f52752424028531",
+      "head_sha256": "892cfb4009feba683acf759c978964e92d0760646fd0f9cf6f52752424028531",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "module_load.py",
+      "bytes": 15851,
+      "mtime_ns": 1787571341510633814,
+      "sha256": "64e38127c1d142aae4f991bd4286bdc8bc7d702c30bc2ca0477b9e9eb44845f4",
+      "baseline_sha256": "64e38127c1d142aae4f991bd4286bdc8bc7d702c30bc2ca0477b9e9eb44845f4",
+      "head_sha256": "64e38127c1d142aae4f991bd4286bdc8bc7d702c30bc2ca0477b9e9eb44845f4",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "module_transform.py",
+      "bytes": 15949,
+      "mtime_ns": 1787571341819795325,
+      "sha256": "bd3b80601fc3fb84f63aee8971f0d8fd67ff08bfff288847577025305aa91568",
+      "baseline_sha256": "bd3b80601fc3fb84f63aee8971f0d8fd67ff08bfff288847577025305aa91568",
+      "head_sha256": "bd3b80601fc3fb84f63aee8971f0d8fd67ff08bfff288847577025305aa91568",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 119,
+      "mtime_ns": 1787571341491809475,
+      "sha256": "b7e1aa823061583924a76c253db34a7649ef22c3ebd5f69d434f37192e37efad",
+      "baseline_sha256": "b7e1aa823061583924a76c253db34a7649ef22c3ebd5f69d434f37192e37efad",
+      "head_sha256": "b7e1aa823061583924a76c253db34a7649ef22c3ebd5f69d434f37192e37efad",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "results/all_results.json",
+      "bytes": 11895,
+      "mtime_ns": 1787643799886578279,
+      "sha256": "ac7f9a53b474338b91d549dffdf0aebec03f0e58266b60355689aeb0cd40a54d",
+      "baseline_sha256": "ac7f9a53b474338b91d549dffdf0aebec03f0e58266b60355689aeb0cd40a54d",
+      "head_sha256": "ac7f9a53b474338b91d549dffdf0aebec03f0e58266b60355689aeb0cd40a54d",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": "start.sh",
+      "bytes": 223,
+      "mtime_ns": 1787571345979454306,
+      "sha256": "49ad3006132808939bcde1c5125c809c3cc4179e87d2c8443b44d740bec66878",
+      "baseline_sha256": "49ad3006132808939bcde1c5125c809c3cc4179e87d2c8443b44d740bec66878",
+      "head_sha256": "49ad3006132808939bcde1c5125c809c3cc4179e87d2c8443b44d740bec66878",
+      "matches_baseline": true,
+      "matches_head": true
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 748,
+      "mtime_ns": 1788705053927895193,
+      "sha256": "da6499f9f9882b6074754f6d6e11f25aec4398ba9cafd16906ea636ac094a5d1",
+      "baseline_sha256": "8af4b97a03eaacab9d40d67723a15a651a894e2fb2d1b59f5b3fde39a9a24b33",
+      "head_sha256": "da6499f9f9882b6074754f6d6e11f25aec4398ba9cafd16906ea636ac094a5d1",
+      "matches_baseline": false,
+      "matches_head": true
+    }
+  ],
+  "review_input_files": [
+    {
+      "path": "docs/AI_EXECUTION_PROTOCOL.md",
+      "bytes": 8886,
+      "mtime_ns": 1788704705192582243,
+      "sha256": "1a3d38929d65493f8352d6b46d32f65fa836502d08a3c2d2704dd713e5c3beac"
+    },
+    {
+      "path": "docs/decisions/0004-continuous-gemini-batch-implementation.md",
+      "bytes": 2783,
+      "mtime_ns": 1787965989168458604,
+      "sha256": "f8ede3e23f352ca0a52167a834d5ac71c4d56f86f1da82ccfb51c37c6a2b3deb"
+    },
+    {
+      "path": "runs/d8_enhancement_study/d8_enhancement_comparison.csv",
+      "bytes": 1894,
+      "mtime_ns": 1788794980222869630,
+      "sha256": "e4b2e7c10068988caa9bcaa9b989a008d7850cdfada5ee82503f366f2b0c8785"
+    },
+    {
+      "path": "runs/d8_enhancement_study/d8_enhancement_study_results.json",
+      "bytes": 26751,
+      "mtime_ns": 1788794980212120478,
+      "sha256": "944df70bd75a8c1a1bb0c6758540936123582fcab08bc64d5806583f09e4da11"
+    },
+    {
+      "path": "scripts/run_nhis_enhancement_study.py",
+      "bytes": 4381,
+      "mtime_ns": 1788794588883763018,
+      "sha256": "65b15aa0ccb772bfb90a8813f6fe2332b25229ccef741579c12e37250a8f5ea5"
+    },
+    {
+      "path": "src/fairbias/__init__.py",
+      "bytes": 429,
+      "mtime_ns": 1788003690332218629,
+      "sha256": "1e1d378ef1f3e9de3a0af40907d8959a44d688be792aac849e6c115a74007903"
+    },
+    {
+      "path": "src/fairbias/bias_metric.py",
+      "bytes": 22283,
+      "mtime_ns": 1788279454692468833,
+      "sha256": "1d40a58eeb827bfe9fdc6415e6dc51a6d6d81f6bca3b025ce8f985bf2aa6aa6d"
+    },
+    {
+      "path": "src/fairbias/config.py",
+      "bytes": 20716,
+      "mtime_ns": 1788279275729495497,
+      "sha256": "7ea50ea868adc79fac4f7e1482eed3474e0635eff3b9f600d4450bf52ac06145"
+    },
+    {
+      "path": "src/fairbias/data.py",
+      "bytes": 15260,
+      "mtime_ns": 1788056921137091352,
+      "sha256": "428e5fc769fa662a8082d56646a58ab246e265818463004269815ad0c98727e9"
+    },
+    {
+      "path": "src/fairbias/enhancement.py",
+      "bytes": 12646,
+      "mtime_ns": 1788794245336643312,
+      "sha256": "0bf26ac47ddae803f3112b2b0dc7c90af29396abb455c8b02beb06ee0dfdfd61"
+    },
+    {
+      "path": "src/fairbias/evaluator.py",
+      "bytes": 15707,
+      "mtime_ns": 1788279284146157659,
+      "sha256": "bfb92a8389c9c6d09bc843a337e5da588eed256dc0b0e2869c7cdcb4b79b1a35"
+    },
+    {
+      "path": "src/fairbias/mitigation.py",
+      "bytes": 30088,
+      "mtime_ns": 1788280213106977085,
+      "sha256": "977c7547d9a3d4e5bab0623be9c4a9a31d4a13fd9011ff5c19d8a046ea2fb371"
+    },
+    {
+      "path": "src/fairbias/models.py",
+      "bytes": 2990,
+      "mtime_ns": 1788003707002535865,
+      "sha256": "a6a30e7aab3211cfc202e07c8c3a2b3e4902963b1d0f65f51870c0d38871948f"
+    },
+    {
+      "path": "src/fairbias/pipeline.py",
+      "bytes": 35322,
+      "mtime_ns": 1788794218421547854,
+      "sha256": "6d81eb2b49d190b143f1be8e4cca91565a3383f955556e88560b793917ee5c7c"
+    },
+    {
+      "path": "src/fairbias/transform.py",
+      "bytes": 9355,
+      "mtime_ns": 1788084599088922783,
+      "sha256": "7d7c9da3e0264d3528a6cb50ccd4816785472dd1373096dce02dc2c7989437a8"
+    },
+    {
+      "path": "src/fairbias/transform_trace.py",
+      "bytes": 5953,
+      "mtime_ns": 1788258107730267701,
+      "sha256": "0b4d3c30183c4e53250c41a87b3b45b6619862139d0dda2d37739ec4cb55d0b1"
+    },
+    {
+      "path": "src/nhis_fairbias/adapter.py",
+      "bytes": 11392,
+      "mtime_ns": 1788255394710114135,
+      "sha256": "9f4727d9fd450b3b4b9f4f0ec5aee6e9d0234f37460177bb4a586d18a8a281c7"
+    },
+    {
+      "path": "src/nhis_fairbias/d6_temporal_runner.py",
+      "bytes": 68815,
+      "mtime_ns": 1788323803443627459,
+      "sha256": "e56a805e4f9c994876f5fb92d399a4fabadc2be462e8e10e543448e9821270d3"
+    },
+    {
+      "path": "src/nhis_fairbias/d8_enhancement_runner.py",
+      "bytes": 18180,
+      "mtime_ns": 1788794526617857322,
+      "sha256": "45ac0380c538c4b9be90582593d2c6a02a5c5c750f0e9a979b3db22f72f67080"
+    },
+    {
+      "path": "src/nhis_fairbias/preprocessing.py",
+      "bytes": 21461,
+      "mtime_ns": 1788258255822706966,
+      "sha256": "4ccfb768843315d32cb4f4fd43375349dc115eb9aa49121a10dfc39fff894fc4"
+    },
+    {
+      "path": "tests/test_fairbias_enhancement.py",
+      "bytes": 5758,
+      "mtime_ns": 1788794259036431433,
+      "sha256": "d33ee31734d6242c6eea79ddb96af105773a6975d0a0fae9ff3f0efa90dac9fc"
+    },
+    {
+      "path": "tests/test_nhis_d8_enhancement.py",
+      "bytes": 1482,
+      "mtime_ns": 1788794596694438795,
+      "sha256": "01747e36f831cb4d220edad0c7ec3dcce8f0c099527247162d784c4aaa47abc0"
+    }
+  ],
+  "known_baseline_exception": {
+    "path": ".gitignore",
+    "status": "PRE_EXISTING_BASELINE_DRIFT_RECORDED_NOT_RESOLVED",
+    "diff": "diff --git a/.gitignore b/.gitignore\nindex 816b666..8c62e07 100644\n--- a/.gitignore\n+++ b/.gitignore\n@@ -48,3 +48,8 @@ outputs/*\n !outputs/.gitkeep\n artifacts/*\n !artifacts/.gitkeep\n+\n+# Private presentation slides and personal build scripts\n+docs/presentation/\n+scripts/build_beamer_deck.py\n+*.pdf\n",
+    "scope": "Leave current bytes unchanged. Only the exact recorded existing difference may be carried into source repair and synthetic review; no baseline-integrity PASS, no restoration or new edits, no experimental release authority."
+  }
+}

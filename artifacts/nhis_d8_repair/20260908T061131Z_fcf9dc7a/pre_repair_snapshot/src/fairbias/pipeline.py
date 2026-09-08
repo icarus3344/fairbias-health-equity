@@ -435,15 +435,6 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
             )
             iter_data["selected_label_O"] = sel_o
             iter_data["selected_attribute"] = sel_attr
-            iter_data["mitigation_attribute"] = sel_attr
-            if sel_attr is not None and cfg.use_accuracy_enhancement:
-                # Recalculate training geometry metrics immediately after BM before handing to AE
-                t_X_bm = transformer.transform_data(
-                    X_train, changed_dict, numerical_cols, categorical_cols
-                )
-                current_epsilon = evaluator.calculate_epsilon(
-                    t_X_bm, O_train, categorical_cols, numerical_cols
-                )
 
         # Step B: Accuracy Enhancement
         ae_attr: Optional[str] = None
@@ -457,19 +448,9 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
                 current_epsilon=current_epsilon,
                 X_val=X_val,
                 Y_val=Y_val,
-                iteration=iter_idx,
             )
-            iter_data["enhancement_attribute"] = ae_attr
-            if ae_attr and not iter_data.get("selected_attribute"):
+            if ae_attr and not iter_data["selected_attribute"]:
                 iter_data["selected_attribute"] = ae_attr
-            if ae_attr is not None:
-                # Recalculate training geometry metrics immediately after AE acceptance
-                t_X_ae = transformer.transform_data(
-                    X_train, changed_dict, numerical_cols, categorical_cols
-                )
-                current_epsilon = evaluator.calculate_epsilon(
-                    t_X_ae, O_train, categorical_cols, numerical_cols
-                )
 
         if sel_attr is None and ae_attr is None:
             # No transform accepted this round: the state is terminal.

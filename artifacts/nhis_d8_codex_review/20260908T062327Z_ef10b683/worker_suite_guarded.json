@@ -1,0 +1,12 @@
+{
+  "tests_run": 28,
+  "passed": 27,
+  "failures": [],
+  "errors": [
+    "test_backward_compatibility_ae_disabled (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_backward_compatibility_ae_disabled)"
+  ],
+  "skipped": [],
+  "blocked_read_attempts": [
+    "data_COMPAS.csv"
+  ]
+}

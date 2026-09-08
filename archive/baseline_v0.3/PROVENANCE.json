@@ -1,0 +1,36 @@
+{
+  "provenance_notice": "Historical immutable baseline results for code_v_0_3 (Commit 038897e9f751edac6e36445b7706eec5fdb15988).",
+  "snapshot_date": "2026-08-29",
+  "baseline_commit": "038897e9f751edac6e36445b7706eec5fdb15988",
+  "baseline_tag": "inherited-code-v0.3-baseline-20260828",
+  "baseline_metrics": {
+    "initial": {
+      "ACC": 0.7510799136069114,
+      "F1": 0.7466169453394549,
+      "EO": 0.06590850348927371,
+      "SP": 0.11898779011993427
+    },
+    "round_2": {
+      "ACC": 0.7548596112311015,
+      "F1": 0.7498561274043893,
+      "EO": 0.04042388214008788,
+      "SP": 0.09816704217869127
+    },
+    "final_round_5": {
+      "ACC": 0.7489200863930886,
+      "F1": 0.744889023834513,
+      "EO": 0.05849918152838804,
+      "SP": 0.11596532826966027
+    }
+  },
+  "dataset_files": {
+    "data_COMPAS.csv": {
+      "rows": 7214,
+      "description": "Historical COMPAS recidivism benchmark dataset"
+    },
+    "data_Credit_Card.csv": {
+      "rows": 30000,
+      "description": "Historical Default of Credit Card Clients benchmark dataset"
+    }
+  }
+}

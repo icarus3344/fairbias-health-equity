@@ -1,0 +1,19 @@
+test_configured_classifier_matches_utility_oracle (adversarial_review.SyntheticReview.test_configured_classifier_matches_utility_oracle) ... ok
+test_existing_directory_rejected_by_real_cli (adversarial_review.SyntheticReview.test_existing_directory_rejected_by_real_cli) ... ok
+test_feature_ranking_uses_only_fit_partition (adversarial_review.SyntheticReview.test_feature_ranking_uses_only_fit_partition) ... ok
+test_infinite_slack_is_invalid (adversarial_review.SyntheticReview.test_infinite_slack_is_invalid) ... ok
+test_invalid_baseline_must_reach_caller_as_failure (adversarial_review.SyntheticReview.test_invalid_baseline_must_reach_caller_as_failure) ... ok
+test_missing_probabilities_not_replaced_with_hard_predictions (adversarial_review.SyntheticReview.test_missing_probabilities_not_replaced_with_hard_predictions) ... ok
+test_missing_protected_data_cannot_disable_enabled_guard (adversarial_review.SyntheticReview.test_missing_protected_data_cannot_disable_enabled_guard) ... ok
+test_nan_after_finite_entry_is_invalid (adversarial_review.SyntheticReview.test_nan_after_finite_entry_is_invalid) ... ok
+test_only_committed_candidate_logged_accepted (adversarial_review.SyntheticReview.test_only_committed_candidate_logged_accepted) ... ok
+test_original_drop_bug_fixed_with_arithmetic_oracle (adversarial_review.SyntheticReview.test_original_drop_bug_fixed_with_arithmetic_oracle) ... ok
+test_partial_geometry_is_invalid (adversarial_review.SyntheticReview.test_partial_geometry_is_invalid) ... ok
+test_partition_fingerprint_binds_values_and_labels (adversarial_review.SyntheticReview.test_partition_fingerprint_binds_values_and_labels) ... ok
+test_protected_index_alignment_is_validated (adversarial_review.SyntheticReview.test_protected_index_alignment_is_validated) ... ok
+test_real_cli_records_midrun_failure_manifest (adversarial_review.SyntheticReview.test_real_cli_records_midrun_failure_manifest) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.042s
+
+OK

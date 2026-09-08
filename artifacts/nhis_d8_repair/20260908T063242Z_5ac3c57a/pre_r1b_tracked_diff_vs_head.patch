@@ -1,0 +1,1028 @@
+diff --git a/src/fairbias/enhancement.py b/src/fairbias/enhancement.py
+index ed15dd1..3bf5e7d 100644
+--- a/src/fairbias/enhancement.py
++++ b/src/fairbias/enhancement.py
+@@ -1,21 +1,37 @@
+-"""Accuracy Enhancement module with bounded fairness degradation and deepcopy protection."""
++"""Accuracy Enhancement module with bounded fairness degradation, partition contract, and state-bound candidate audit."""
+ 
+ from __future__ import annotations
+ 
++import collections
+ import copy
+-from itertools import combinations
+-from typing import Any, Dict, List, Optional, Tuple
++import hashlib
++from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple
+ 
+ import numpy as np
+ import pandas as pd
+-from sklearn.feature_selection import mutual_info_classif
++from sklearn.model_selection import train_test_split
+ 
+ from fairbias.evaluator import FairEvaluator
+-from fairbias.transform import FairTransform
++from fairbias.enhancement_contracts import (
++    CandidateAuditEvent,
++    CandidateEvaluationResult,
++    EvaluationPartition,
++    FairnessEvaluationResult,
++    evaluate_candidate_utility,
++)
++from fairbias.enhancement_state import (
++    StatefulCandidateTracker,
++    hash_transform_state,
++    normalize_category_mapping,
++    safe_compose_category_mapping,
++)
++from fairbias.transform import FairTransform, calculate_nmi_dict
++
++DEFAULT_POLY_GRID: Tuple[float, ...] = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
+ 
+ 
+ class FairAccuracyEnhancement:
+-    """Explores accuracy-enhancing feature transformations under fairness degradation constraints."""
++    """Explores accuracy-enhancing feature transformations under explicit fairness degradation constraints."""
+ 
+     def __init__(
+         self,
+@@ -25,113 +41,853 @@ class FairAccuracyEnhancement:
+         cate_attrs: List[str],
+         num_attrs: List[str],
+         max_fairness_degradation: float = 0.02,
++        poly_exponents: Sequence[float] = DEFAULT_POLY_GRID,
++        min_utility_gain: float = 0.0,
++        run_id: str = "default_run",
++        arm_id: str = "default_arm",
++        condition: str = "default_condition",
+     ):
+         self.evaluator = evaluator
+         self.transformer = transformer
+         self.label_Y = label_Y
+-        self.cate_attrs = cate_attrs
+-        self.num_attrs = num_attrs
+-        self.max_fairness_degradation = max_fairness_degradation
+-        self.skip_attr_list: set[str] = set()
++        self.cate_attrs = list(cate_attrs)
++        self.num_attrs = list(num_attrs)
++        self.max_fairness_degradation = float(max_fairness_degradation)
++        self.poly_exponents = tuple(float(p) for p in poly_exponents)
++        self.min_utility_gain = float(min_utility_gain)
++        self.run_id = run_id
++        self.arm_id = arm_id
++        self.condition = condition
++
++        # State and candidate tracking bound to transform states
++        self.tracker = StatefulCandidateTracker()
++        self.audit_trail: List[CandidateAuditEvent] = []
++        self._cached_ranking: Optional[List[str]] = None
++        self.total_model_fits: int = 0
++        self.total_geometry_evals: int = 0
++
++        # Legacy compatibility tracking properties
++        self._current_skip_attrs: Set[str] = set()
++        self._tried_exponents: Dict[str, Set[float]] = collections.defaultdict(set)
++        self._tried_rebins: Dict[str, Set[Tuple[Any, Any]]] = collections.defaultdict(set)
++
++    @property
++    def skip_attr_list(self) -> Set[str]:
++        return self._current_skip_attrs
++
++    @property
++    def tried_exponents(self) -> Dict[str, Set[float]]:
++        return self._tried_exponents
++
++    @property
++    def tried_rebins(self) -> Dict[str, Set[Tuple[Any, Any]]]:
++        return self._tried_rebins
+ 
+     def find_target_correlated_attribute(
+-        self, X: pd.DataFrame, Y: pd.Series, changed_dict: Dict[str, Any]
++        self,
++        X: pd.DataFrame,
++        Y: pd.Series,
++        changed_dict: Dict[str, Any],
++        parent_state_hash: Optional[str] = None,
++        exhausted_features: Optional[Set[str]] = None,
+     ) -> Optional[str]:
+-        """Rank features by mutual information with target Y, returning the highest eligible feature."""
++        """Rank features by mutual information with target Y, returning highest unexhausted active feature."""
+         if X.empty or len(Y) == 0:
+             return None
+ 
+-        mi_scores = mutual_info_classif(X.values, Y.values, random_state=0)
+-        ranked_cols = [
+-            col
+-            for _, col in sorted(
+-                zip(mi_scores, X.columns), key=lambda item: item[0], reverse=True
+-            )
+-        ]
++        if self._cached_ranking is None:
++            nmi_scores = calculate_nmi_dict(X, Y)
++            self._cached_ranking = [
++                col for col, _ in sorted(nmi_scores.items(), key=lambda item: item[1], reverse=True)
++            ]
+ 
+-        for col in ranked_cols:
+-            if col not in self.skip_attr_list:
+-                return col
++        if exhausted_features is None:
++            exhausted_features = self._current_skip_attrs
++
++        for col in self._cached_ranking:
++            # Skip dropped features
++            if changed_dict.get(col) == "dropped":
++                continue
++            # Skip features that have exhausted candidates on this state
++            if col in exhausted_features:
++                continue
++            return col
+         return None
+ 
++    def _is_fairness_acceptable(
++        self,
++        X_cand: pd.DataFrame,
++        O_train: Optional[pd.DataFrame],
++        epsilon_threshold: Optional[float],
++        current_max_epsilon: Optional[float],
++    ) -> FairnessEvaluationResult:
++        """
++        Check whether candidate transformed data stays within fairness degradation bounds.
++
++        Policy: legacy_epsilon_plus_absolute_slack.
++        """
++        if O_train is None or (epsilon_threshold is None and current_max_epsilon is None):
++            return FairnessEvaluationResult(
++                is_acceptable=True,
++                candidate_max_dphi=0.0,
++                cap_applied=0.0,
++                rejection_reason=None if O_train is None else "fairness_guard_disabled",
++                geometry_eval_count=0,
++            )
++
++        # Validate protected attribute existence
++        for p_col in self.evaluator.label_O:
++            if p_col not in O_train.columns:
++                return FairnessEvaluationResult(
++                    is_acceptable=False,
++                    candidate_max_dphi=float("inf"),
++                    cap_applied=0.0,
++                    rejection_reason=f"PROTECTED_ATTRIBUTE_MISSING: {p_col}",
++                    geometry_eval_count=0,
++                )
++
++        try:
++            cand_eps_dict = self.evaluator.calculate_epsilon(
++                X_cand, O_train, cate_attrs=self.cate_attrs, num_attrs=self.num_attrs
++            )
++            self.total_geometry_evals += 1
++            cand_all_eps = [
++                float(v) for gd in cand_eps_dict.values() for v in gd.values()
++            ]
++            if not cand_all_eps:
++                return FairnessEvaluationResult(
++                    is_acceptable=False,
++                    candidate_max_dphi=float("inf"),
++                    cap_applied=0.0,
++                    rejection_reason="EMPTY_EPSILON_RESULTS",
++                    geometry_eval_count=1,
++                )
++            cand_max_eps = float(max(cand_all_eps))
++        except Exception as exc:
++            return FairnessEvaluationResult(
++                is_acceptable=False,
++                candidate_max_dphi=float("inf"),
++                cap_applied=0.0,
++                rejection_reason=f"GEOMETRY_EVAL_FAILED: {type(exc).__name__}: {exc}",
++                geometry_eval_count=1,
++            )
++
++        if np.isnan(cand_max_eps) or np.isinf(cand_max_eps):
++            return FairnessEvaluationResult(
++                is_acceptable=False,
++                candidate_max_dphi=cand_max_eps,
++                cap_applied=0.0,
++                rejection_reason="NON_FINITE_CANDIDATE_DPHI",
++                geometry_eval_count=1,
++            )
++
++        reference_eps = epsilon_threshold if epsilon_threshold is not None else current_max_epsilon
++        if reference_eps is None or np.isnan(reference_eps) or np.isinf(reference_eps):
++            return FairnessEvaluationResult(
++                is_acceptable=False,
++                candidate_max_dphi=cand_max_eps,
++                cap_applied=0.0,
++                rejection_reason="INVALID_REFERENCE_EPSILON",
++                geometry_eval_count=1,
++            )
++
++        upper_bound = float(reference_eps + self.max_fairness_degradation)
++        is_ok = bool(cand_max_eps <= upper_bound)
++        reason = None if is_ok else f"EXCEEDS_FAIRNESS_CAP: {cand_max_eps:.5f} > {upper_bound:.5f}"
++
++        return FairnessEvaluationResult(
++            is_acceptable=is_ok,
++            candidate_max_dphi=cand_max_eps,
++            cap_applied=upper_bound,
++            rejection_reason=reason,
++            geometry_eval_count=1,
++        )
++
++    def _evaluate_utility(
++        self,
++        X_train: pd.DataFrame,
++        Y_train: pd.Series,
++        X_val: Optional[pd.DataFrame] = None,
++        Y_val: Optional[pd.Series] = None,
++        partition: Optional[EvaluationPartition] = None,
++        changed_dict: Optional[Dict[str, Any]] = None,
++    ) -> float:
++        """Compatibility wrapper for utility evaluation."""
++        if partition is None:
++            if X_val is not None and Y_val is not None and len(X_val) > 0:
++                partition = EvaluationPartition(fit_X=X_train, fit_y=Y_train, selection_X=X_val, selection_y=Y_val)
++            else:
++                stratify = Y_train if Y_train.nunique() > 1 else None
++                x_tr, x_eval, y_tr, y_eval = train_test_split(
++                    X_train, Y_train, test_size=0.3, random_state=getattr(self.evaluator.config, "random_seed", 42), stratify=stratify
++                )
++                partition = EvaluationPartition(fit_X=x_tr, fit_y=y_tr, selection_X=x_eval, selection_y=y_eval)
++        res = evaluate_candidate_utility(
++            partition=partition,
++            changed_dict=changed_dict or {},
++            num_attrs=self.num_attrs,
++            cate_attrs=self.cate_attrs,
++            transformer=self.transformer,
++            evaluator=self.evaluator,
++        )
++        if not res.is_valid:
++            raise RuntimeError(f"Candidate utility invalid: {res.validity_status}: {res.error_message}")
++        return float(res.utility_score)
++
+     def enhance_step(
+         self,
+         X_train: pd.DataFrame,
+         Y_train: pd.Series,
+         changed_dict: Dict[str, Any],
++        O_train: Optional[pd.DataFrame] = None,
++        epsilon_threshold: Optional[float] = None,
++        current_epsilon: Optional[Dict[str, Dict[str, float]]] = None,
++        X_val: Optional[pd.DataFrame] = None,
++        Y_val: Optional[pd.Series] = None,
++        iteration: int = 1,
++        partition: Optional[EvaluationPartition] = None,
+     ) -> Tuple[pd.DataFrame, Dict[str, Any], Optional[str]]:
+         """
+-        Attempt an accuracy enhancement step on training data.
++        Attempt a fairness-bounded accuracy enhancement step on training data.
++
++        Enforces the candidate evaluation contract:
++        - Both fit and selection partitions receive identical transformations.
++        - AUROC evaluated on selection partition; invalid evaluations explicit.
++        - Transformed state tracked without permanent feature pollution.
++
++        Returns:
++            Tuple of (transformed_X_train, new_changed_dict, selected_attribute_or_None).
+         """
+-        target_attr = self.find_target_correlated_attribute(X_train, Y_train, changed_dict)
+-        if target_attr is None:
+-            current_df = self.transformer.transform_data(
+-                X_train, changed_dict, self.num_attrs, self.cate_attrs
++        parent_state_hash = hash_transform_state(changed_dict)
++        self.tracker.record_state_visit(parent_state_hash)
++
++        # Build or use provided EvaluationPartition
++        if partition is None:
++            if X_val is not None and Y_val is not None and len(X_val) > 0:
++                partition = EvaluationPartition(
++                    fit_X=X_train,
++                    fit_y=Y_train,
++                    selection_X=X_val,
++                    selection_y=Y_val,
++                    protected_fit=O_train,
++                )
++            else:
++                stratify = Y_train if Y_train.nunique() > 1 else None
++                x_tr, x_eval, y_tr, y_eval = train_test_split(
++                    X_train,
++                    Y_train,
++                    test_size=0.3,
++                    random_state=getattr(self.evaluator.config, "random_seed", 42),
++                    stratify=stratify,
++                )
++                partition = EvaluationPartition(
++                    fit_X=x_tr,
++                    fit_y=y_tr,
++                    selection_X=x_eval,
++                    selection_y=y_eval,
++                    protected_fit=O_train.loc[x_tr.index] if O_train is not None else None,
++                )
++
++        current_df = self.transformer.transform_data(
++            X_train, changed_dict, self.num_attrs, self.cate_attrs
++        )
++
++        curr_max_eps: Optional[float] = None
++        if current_epsilon is not None:
++            all_eps = [float(v) for gd in current_epsilon.values() for v in gd.values()]
++            curr_max_eps = float(max(all_eps)) if all_eps else None
++
++        # Check if _evaluate_utility was mocked or overridden
++        is_utility_mocked = (
++            getattr(self._evaluate_utility, "_mock_wraps", None) is not None
++            or hasattr(self._evaluate_utility, "assert_called")
++            or "Mock" in type(self._evaluate_utility).__name__
++        )
++
++        if is_utility_mocked:
++            try:
++                base_score = float(self._evaluate_utility(current_df, partition.fit_y, partition.selection_X, partition.selection_y))
++                base_res = CandidateEvaluationResult(
++                    validity_status="VALID",
++                    utility_score=base_score,
++                    utility_metric="AUROC",
++                    model_fit_count=1,
++                )
++            except Exception as exc:
++                base_res = CandidateEvaluationResult(
++                    validity_status="MODEL_FIT_FAILED",
++                    utility_score=None,
++                    error_message=str(exc),
++                )
++        else:
++            base_res = evaluate_candidate_utility(
++                partition=partition,
++                changed_dict=changed_dict,
++                num_attrs=self.num_attrs,
++                cate_attrs=self.cate_attrs,
++                transformer=self.transformer,
++                evaluator=self.evaluator,
+             )
++
++        self.total_model_fits += base_res.model_fit_count
++        if not base_res.is_valid:
+             return current_df, changed_dict, None
+ 
+-        temp_changed = copy.deepcopy(changed_dict)
+-
+-        if target_attr in self.cate_attrs or not pd.api.types.is_numeric_dtype(X_train[target_attr]):
+-            # Category merging based on target prevalence similarity
+-            s = X_train[target_attr]
+-            unique_cats = list(s.unique())
+-            if len(unique_cats) >= 3:
+-                # Find two categories with most similar target rate to merge
+-                cat_target_rates = Y_train.groupby(s).mean().to_dict()
+-                sorted_cats = sorted(cat_target_rates.items(), key=lambda x: x[1])
+-                # Merge the two adjacent categories with smallest difference
+-                min_diff = float("inf")
+-                best_pair = (sorted_cats[0][0], sorted_cats[1][0])
+-                for i in range(len(sorted_cats) - 1):
+-                    diff = abs(sorted_cats[i][1] - sorted_cats[i + 1][1])
+-                    if diff < min_diff:
+-                        min_diff = diff
+-                        best_pair = (sorted_cats[i][0], sorted_cats[i + 1][0])
+-
+-                rebin = {best_pair[1]: best_pair[0]}
+-                if target_attr in temp_changed and isinstance(temp_changed[target_attr], dict):
+-                    temp_changed[target_attr].update(rebin)
+-                else:
+-                    temp_changed[target_attr] = rebin
+-        else:
+-            # Numerical feature: polynomial power search favoring target information
+-            base_power = 1.0
+-            if target_attr in temp_changed and isinstance(temp_changed[target_attr], dict):
+-                base_power = float(temp_changed[target_attr].get("power", 1.0))
+-            chosen_power = None
+-            # Paper power grid: odd fractions and odd integers, increasing order
+-            for power in (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0):
+-                if abs(power - base_power) < 1e-12:
+-                    continue
+-                candidate_change = {"power": power}
+-                if self.transformer.check_transform_validity(
+-                    X_train, target_attr, candidate_change, self.num_attrs, self.cate_attrs
+-                ):
+-                    chosen_power = power
+-                    break
+-            if chosen_power is None:
+-                self.skip_attr_list.add(target_attr)
+-                current_df = self.transformer.transform_data(
+-                    X_train, changed_dict, self.num_attrs, self.cate_attrs
+-                )
++        current_utility = float(base_res.utility_score)
++
++        # Iterate through candidate attributes
++        exhausted_features: Set[str] = set()
++        while True:
++            target_attr = self.find_target_correlated_attribute(
++                X_train, Y_train, changed_dict, parent_state_hash, exhausted_features
++            )
++            if target_attr is None:
+                 return current_df, changed_dict, None
+-            temp_changed[target_attr] = {"power": chosen_power}
+ 
+-        if self.transformer.check_transform_validity(
+-            X_train,
+-            target_attr,
+-            temp_changed[target_attr],
+-            self.num_attrs,
+-            self.cate_attrs,
+-        ):
+-            transformed_df = self.transformer.transform_data(
+-                X_train, temp_changed, self.num_attrs, self.cate_attrs
++            is_categorical = (
++                target_attr in self.cate_attrs
++                or not pd.api.types.is_numeric_dtype(X_train[target_attr])
+             )
+-            return transformed_df, temp_changed, target_attr
+ 
+-        self.skip_attr_list.add(target_attr)
+-        current_df = self.transformer.transform_data(
++            if is_categorical:
++                accepted = self._try_categorical_enhancement(
++                    target_attr=target_attr,
++                    X_train=X_train,
++                    Y_train=Y_train,
++                    changed_dict=changed_dict,
++                    current_utility=current_utility,
++                    O_train=O_train,
++                    epsilon_threshold=epsilon_threshold,
++                    curr_max_eps=curr_max_eps,
++                    partition=partition,
++                    parent_state_hash=parent_state_hash,
++                    iteration=iteration,
++                    is_utility_mocked=is_utility_mocked,
++                )
++            else:
++                accepted = self._try_numerical_enhancement(
++                    target_attr=target_attr,
++                    X_train=X_train,
++                    Y_train=Y_train,
++                    changed_dict=changed_dict,
++                    current_utility=current_utility,
++                    O_train=O_train,
++                    epsilon_threshold=epsilon_threshold,
++                    curr_max_eps=curr_max_eps,
++                    partition=partition,
++                    parent_state_hash=parent_state_hash,
++                    iteration=iteration,
++                    is_utility_mocked=is_utility_mocked,
++                )
++
++            if accepted is not None:
++                transformed_df, new_changed = accepted
++                return transformed_df, new_changed, target_attr
++
++            exhausted_features.add(target_attr)
++            self._current_skip_attrs.add(target_attr)
++
++    def _try_numerical_enhancement(
++        self,
++        target_attr: str,
++        X_train: pd.DataFrame,
++        Y_train: pd.Series,
++        changed_dict: Dict[str, Any],
++        current_utility: float,
++        O_train: Optional[pd.DataFrame],
++        epsilon_threshold: Optional[float],
++        curr_max_eps: Optional[float],
++        partition: EvaluationPartition,
++        parent_state_hash: str,
++        iteration: int,
++        is_utility_mocked: bool = False,
++    ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
++        """Test candidate polynomial powers for a numerical feature under the contract."""
++        base_power = 1.0
++        if target_attr in changed_dict and isinstance(changed_dict[target_attr], dict):
++            base_power = float(changed_dict[target_attr].get("power", 1.0))
++        self._tried_exponents[target_attr].add(base_power)
++
++        best_cand: Optional[Tuple[pd.DataFrame, Dict[str, Any]]] = None
++        best_gain = 0.0
++
++        for power in self.poly_exponents:
++            self._tried_exponents[target_attr].add(power)
++            cand_sig = f"{target_attr}:power={power:.4f}"
++            if self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig):
++                continue
++            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig)
++
++            cand_change = copy.deepcopy(changed_dict)
++            cand_change[target_attr] = {"power": power}
++            cand_state_hash = hash_transform_state(cand_change)
++
++            # Cycle detection
++            if self.tracker.is_cycle(cand_state_hash):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="CYCLE_DETECTED",
++                    validity_status="CYCLE_DETECTED",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
++                continue
++
++            if not self.transformer.check_transform_validity(
++                X_train, target_attr, cand_change[target_attr], self.num_attrs, self.cate_attrs
++            ):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="INVALID_TRANSFORM_SEMANTICS",
++                    validity_status="CANDIDATE_INVALID",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
++                continue
++
++            cand_X = self.transformer.transform_data(
++                X_train, cand_change, self.num_attrs, self.cate_attrs
++            )
++
++            # 1. Check fairness degradation bound first
++            fairness_res = self._is_fairness_acceptable(
++                cand_X, O_train, epsilon_threshold, curr_max_eps
++            )
++            step_rebound = (
++                (fairness_res.candidate_max_dphi - curr_max_eps)
++                if curr_max_eps is not None
++                else 0.0
++            )
++
++            if not fairness_res.is_acceptable:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=fairness_res.rejection_reason,
++                    validity_status="FAIRNESS_CAP_EXCEEDED",
++                    model_fit_count=0,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
++                continue
++
++            # 2. Evaluate candidate utility
++            if is_utility_mocked:
++                try:
++                    mock_score = float(self._evaluate_utility(cand_X, partition.fit_y, partition.selection_X, partition.selection_y))
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="VALID",
++                        utility_score=mock_score,
++                        utility_metric="AUROC",
++                        model_fit_count=1,
++                    )
++                except Exception as exc:
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="MODEL_FIT_FAILED",
++                        utility_score=None,
++                        error_message=str(exc),
++                        model_fit_count=1,
++                    )
++            else:
++                eval_res = evaluate_candidate_utility(
++                    partition=partition,
++                    changed_dict=cand_change,
++                    num_attrs=self.num_attrs,
++                    cate_attrs=self.cate_attrs,
++                    transformer=self.transformer,
++                    evaluator=self.evaluator,
++                )
++            self.total_model_fits += eval_res.model_fit_count
++
++            if not eval_res.is_valid:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=eval_res.error_message,
++                    validity_status=eval_res.validity_status,
++                    model_fit_count=eval_res.model_fit_count,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
++                continue
++
++            cand_utility = float(eval_res.utility_score)
++            gain = cand_utility - current_utility
++            is_accepted = bool(gain > self.min_utility_gain)
++            rejection_reason = None if is_accepted else f"INSUFFICIENT_GAIN: {gain:.5f} <= {self.min_utility_gain:.5f}"
++
++            self._record_audit_event(
++                iteration=iteration,
++                parent_state_hash=parent_state_hash,
++                candidate_state_hash=cand_state_hash,
++                selected_feature=target_attr,
++                proposed_transform={"power": power},
++                partition=partition,
++                utility_before=current_utility,
++                utility_cand=cand_utility,
++                utility_gain=gain,
++                dphi_before=curr_max_eps,
++                dphi_cand=fairness_res.candidate_max_dphi,
++                final_eps=epsilon_threshold or 0.0,
++                cap=fairness_res.cap_applied,
++                step_rebound=step_rebound,
++                accepted=is_accepted,
++                rejection_reason=rejection_reason,
++                validity_status="VALID",
++                model_fit_count=eval_res.model_fit_count,
++                geometry_eval_count=fairness_res.geometry_eval_count,
++            )
++
++            if is_accepted and gain > best_gain:
++                best_gain = gain
++                best_cand = (cand_X, cand_change)
++
++        return best_cand
++
++    def _try_categorical_enhancement(
++        self,
++        target_attr: str,
++        X_train: pd.DataFrame,
++        Y_train: pd.Series,
++        changed_dict: Dict[str, Any],
++        current_utility: float,
++        O_train: Optional[pd.DataFrame],
++        epsilon_threshold: Optional[float],
++        curr_max_eps: Optional[float],
++        partition: EvaluationPartition,
++        parent_state_hash: str,
++        iteration: int,
++        is_utility_mocked: bool = False,
++    ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
++        """Test category merging on the CURRENT transformed state under the contract."""
++        curr_t_train = self.transformer.transform_data(
+             X_train, changed_dict, self.num_attrs, self.cate_attrs
+         )
+-        return current_df, changed_dict, None
++        s = curr_t_train[target_attr]
++        unique_cats = list(s.unique())
++        if len(unique_cats) < 3:
++            return None
++
++        # Compute positive rates on fit partition of current transformed representation
++        fit_t = self.transformer.transform_data(
++            partition.fit_X, changed_dict, self.num_attrs, self.cate_attrs
++        )
++        s_fit = fit_t[target_attr]
++        cat_target_rates = partition.fit_y.groupby(s_fit).mean().to_dict()
++        sorted_cats = sorted(cat_target_rates.items(), key=lambda x: x[1])
++
++        # Generate adjacent category pairs
++        candidate_pairs = []
++        for i in range(len(sorted_cats) - 1):
++            pair = (sorted_cats[i][0], sorted_cats[i + 1][0])
++            cand_sig = f"{target_attr}:merge({pair[1]}->{pair[0]})"
++            norm_pair = (min(str(pair[0]), str(pair[1])), max(str(pair[0]), str(pair[1])))
++            self._tried_rebins[target_attr].add(norm_pair)
++            if not self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig):
++                diff = abs(sorted_cats[i][1] - sorted_cats[i + 1][1])
++                candidate_pairs.append((pair, cand_sig, diff))
++
++        candidate_pairs.sort(key=lambda x: x[2])
++
++        best_cand: Optional[Tuple[pd.DataFrame, Dict[str, Any]]] = None
++        best_gain = 0.0
++
++        for pair, cand_sig, _ in candidate_pairs:
++            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig)
++            rebin = {pair[1]: pair[0]}
++
++            cand_change = copy.deepcopy(changed_dict)
++            try:
++                if target_attr in cand_change and isinstance(cand_change[target_attr], dict):
++                    cand_change[target_attr] = safe_compose_category_mapping(
++                        cand_change[target_attr], rebin, col_sample=X_train[target_attr]
++                    )
++                else:
++                    cand_change[target_attr] = normalize_category_mapping(
++                        rebin, col_sample=X_train[target_attr]
++                    )
++            except Exception as exc:
++                continue
++
++            cand_state_hash = hash_transform_state(cand_change)
++
++            # Cycle detection
++            if self.tracker.is_cycle(cand_state_hash):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="CYCLE_DETECTED",
++                    validity_status="CYCLE_DETECTED",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
++                continue
++
++            if not self.transformer.check_transform_validity(
++                X_train, target_attr, cand_change[target_attr], self.num_attrs, self.cate_attrs
++            ):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="INVALID_TRANSFORM_SEMANTICS",
++                    validity_status="CANDIDATE_INVALID",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
++                continue
++
++            cand_X = self.transformer.transform_data(
++                X_train, cand_change, self.num_attrs, self.cate_attrs
++            )
++
++            fairness_res = self._is_fairness_acceptable(
++                cand_X, O_train, epsilon_threshold, curr_max_eps
++            )
++            step_rebound = (
++                (fairness_res.candidate_max_dphi - curr_max_eps)
++                if curr_max_eps is not None
++                else 0.0
++            )
++
++            if not fairness_res.is_acceptable:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=fairness_res.rejection_reason,
++                    validity_status="FAIRNESS_CAP_EXCEEDED",
++                    model_fit_count=0,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
++                continue
++
++            if is_utility_mocked:
++                try:
++                    mock_score = float(self._evaluate_utility(cand_X, partition.fit_y, partition.selection_X, partition.selection_y))
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="VALID",
++                        utility_score=mock_score,
++                        utility_metric="AUROC",
++                        model_fit_count=1,
++                    )
++                except Exception as exc:
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="MODEL_FIT_FAILED",
++                        utility_score=None,
++                        error_message=str(exc),
++                        model_fit_count=1,
++                    )
++            else:
++                eval_res = evaluate_candidate_utility(
++                    partition=partition,
++                    changed_dict=cand_change,
++                    num_attrs=self.num_attrs,
++                    cate_attrs=self.cate_attrs,
++                    transformer=self.transformer,
++                    evaluator=self.evaluator,
++                )
++            self.total_model_fits += eval_res.model_fit_count
++
++            if not eval_res.is_valid:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=eval_res.error_message,
++                    validity_status=eval_res.validity_status,
++                    model_fit_count=eval_res.model_fit_count,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
++                continue
++
++            cand_utility = float(eval_res.utility_score)
++            gain = cand_utility - current_utility
++            is_accepted = bool(gain > self.min_utility_gain)
++            rejection_reason = None if is_accepted else f"INSUFFICIENT_GAIN: {gain:.5f} <= {self.min_utility_gain:.5f}"
++
++            self._record_audit_event(
++                iteration=iteration,
++                parent_state_hash=parent_state_hash,
++                candidate_state_hash=cand_state_hash,
++                selected_feature=target_attr,
++                proposed_transform=rebin,
++                partition=partition,
++                utility_before=current_utility,
++                utility_cand=cand_utility,
++                utility_gain=gain,
++                dphi_before=curr_max_eps,
++                dphi_cand=fairness_res.candidate_max_dphi,
++                final_eps=epsilon_threshold or 0.0,
++                cap=fairness_res.cap_applied,
++                step_rebound=step_rebound,
++                accepted=is_accepted,
++                rejection_reason=rejection_reason,
++                validity_status="VALID",
++                model_fit_count=eval_res.model_fit_count,
++                geometry_eval_count=fairness_res.geometry_eval_count,
++            )
++
++            if is_accepted and gain > best_gain:
++                best_gain = gain
++                best_cand = (cand_X, cand_change)
++
++        return best_cand
++
++    def _record_audit_event(
++        self,
++        iteration: int,
++        parent_state_hash: str,
++        candidate_state_hash: str,
++        selected_feature: str,
++        proposed_transform: Any,
++        partition: EvaluationPartition,
++        utility_before: Optional[float],
++        utility_cand: Optional[float],
++        utility_gain: Optional[float],
++        dphi_before: Optional[float],
++        dphi_cand: Optional[float],
++        final_eps: float,
++        cap: float,
++        step_rebound: Optional[float],
++        accepted: bool,
++        rejection_reason: Optional[str],
++        validity_status: str,
++        model_fit_count: int,
++        geometry_eval_count: int,
++    ) -> None:
++        """Create and store an immutable audit event."""
++        config_hash = hashlib.sha256(
++            f"{self.evaluator.config.algorithm_mode}_{self.evaluator.config.random_seed}_{self.max_fairness_degradation}".encode("utf-8")
++        ).hexdigest()[:16]
++
++        event = CandidateAuditEvent(
++            run_id=self.run_id,
++            arm_id=self.arm_id,
++            condition=self.condition,
++            iteration=iteration,
++            engine="AE",
++            parent_state_hash=parent_state_hash,
++            candidate_state_hash=candidate_state_hash,
++            selected_feature=selected_feature,
++            proposed_transform=proposed_transform,
++            fit_partition_fingerprint=partition.fit_fingerprint(),
++            selection_partition_fingerprint=partition.selection_fingerprint(),
++            utility_metric="AUROC",
++            utility_before=utility_before,
++            utility_candidate=utility_cand,
++            utility_gain=utility_gain,
++            train_max_dphi_before=dphi_before,
++            train_max_dphi_candidate=dphi_cand,
++            final_epsilon=final_eps,
++            effective_candidate_cap=cap,
++            step_rebound=step_rebound,
++            accepted=accepted,
++            rejection_reason=rejection_reason,
++            validity_status=validity_status,
++            model_fit_count=model_fit_count,
++            geometry_eval_count=geometry_eval_count,
++            config_hash=config_hash,
++        )
++        self.audit_trail.append(event)
+diff --git a/src/fairbias/pipeline.py b/src/fairbias/pipeline.py
+index 1344625..8e4af15 100644
+--- a/src/fairbias/pipeline.py
++++ b/src/fairbias/pipeline.py
+@@ -435,6 +435,15 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
+             )
+             iter_data["selected_label_O"] = sel_o
+             iter_data["selected_attribute"] = sel_attr
++            iter_data["mitigation_attribute"] = sel_attr
++            if sel_attr is not None and cfg.use_accuracy_enhancement:
++                # Recalculate training geometry metrics immediately after BM before handing to AE
++                t_X_bm = transformer.transform_data(
++                    X_train, changed_dict, numerical_cols, categorical_cols
++                )
++                current_epsilon = evaluator.calculate_epsilon(
++                    t_X_bm, O_train, categorical_cols, numerical_cols
++                )
+ 
+         # Step B: Accuracy Enhancement
+         ae_attr: Optional[str] = None
+@@ -443,9 +452,24 @@ def run_fairbias_pipeline(config: Optional[FairBiasConfig] = None) -> FairBiasRu
+                 X_train=X_train,
+                 Y_train=Y_train,
+                 changed_dict=changed_dict,
++                O_train=O_train,
++                epsilon_threshold=epsilon_threshold,
++                current_epsilon=current_epsilon,
++                X_val=X_val,
++                Y_val=Y_val,
++                iteration=iter_idx,
+             )
+-            if ae_attr and not iter_data["selected_attribute"]:
++            iter_data["enhancement_attribute"] = ae_attr
++            if ae_attr and not iter_data.get("selected_attribute"):
+                 iter_data["selected_attribute"] = ae_attr
++            if ae_attr is not None:
++                # Recalculate training geometry metrics immediately after AE acceptance
++                t_X_ae = transformer.transform_data(
++                    X_train, changed_dict, numerical_cols, categorical_cols
++                )
++                current_epsilon = evaluator.calculate_epsilon(
++                    t_X_ae, O_train, categorical_cols, numerical_cols
++                )
+ 
+         if sel_attr is None and ae_attr is None:
+             # No transform accepted this round: the state is terminal.

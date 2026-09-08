@@ -1,0 +1,168 @@
+test_configured_classifier_matches_utility_oracle (__main__.SyntheticReview.test_configured_classifier_matches_utility_oracle) ... FAIL
+test_existing_directory_rejected_by_real_cli (__main__.SyntheticReview.test_existing_directory_rejected_by_real_cli) ... === Starting D8 Accuracy Enhancement Study ===
+Run ID: d8_run_existing
+Target arms: ['D6_ARM_001']
+Smoke test mode: False
+Allow real data: False
+Output directory: /Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/tmpnv_d54mq/existing
+
+[D6_ARM_001] Evaluating D6_ARM_001 (SEX_A)...
+ERROR
+test_feature_ranking_uses_only_fit_partition (__main__.SyntheticReview.test_feature_ranking_uses_only_fit_partition) ... FAIL
+test_infinite_slack_is_invalid (__main__.SyntheticReview.test_infinite_slack_is_invalid) ... FAIL
+test_invalid_baseline_must_reach_caller_as_failure (__main__.SyntheticReview.test_invalid_baseline_must_reach_caller_as_failure) ... FAIL
+test_missing_probabilities_not_replaced_with_hard_predictions (__main__.SyntheticReview.test_missing_probabilities_not_replaced_with_hard_predictions) ... FAIL
+test_missing_protected_data_cannot_disable_enabled_guard (__main__.SyntheticReview.test_missing_protected_data_cannot_disable_enabled_guard) ... FAIL
+test_nan_after_finite_entry_is_invalid (__main__.SyntheticReview.test_nan_after_finite_entry_is_invalid) ... FAIL
+test_only_committed_candidate_logged_accepted (__main__.SyntheticReview.test_only_committed_candidate_logged_accepted) ... FAIL
+test_original_drop_bug_fixed_with_arithmetic_oracle (__main__.SyntheticReview.test_original_drop_bug_fixed_with_arithmetic_oracle) ... ok
+test_partial_geometry_is_invalid (__main__.SyntheticReview.test_partial_geometry_is_invalid) ... FAIL
+test_partition_fingerprint_binds_values_and_labels (__main__.SyntheticReview.test_partition_fingerprint_binds_values_and_labels) ... FAIL
+test_protected_index_alignment_is_validated (__main__.SyntheticReview.test_protected_index_alignment_is_validated) ... FAIL
+test_real_cli_records_midrun_failure_manifest (__main__.SyntheticReview.test_real_cli_records_midrun_failure_manifest) ... === Starting D8 Accuracy Enhancement Study ===
+Run ID: d8_run_new
+Target arms: ['D6_ARM_001']
+Smoke test mode: False
+Allow real data: False
+Output directory: /Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/tmpy5hcg8sx/new
+
+[D6_ARM_001] Evaluating D6_ARM_001 (SEX_A)...
+FAIL
+
+======================================================================
+ERROR: test_existing_directory_rejected_by_real_cli (__main__.SyntheticReview.test_existing_directory_rejected_by_real_cli)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 122, in test_existing_directory_rejected_by_real_cli
+    with self.assertRaises(FileExistsError): cli.main()
+                                             ~~~~~~~~^^
+  File "/Users/lkc/Downloads/code_v_0_3/scripts/run_nhis_enhancement_study.py", line 127, in main
+    res = runner.run_arm(arm_id)
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 117, in run_arm
+    def run_arm(self,arm): raise RuntimeError('SYNTHETIC_INJECTED_STOP')
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: SYNTHETIC_INJECTED_STOP
+
+======================================================================
+FAIL: test_configured_classifier_matches_utility_oracle (__main__.SyntheticReview.test_configured_classifier_matches_utility_oracle)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 75, in test_configured_classifier_matches_utility_oracle
+    self.assertAlmostEqual(result.utility_score,wanted,places=10)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0.499047619047619 != 1.0 within 10 places (0.500952380952381 difference)
+
+======================================================================
+FAIL: test_feature_ranking_uses_only_fit_partition (__main__.SyntheticReview.test_feature_ranking_uses_only_fit_partition)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 105, in test_feature_ranking_uses_only_fit_partition
+    self.assertEqual(seen,[120])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+AssertionError: Lists differ: [160] != [120]
+
+First differing element 0:
+160
+120
+
+- [160]
+?   ^
+
++ [120]
+?   ^
+
+
+======================================================================
+FAIL: test_infinite_slack_is_invalid (__main__.SyntheticReview.test_infinite_slack_is_invalid)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 62, in test_infinite_slack_is_invalid
+    self.assertFalse(self.ae._is_fairness_acceptable(self.X,self.O,.1,.1).is_acceptable)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_invalid_baseline_must_reach_caller_as_failure (__main__.SyntheticReview.test_invalid_baseline_must_reach_caller_as_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 66, in test_invalid_baseline_must_reach_caller_as_failure
+    with self.assertRaisesRegex((RuntimeError,ValueError),'SINGLE_CLASS|single|invalid'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (<class 'RuntimeError'>, <class 'ValueError'>) not raised
+
+======================================================================
+FAIL: test_missing_probabilities_not_replaced_with_hard_predictions (__main__.SyntheticReview.test_missing_probabilities_not_replaced_with_hard_predictions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 82, in test_missing_probabilities_not_replaced_with_hard_predictions
+    self.assertFalse(result.is_valid)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_missing_protected_data_cannot_disable_enabled_guard (__main__.SyntheticReview.test_missing_protected_data_cannot_disable_enabled_guard)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 49, in test_missing_protected_data_cannot_disable_enabled_guard
+    self.assertFalse(r.is_acceptable)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_nan_after_finite_entry_is_invalid (__main__.SyntheticReview.test_nan_after_finite_entry_is_invalid)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 57, in test_nan_after_finite_entry_is_invalid
+    self.assertFalse(self.ae._is_fairness_acceptable(self.X,self.O,.1,.1).is_acceptable)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_only_committed_candidate_logged_accepted (__main__.SyntheticReview.test_only_committed_candidate_logged_accepted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 112, in test_only_committed_candidate_logged_accepted
+    self.assertEqual(len(actual),1,msg=f'committed={changed}; accepted_events={len(actual)}')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : committed={'z': {'power': 3.0}}; accepted_events=2
+
+======================================================================
+FAIL: test_partial_geometry_is_invalid (__main__.SyntheticReview.test_partial_geometry_is_invalid)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 53, in test_partial_geometry_is_invalid
+    self.assertFalse(self.ae._is_fairness_acceptable(self.X,self.O,.1,.1).is_acceptable)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_partition_fingerprint_binds_values_and_labels (__main__.SyntheticReview.test_partition_fingerprint_binds_values_and_labels)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 93, in test_partition_fingerprint_binds_values_and_labels
+    self.assertNotEqual(self.part.fit_fingerprint(),other.fit_fingerprint())
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '11c1ee4b26a6d752' == '11c1ee4b26a6d752'
+
+======================================================================
+FAIL: test_protected_index_alignment_is_validated (__main__.SyntheticReview.test_protected_index_alignment_is_validated)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 86, in test_protected_index_alignment_is_validated
+    with self.assertRaises(ValueError):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_real_cli_records_midrun_failure_manifest (__main__.SyntheticReview.test_real_cli_records_midrun_failure_manifest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py", line 132, in test_real_cli_records_midrun_failure_manifest
+    self.assertTrue((d/'execution_manifest.json').exists())
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.057s
+
+FAILED (failures=12, errors=1)

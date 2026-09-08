@@ -1,0 +1,123 @@
+{
+  "created_at_utc": "20260908T064200Z",
+  "artifact_dir": "artifacts/nhis_d8_repair/20260908T063242Z_5ac3c57a",
+  "branch": "research/nhis-fairbias",
+  "head": "b595e59b67d8781a3dca41199487909fdb9ed42d",
+  "protected_tag": "inherited-code-v0.3-baseline-20260828",
+  "protected_commit": "038897e9f751edac6e36445b7706eec5fdb15988",
+  "python_version": "3.13.2 (v3.13.2:4f8bb3947cf, Feb  4 2025, 11:51:10) [Clang 15.0.0 (clang-1500.3.9.4)]",
+  "snapshot_files": [
+    {
+      "path": "src/fairbias/enhancement.py",
+      "bytes": 39036,
+      "mtime_ns": 1788849438289049824,
+      "sha256": "f533dba7810d24196a856e8ba3f33ce6f3282d0d2b6e70ee5872b83e24a7ec38"
+    },
+    {
+      "path": "src/fairbias/pipeline.py",
+      "bytes": 36364,
+      "mtime_ns": 1788848051786621632,
+      "sha256": "71082b87094d4b633044b597c361731f36e0b53b871cc4f712f39efed675a240"
+    },
+    {
+      "path": "src/fairbias/enhancement_contracts.py",
+      "bytes": 14102,
+      "mtime_ns": 1788849199957685589,
+      "sha256": "19c8bc7eea218cbe76d30eeb972f7d317e2c44413a2e94499da7f64b0a9886e2"
+    },
+    {
+      "path": "src/fairbias/enhancement_state.py",
+      "bytes": 7348,
+      "mtime_ns": 1788847992641334463,
+      "sha256": "9d00d4e240763a436f844257a6f298b3af5b6f7521bf1791304928bf3744a151"
+    },
+    {
+      "path": "src/nhis_fairbias/d8_enhancement_runner.py",
+      "bytes": 25416,
+      "mtime_ns": 1788849465287980326,
+      "sha256": "2891972d7c53c27a8ffc89f2ab8f3efd786d693c97ccee3b829274690b68b616"
+    },
+    {
+      "path": "scripts/run_nhis_enhancement_study.py",
+      "bytes": 8507,
+      "mtime_ns": 1788849479387700621,
+      "sha256": "30b107cfdb4cbfd1b5a16f7f2cb01554783b8f4f681705af25bc92ffcf40623b"
+    },
+    {
+      "path": "tests/test_fairbias_enhancement.py",
+      "bytes": 6974,
+      "mtime_ns": 1788849546204836185,
+      "sha256": "5fbe497b35d80e1db70a00a34936a2b50f3c5b9f380931e24215549886ca7c02"
+    },
+    {
+      "path": "tests/test_nhis_d8_enhancement.py",
+      "bytes": 3448,
+      "mtime_ns": 1788849651118720264,
+      "sha256": "4f6d44f06b5a00574c677e0794aae42297f055ef4df1248347c2021335de91d9"
+    },
+    {
+      "path": "tests/test_fairbias_enhancement_contracts.py",
+      "bytes": 24770,
+      "mtime_ns": 1788849582598198635,
+      "sha256": "8443e2639e629cf4cb93ad383d9a94d907613b6ecf2d8921883fffdacf502f74"
+    },
+    {
+      "path": "tests/test_nhis_d8_synthetic_contracts.py",
+      "bytes": 6947,
+      "mtime_ns": 1788849627508611416,
+      "sha256": "d2e541ca3abedb023b10acd7b295614b2183aa57b37601f8f1325b5336048489"
+    }
+  ],
+  "hash_diff_vs_r1_endpoint": {
+    "src/fairbias/enhancement.py": {
+      "pre_r1b_sha256": "6efd3ec9303b9620b41de350ad50998058db68ed4f35fb28d6953d443ff81b77",
+      "post_r1b_sha256": "f533dba7810d24196a856e8ba3f33ce6f3282d0d2b6e70ee5872b83e24a7ec38",
+      "changed": true
+    },
+    "src/fairbias/pipeline.py": {
+      "pre_r1b_sha256": "71082b87094d4b633044b597c361731f36e0b53b871cc4f712f39efed675a240",
+      "post_r1b_sha256": "71082b87094d4b633044b597c361731f36e0b53b871cc4f712f39efed675a240",
+      "changed": false
+    },
+    "src/fairbias/enhancement_contracts.py": {
+      "pre_r1b_sha256": "e24a2eba67102557805ca109351d02772d9495a71e40718aa4b97d23f35fa5d7",
+      "post_r1b_sha256": "19c8bc7eea218cbe76d30eeb972f7d317e2c44413a2e94499da7f64b0a9886e2",
+      "changed": true
+    },
+    "src/fairbias/enhancement_state.py": {
+      "pre_r1b_sha256": "9d00d4e240763a436f844257a6f298b3af5b6f7521bf1791304928bf3744a151",
+      "post_r1b_sha256": "9d00d4e240763a436f844257a6f298b3af5b6f7521bf1791304928bf3744a151",
+      "changed": false
+    },
+    "src/nhis_fairbias/d8_enhancement_runner.py": {
+      "pre_r1b_sha256": "bb4a410ba35f18debad6db0a6040c2bfa6f3379ecc0a6cf93f7f0529bd7e2f27",
+      "post_r1b_sha256": "2891972d7c53c27a8ffc89f2ab8f3efd786d693c97ccee3b829274690b68b616",
+      "changed": true
+    },
+    "scripts/run_nhis_enhancement_study.py": {
+      "pre_r1b_sha256": "af82631e4a7f6a4ac6a58e21405c9894134ad563a7bf242fbe7cc56b63bfbd1a",
+      "post_r1b_sha256": "30b107cfdb4cbfd1b5a16f7f2cb01554783b8f4f681705af25bc92ffcf40623b",
+      "changed": true
+    },
+    "tests/test_fairbias_enhancement.py": {
+      "pre_r1b_sha256": "d33ee31734d6242c6eea79ddb96af105773a6975d0a0fae9ff3f0efa90dac9fc",
+      "post_r1b_sha256": "5fbe497b35d80e1db70a00a34936a2b50f3c5b9f380931e24215549886ca7c02",
+      "changed": true
+    },
+    "tests/test_nhis_d8_enhancement.py": {
+      "pre_r1b_sha256": "02dd848f04b141f54853165bd689747e3dcc589ccd363b3d9715d57e05707bc2",
+      "post_r1b_sha256": "4f6d44f06b5a00574c677e0794aae42297f055ef4df1248347c2021335de91d9",
+      "changed": true
+    },
+    "tests/test_fairbias_enhancement_contracts.py": {
+      "pre_r1b_sha256": "a19e90490a2c39871c6ee0df76f7da0a41b8aad6a4ccf1a7a50ddd79c0e5649f",
+      "post_r1b_sha256": "8443e2639e629cf4cb93ad383d9a94d907613b6ecf2d8921883fffdacf502f74",
+      "changed": true
+    },
+    "tests/test_nhis_d8_synthetic_contracts.py": {
+      "pre_r1b_sha256": "8a4fa53d6ff9ed2cc08a88a4028791e2247d36d5732f1f404dc29f448c75aa2f",
+      "post_r1b_sha256": "d2e541ca3abedb023b10acd7b295614b2183aa57b37601f8f1325b5336048489",
+      "changed": true
+    }
+  }
+}

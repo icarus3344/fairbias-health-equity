@@ -1,0 +1,59 @@
+{
+  "created_at_utc": "20260908T061131Z",
+  "artifact_dir": "artifacts/nhis_d8_repair/20260908T061131Z_fcf9dc7a",
+  "branch": "research/nhis-fairbias",
+  "head": "b595e59b67d8781a3dca41199487909fdb9ed42d",
+  "protected_tag": "inherited-code-v0.3-baseline-20260828",
+  "protected_commit": "038897e9f751edac6e36445b7706eec5fdb15988",
+  "python_version": "Python 3.13.5 (/Library/Frameworks/Python.framework/Versions/3.13/bin/python3)",
+  "snapshot_files": [
+    {
+      "path": "src/fairbias/enhancement.py",
+      "bytes": 12646,
+      "mtime_ns": 1788794245336643312,
+      "sha256": "0bf26ac47ddae803f3112b2b0dc7c90af29396abb455c8b02beb06ee0dfdfd61"
+    },
+    {
+      "path": "src/fairbias/pipeline.py",
+      "bytes": 35322,
+      "mtime_ns": 1788794218421547854,
+      "sha256": "6d81eb2b49d190b143f1be8e4cca91565a3383f955556e88560b793917ee5c7c"
+    },
+    {
+      "path": "src/nhis_fairbias/d8_enhancement_runner.py",
+      "bytes": 18180,
+      "mtime_ns": 1788794526617857322,
+      "sha256": "45ac0380c538c4b9be90582593d2c6a02a5c5c750f0e9a979b3db22f72f67080"
+    },
+    {
+      "path": "scripts/run_nhis_enhancement_study.py",
+      "bytes": 4381,
+      "mtime_ns": 1788794588883763018,
+      "sha256": "65b15aa0ccb772bfb90a8813f6fe2332b25229ccef741579c12e37250a8f5ea5"
+    },
+    {
+      "path": "tests/test_fairbias_enhancement.py",
+      "bytes": 5758,
+      "mtime_ns": 1788794259036431433,
+      "sha256": "d33ee31734d6242c6eea79ddb96af105773a6975d0a0fae9ff3f0efa90dac9fc"
+    },
+    {
+      "path": "tests/test_nhis_d8_enhancement.py",
+      "bytes": 1482,
+      "mtime_ns": 1788794596694438795,
+      "sha256": "01747e36f831cb4d220edad0c7ec3dcce8f0c099527247162d784c4aaa47abc0"
+    },
+    {
+      "path": "runs/d8_enhancement_study/d8_enhancement_comparison.csv",
+      "bytes": 1894,
+      "mtime_ns": 1788794980222869630,
+      "sha256": "e4b2e7c10068988caa9bcaa9b989a008d7850cdfada5ee82503f366f2b0c8785"
+    },
+    {
+      "path": "runs/d8_enhancement_study/d8_enhancement_study_results.json",
+      "bytes": 26751,
+      "mtime_ns": 1788794980212120478,
+      "sha256": "944df70bd75a8c1a1bb0c6758540936123582fcab08bc64d5806583f09e4da11"
+    }
+  ]
+}

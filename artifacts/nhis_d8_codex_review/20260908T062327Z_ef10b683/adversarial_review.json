@@ -1,0 +1,61 @@
+{
+  "tests_run": 14,
+  "passed": 1,
+  "failures": [
+    {
+      "test": "test_configured_classifier_matches_utility_oracle (__main__.SyntheticReview.test_configured_classifier_matches_utility_oracle)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 75, in test_configured_classifier_matches_utility_oracle\n    self.assertAlmostEqual(result.utility_score,wanted,places=10)\n    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 0.499047619047619 != 1.0 within 10 places (0.500952380952381 difference)\n"
+    },
+    {
+      "test": "test_feature_ranking_uses_only_fit_partition (__main__.SyntheticReview.test_feature_ranking_uses_only_fit_partition)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 105, in test_feature_ranking_uses_only_fit_partition\n    self.assertEqual(seen,[120])\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nAssertionError: Lists differ: [160] != [120]\n\nFirst differing element 0:\n160\n120\n\n- [160]\n?   ^\n\n+ [120]\n?   ^\n\n"
+    },
+    {
+      "test": "test_infinite_slack_is_invalid (__main__.SyntheticReview.test_infinite_slack_is_invalid)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 62, in test_infinite_slack_is_invalid\n    self.assertFalse(self.ae._is_fairness_acceptable(self.X,self.O,.1,.1).is_acceptable)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n"
+    },
+    {
+      "test": "test_invalid_baseline_must_reach_caller_as_failure (__main__.SyntheticReview.test_invalid_baseline_must_reach_caller_as_failure)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 66, in test_invalid_baseline_must_reach_caller_as_failure\n    with self.assertRaisesRegex((RuntimeError,ValueError),'SINGLE_CLASS|single|invalid'):\n         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (<class 'RuntimeError'>, <class 'ValueError'>) not raised\n"
+    },
+    {
+      "test": "test_missing_probabilities_not_replaced_with_hard_predictions (__main__.SyntheticReview.test_missing_probabilities_not_replaced_with_hard_predictions)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 82, in test_missing_probabilities_not_replaced_with_hard_predictions\n    self.assertFalse(result.is_valid)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n"
+    },
+    {
+      "test": "test_missing_protected_data_cannot_disable_enabled_guard (__main__.SyntheticReview.test_missing_protected_data_cannot_disable_enabled_guard)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 49, in test_missing_protected_data_cannot_disable_enabled_guard\n    self.assertFalse(r.is_acceptable)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n"
+    },
+    {
+      "test": "test_nan_after_finite_entry_is_invalid (__main__.SyntheticReview.test_nan_after_finite_entry_is_invalid)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 57, in test_nan_after_finite_entry_is_invalid\n    self.assertFalse(self.ae._is_fairness_acceptable(self.X,self.O,.1,.1).is_acceptable)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n"
+    },
+    {
+      "test": "test_only_committed_candidate_logged_accepted (__main__.SyntheticReview.test_only_committed_candidate_logged_accepted)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 112, in test_only_committed_candidate_logged_accepted\n    self.assertEqual(len(actual),1,msg=f'committed={changed}; accepted_events={len(actual)}')\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 2 != 1 : committed={'z': {'power': 3.0}}; accepted_events=2\n"
+    },
+    {
+      "test": "test_partial_geometry_is_invalid (__main__.SyntheticReview.test_partial_geometry_is_invalid)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 53, in test_partial_geometry_is_invalid\n    self.assertFalse(self.ae._is_fairness_acceptable(self.X,self.O,.1,.1).is_acceptable)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n"
+    },
+    {
+      "test": "test_partition_fingerprint_binds_values_and_labels (__main__.SyntheticReview.test_partition_fingerprint_binds_values_and_labels)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 93, in test_partition_fingerprint_binds_values_and_labels\n    self.assertNotEqual(self.part.fit_fingerprint(),other.fit_fingerprint())\n    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: '11c1ee4b26a6d752' == '11c1ee4b26a6d752'\n"
+    },
+    {
+      "test": "test_protected_index_alignment_is_validated (__main__.SyntheticReview.test_protected_index_alignment_is_validated)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 86, in test_protected_index_alignment_is_validated\n    with self.assertRaises(ValueError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\nAssertionError: ValueError not raised\n"
+    },
+    {
+      "test": "test_real_cli_records_midrun_failure_manifest (__main__.SyntheticReview.test_real_cli_records_midrun_failure_manifest)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 132, in test_real_cli_records_midrun_failure_manifest\n    self.assertTrue((d/'execution_manifest.json').exists())\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n"
+    }
+  ],
+  "errors": [
+    {
+      "test": "test_existing_directory_rejected_by_real_cli (__main__.SyntheticReview.test_existing_directory_rejected_by_real_cli)",
+      "traceback": "Traceback (most recent call last):\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 122, in test_existing_directory_rejected_by_real_cli\n    with self.assertRaises(FileExistsError): cli.main()\n                                             ~~~~~~~~^^\n  File \"/Users/lkc/Downloads/code_v_0_3/scripts/run_nhis_enhancement_study.py\", line 127, in main\n    res = runner.run_arm(arm_id)\n  File \"/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683/adversarial_review.py\", line 117, in run_arm\n    def run_arm(self,arm): raise RuntimeError('SYNTHETIC_INJECTED_STOP')\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: SYNTHETIC_INJECTED_STOP\n"
+    }
+  ],
+  "blocked_read_attempts": []
+}

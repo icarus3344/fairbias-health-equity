@@ -1,0 +1,8 @@
+archive/baseline_v0.3/PROVENANCE.json
+archive/baseline_v0.3/all_results_baseline_v0.3.json
+docs/plans/NHIS_D8_ENHANCEMENT_PRECHECK_20260908.json
+docs/plans/NHIS_D8_ENHANCEMENT_REPAIR_PLAN_20260908.md
+scripts/run_nhis_enhancement_study.py
+src/nhis_fairbias/d8_enhancement_runner.py
+tests/test_fairbias_enhancement.py
+tests/test_nhis_d8_enhancement.py

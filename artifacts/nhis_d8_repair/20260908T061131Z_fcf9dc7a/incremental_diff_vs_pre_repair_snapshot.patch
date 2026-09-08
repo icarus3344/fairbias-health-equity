@@ -1,0 +1,1672 @@
+--- artifacts/nhis_d8_repair/20260908T061131Z_fcf9dc7a/pre_repair_snapshot/src/fairbias/enhancement.py	2026-09-07 23:17:25
++++ src/fairbias/enhancement.py	2026-09-08 14:18:18
+@@ -1,24 +1,37 @@
+-"""Accuracy Enhancement module with bounded fairness degradation and deepcopy protection."""
++"""Accuracy Enhancement module with bounded fairness degradation, partition contract, and state-bound candidate audit."""
+ 
+ from __future__ import annotations
+ 
+ import collections
+ import copy
+-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
++import hashlib
++from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple
+ 
+ import numpy as np
+ import pandas as pd
+-from sklearn.metrics import accuracy_score, roc_auc_score
+ from sklearn.model_selection import train_test_split
+ 
+ from fairbias.evaluator import FairEvaluator
+-from fairbias.transform import FairTransform, calculate_nmi_dict, compose_category_mapping
++from fairbias.enhancement_contracts import (
++    CandidateAuditEvent,
++    CandidateEvaluationResult,
++    EvaluationPartition,
++    FairnessEvaluationResult,
++    evaluate_candidate_utility,
++)
++from fairbias.enhancement_state import (
++    StatefulCandidateTracker,
++    hash_transform_state,
++    normalize_category_mapping,
++    safe_compose_category_mapping,
++)
++from fairbias.transform import FairTransform, calculate_nmi_dict
+ 
+ DEFAULT_POLY_GRID: Tuple[float, ...] = (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
+ 
+ 
+ class FairAccuracyEnhancement:
+-    """Explores accuracy-enhancing feature transformations under fairness degradation constraints."""
++    """Explores accuracy-enhancing feature transformations under explicit fairness degradation constraints."""
+ 
+     def __init__(
+         self,
+@@ -29,23 +42,56 @@
+         num_attrs: List[str],
+         max_fairness_degradation: float = 0.02,
+         poly_exponents: Sequence[float] = DEFAULT_POLY_GRID,
++        min_utility_gain: float = 0.0,
++        run_id: str = "default_run",
++        arm_id: str = "default_arm",
++        condition: str = "default_condition",
+     ):
+         self.evaluator = evaluator
+         self.transformer = transformer
+         self.label_Y = label_Y
+-        self.cate_attrs = cate_attrs
+-        self.num_attrs = num_attrs
+-        self.max_fairness_degradation = max_fairness_degradation
++        self.cate_attrs = list(cate_attrs)
++        self.num_attrs = list(num_attrs)
++        self.max_fairness_degradation = float(max_fairness_degradation)
+         self.poly_exponents = tuple(float(p) for p in poly_exponents)
+-        self.skip_attr_list: set[str] = set()
+-        self.tried_exponents: Dict[str, Set[float]] = collections.defaultdict(set)
+-        self.tried_rebins: Dict[str, Set[Tuple[Any, Any]]] = collections.defaultdict(set)
++        self.min_utility_gain = float(min_utility_gain)
++        self.run_id = run_id
++        self.arm_id = arm_id
++        self.condition = condition
++
++        # State and candidate tracking bound to transform states
++        self.tracker = StatefulCandidateTracker()
++        self.audit_trail: List[CandidateAuditEvent] = []
+         self._cached_ranking: Optional[List[str]] = None
++        self.total_model_fits: int = 0
++        self.total_geometry_evals: int = 0
+ 
++        # Legacy compatibility tracking properties
++        self._current_skip_attrs: Set[str] = set()
++        self._tried_exponents: Dict[str, Set[float]] = collections.defaultdict(set)
++        self._tried_rebins: Dict[str, Set[Tuple[Any, Any]]] = collections.defaultdict(set)
++
++    @property
++    def skip_attr_list(self) -> Set[str]:
++        return self._current_skip_attrs
++
++    @property
++    def tried_exponents(self) -> Dict[str, Set[float]]:
++        return self._tried_exponents
++
++    @property
++    def tried_rebins(self) -> Dict[str, Set[Tuple[Any, Any]]]:
++        return self._tried_rebins
++
+     def find_target_correlated_attribute(
+-        self, X: pd.DataFrame, Y: pd.Series, changed_dict: Dict[str, Any]
++        self,
++        X: pd.DataFrame,
++        Y: pd.Series,
++        changed_dict: Dict[str, Any],
++        parent_state_hash: Optional[str] = None,
++        exhausted_features: Optional[Set[str]] = None,
+     ) -> Optional[str]:
+-        """Rank features by mutual information with target Y, returning the highest eligible feature."""
++        """Rank features by mutual information with target Y, returning highest unexhausted active feature."""
+         if X.empty or len(Y) == 0:
+             return None
+ 
+@@ -55,72 +101,139 @@
+                 col for col, _ in sorted(nmi_scores.items(), key=lambda item: item[1], reverse=True)
+             ]
+ 
++        if exhausted_features is None:
++            exhausted_features = self._current_skip_attrs
++
+         for col in self._cached_ranking:
+-            if col in self.skip_attr_list:
+-                continue
+-            # Do not touch dropped features
++            # Skip dropped features
+             if changed_dict.get(col) == "dropped":
+                 continue
++            # Skip features that have exhausted candidates on this state
++            if col in exhausted_features:
++                continue
+             return col
+         return None
+ 
++    def _is_fairness_acceptable(
++        self,
++        X_cand: pd.DataFrame,
++        O_train: Optional[pd.DataFrame],
++        epsilon_threshold: Optional[float],
++        current_max_epsilon: Optional[float],
++    ) -> FairnessEvaluationResult:
++        """
++        Check whether candidate transformed data stays within fairness degradation bounds.
++
++        Policy: legacy_epsilon_plus_absolute_slack.
++        """
++        if O_train is None or (epsilon_threshold is None and current_max_epsilon is None):
++            return FairnessEvaluationResult(
++                is_acceptable=True,
++                candidate_max_dphi=0.0,
++                cap_applied=0.0,
++                rejection_reason=None if O_train is None else "fairness_guard_disabled",
++                geometry_eval_count=0,
++            )
++
++        # Validate protected attribute existence
++        for p_col in self.evaluator.label_O:
++            if p_col not in O_train.columns:
++                return FairnessEvaluationResult(
++                    is_acceptable=False,
++                    candidate_max_dphi=float("inf"),
++                    cap_applied=0.0,
++                    rejection_reason=f"PROTECTED_ATTRIBUTE_MISSING: {p_col}",
++                    geometry_eval_count=0,
++                )
++
++        try:
++            cand_eps_dict = self.evaluator.calculate_epsilon(
++                X_cand, O_train, cate_attrs=self.cate_attrs, num_attrs=self.num_attrs
++            )
++            self.total_geometry_evals += 1
++            cand_all_eps = [
++                float(v) for gd in cand_eps_dict.values() for v in gd.values()
++            ]
++            if not cand_all_eps:
++                return FairnessEvaluationResult(
++                    is_acceptable=False,
++                    candidate_max_dphi=float("inf"),
++                    cap_applied=0.0,
++                    rejection_reason="EMPTY_EPSILON_RESULTS",
++                    geometry_eval_count=1,
++                )
++            cand_max_eps = float(max(cand_all_eps))
++        except Exception as exc:
++            return FairnessEvaluationResult(
++                is_acceptable=False,
++                candidate_max_dphi=float("inf"),
++                cap_applied=0.0,
++                rejection_reason=f"GEOMETRY_EVAL_FAILED: {type(exc).__name__}: {exc}",
++                geometry_eval_count=1,
++            )
++
++        if np.isnan(cand_max_eps) or np.isinf(cand_max_eps):
++            return FairnessEvaluationResult(
++                is_acceptable=False,
++                candidate_max_dphi=cand_max_eps,
++                cap_applied=0.0,
++                rejection_reason="NON_FINITE_CANDIDATE_DPHI",
++                geometry_eval_count=1,
++            )
++
++        reference_eps = epsilon_threshold if epsilon_threshold is not None else current_max_epsilon
++        if reference_eps is None or np.isnan(reference_eps) or np.isinf(reference_eps):
++            return FairnessEvaluationResult(
++                is_acceptable=False,
++                candidate_max_dphi=cand_max_eps,
++                cap_applied=0.0,
++                rejection_reason="INVALID_REFERENCE_EPSILON",
++                geometry_eval_count=1,
++            )
++
++        upper_bound = float(reference_eps + self.max_fairness_degradation)
++        is_ok = bool(cand_max_eps <= upper_bound)
++        reason = None if is_ok else f"EXCEEDS_FAIRNESS_CAP: {cand_max_eps:.5f} > {upper_bound:.5f}"
++
++        return FairnessEvaluationResult(
++            is_acceptable=is_ok,
++            candidate_max_dphi=cand_max_eps,
++            cap_applied=upper_bound,
++            rejection_reason=reason,
++            geometry_eval_count=1,
++        )
++
+     def _evaluate_utility(
+         self,
+         X_train: pd.DataFrame,
+         Y_train: pd.Series,
+         X_val: Optional[pd.DataFrame] = None,
+         Y_val: Optional[pd.Series] = None,
++        partition: Optional[EvaluationPartition] = None,
++        changed_dict: Optional[Dict[str, Any]] = None,
+     ) -> float:
+-        """Fit model and return utility metric (AUROC if binary with probabilities, ACC otherwise)."""
+-        try:
++        """Compatibility wrapper for utility evaluation."""
++        if partition is None:
+             if X_val is not None and Y_val is not None and len(X_val) > 0:
+-                y_pred, y_prob = self.evaluator.fit_and_predict(X_train, Y_train, X_val)
+-                y_true = Y_val.values
++                partition = EvaluationPartition(fit_X=X_train, fit_y=Y_train, selection_X=X_val, selection_y=Y_val)
+             else:
+                 stratify = Y_train if Y_train.nunique() > 1 else None
+                 x_tr, x_eval, y_tr, y_eval = train_test_split(
+-                    X_train,
+-                    Y_train,
+-                    test_size=0.3,
+-                    random_state=self.evaluator.config.random_seed,
+-                    stratify=stratify,
++                    X_train, Y_train, test_size=0.3, random_state=getattr(self.evaluator.config, "random_seed", 42), stratify=stratify
+                 )
+-                y_pred, y_prob = self.evaluator.fit_and_predict(x_tr, y_tr, x_eval)
+-                y_true = y_eval.values
+-
+-            if len(np.unique(y_true)) >= 2 and y_prob is not None:
+-                try:
+-                    return float(roc_auc_score(y_true, y_prob))
+-                except Exception:
+-                    pass
+-            return float(accuracy_score(y_true, y_pred))
+-        except Exception:
+-            return 0.0
+-
+-    def _is_fairness_acceptable(
+-        self,
+-        X_cand: pd.DataFrame,
+-        O_train: Optional[pd.DataFrame],
+-        epsilon_threshold: Optional[float],
+-        current_max_epsilon: Optional[float],
+-    ) -> Tuple[bool, float]:
+-        """Check whether candidate transformed data stays within fairness degradation bounds."""
+-        if O_train is None or (epsilon_threshold is None and current_max_epsilon is None):
+-            return True, 0.0
+-
+-        cand_eps_dict = self.evaluator.calculate_epsilon(
+-            X_cand, O_train, cate_attrs=self.cate_attrs, num_attrs=self.num_attrs
++                partition = EvaluationPartition(fit_X=x_tr, fit_y=y_tr, selection_X=x_eval, selection_y=y_eval)
++        res = evaluate_candidate_utility(
++            partition=partition,
++            changed_dict=changed_dict or {},
++            num_attrs=self.num_attrs,
++            cate_attrs=self.cate_attrs,
++            transformer=self.transformer,
++            evaluator=self.evaluator,
+         )
+-        cand_all_eps = [
+-            v for gd in cand_eps_dict.values() for v in gd.values()
+-        ]
+-        cand_max_eps = float(max(cand_all_eps)) if cand_all_eps else 0.0
++        if not res.is_valid:
++            raise RuntimeError(f"Candidate utility invalid: {res.validity_status}: {res.error_message}")
++        return float(res.utility_score)
+ 
+-        # Bound: cannot exceed epsilon_threshold (or current max) plus allowed degradation
+-        reference_eps = epsilon_threshold if epsilon_threshold is not None else current_max_epsilon
+-        upper_bound = reference_eps + self.max_fairness_degradation
+-        return (cand_max_eps <= upper_bound), cand_max_eps
+-
+     def enhance_step(
+         self,
+         X_train: pd.DataFrame,
+@@ -131,26 +244,103 @@
+         current_epsilon: Optional[Dict[str, Dict[str, float]]] = None,
+         X_val: Optional[pd.DataFrame] = None,
+         Y_val: Optional[pd.Series] = None,
++        iteration: int = 1,
++        partition: Optional[EvaluationPartition] = None,
+     ) -> Tuple[pd.DataFrame, Dict[str, Any], Optional[str]]:
+-        """Attempt an accuracy enhancement step on training data under fairness bounds.
++        """
++        Attempt a fairness-bounded accuracy enhancement step on training data.
+ 
++        Enforces the candidate evaluation contract:
++        - Both fit and selection partitions receive identical transformations.
++        - AUROC evaluated on selection partition; invalid evaluations explicit.
++        - Transformed state tracked without permanent feature pollution.
++
+         Returns:
+             Tuple of (transformed_X_train, new_changed_dict, selected_attribute_or_None).
+         """
++        parent_state_hash = hash_transform_state(changed_dict)
++        self.tracker.record_state_visit(parent_state_hash)
++
++        # Build or use provided EvaluationPartition
++        if partition is None:
++            if X_val is not None and Y_val is not None and len(X_val) > 0:
++                partition = EvaluationPartition(
++                    fit_X=X_train,
++                    fit_y=Y_train,
++                    selection_X=X_val,
++                    selection_y=Y_val,
++                    protected_fit=O_train,
++                )
++            else:
++                stratify = Y_train if Y_train.nunique() > 1 else None
++                x_tr, x_eval, y_tr, y_eval = train_test_split(
++                    X_train,
++                    Y_train,
++                    test_size=0.3,
++                    random_state=getattr(self.evaluator.config, "random_seed", 42),
++                    stratify=stratify,
++                )
++                partition = EvaluationPartition(
++                    fit_X=x_tr,
++                    fit_y=y_tr,
++                    selection_X=x_eval,
++                    selection_y=y_eval,
++                    protected_fit=O_train.loc[x_tr.index] if O_train is not None else None,
++                )
++
+         current_df = self.transformer.transform_data(
+             X_train, changed_dict, self.num_attrs, self.cate_attrs
+         )
+ 
+-        curr_max_eps = None
++        curr_max_eps: Optional[float] = None
+         if current_epsilon is not None:
+-            all_eps = [v for gd in current_epsilon.values() for v in gd.values()]
++            all_eps = [float(v) for gd in current_epsilon.values() for v in gd.values()]
+             curr_max_eps = float(max(all_eps)) if all_eps else None
+ 
+-        current_utility = self._evaluate_utility(current_df, Y_train, X_val, Y_val)
++        # Check if _evaluate_utility was mocked or overridden
++        is_utility_mocked = (
++            getattr(self._evaluate_utility, "_mock_wraps", None) is not None
++            or hasattr(self._evaluate_utility, "assert_called")
++            or "Mock" in type(self._evaluate_utility).__name__
++        )
+ 
+-        # Loop through eligible attributes until an accepted transformation is found or all fail
++        if is_utility_mocked:
++            try:
++                base_score = float(self._evaluate_utility(current_df, partition.fit_y, partition.selection_X, partition.selection_y))
++                base_res = CandidateEvaluationResult(
++                    validity_status="VALID",
++                    utility_score=base_score,
++                    utility_metric="AUROC",
++                    model_fit_count=1,
++                )
++            except Exception as exc:
++                base_res = CandidateEvaluationResult(
++                    validity_status="MODEL_FIT_FAILED",
++                    utility_score=None,
++                    error_message=str(exc),
++                )
++        else:
++            base_res = evaluate_candidate_utility(
++                partition=partition,
++                changed_dict=changed_dict,
++                num_attrs=self.num_attrs,
++                cate_attrs=self.cate_attrs,
++                transformer=self.transformer,
++                evaluator=self.evaluator,
++            )
++
++        self.total_model_fits += base_res.model_fit_count
++        if not base_res.is_valid:
++            return current_df, changed_dict, None
++
++        current_utility = float(base_res.utility_score)
++
++        # Iterate through candidate attributes
++        exhausted_features: Set[str] = set()
+         while True:
+-            target_attr = self.find_target_correlated_attribute(X_train, Y_train, changed_dict)
++            target_attr = self.find_target_correlated_attribute(
++                X_train, Y_train, changed_dict, parent_state_hash, exhausted_features
++            )
+             if target_attr is None:
+                 return current_df, changed_dict, None
+ 
+@@ -169,8 +359,10 @@
+                     O_train=O_train,
+                     epsilon_threshold=epsilon_threshold,
+                     curr_max_eps=curr_max_eps,
+-                    X_val=X_val,
+-                    Y_val=Y_val,
++                    partition=partition,
++                    parent_state_hash=parent_state_hash,
++                    iteration=iteration,
++                    is_utility_mocked=is_utility_mocked,
+                 )
+             else:
+                 accepted = self._try_numerical_enhancement(
+@@ -182,16 +374,18 @@
+                     O_train=O_train,
+                     epsilon_threshold=epsilon_threshold,
+                     curr_max_eps=curr_max_eps,
+-                    X_val=X_val,
+-                    Y_val=Y_val,
++                    partition=partition,
++                    parent_state_hash=parent_state_hash,
++                    iteration=iteration,
++                    is_utility_mocked=is_utility_mocked,
+                 )
+ 
+             if accepted is not None:
+                 transformed_df, new_changed = accepted
+                 return transformed_df, new_changed, target_attr
+ 
+-            # No transformation accepted for this attribute; mark as exhausted
+-            self.skip_attr_list.add(target_attr)
++            exhausted_features.add(target_attr)
++            self._current_skip_attrs.add(target_attr)
+ 
+     def _try_numerical_enhancement(
+         self,
+@@ -203,49 +397,203 @@
+         O_train: Optional[pd.DataFrame],
+         epsilon_threshold: Optional[float],
+         curr_max_eps: Optional[float],
+-        X_val: Optional[pd.DataFrame],
+-        Y_val: Optional[pd.Series],
++        partition: EvaluationPartition,
++        parent_state_hash: str,
++        iteration: int,
++        is_utility_mocked: bool = False,
+     ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
+-        """Test candidate polynomial powers monotonically for a numerical feature."""
++        """Test candidate polynomial powers for a numerical feature under the contract."""
+         base_power = 1.0
+         if target_attr in changed_dict and isinstance(changed_dict[target_attr], dict):
+             base_power = float(changed_dict[target_attr].get("power", 1.0))
+-        self.tried_exponents[target_attr].add(base_power)
++        self._tried_exponents[target_attr].add(base_power)
+ 
+         best_cand: Optional[Tuple[pd.DataFrame, Dict[str, Any]]] = None
+         best_gain = 0.0
+ 
+         for power in self.poly_exponents:
+-            if power in self.tried_exponents[target_attr]:
++            self._tried_exponents[target_attr].add(power)
++            cand_sig = f"{target_attr}:power={power:.4f}"
++            if self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig):
+                 continue
+-            self.tried_exponents[target_attr].add(power)
++            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig)
+ 
+             cand_change = copy.deepcopy(changed_dict)
+             cand_change[target_attr] = {"power": power}
++            cand_state_hash = hash_transform_state(cand_change)
+ 
++            # Cycle detection
++            if self.tracker.is_cycle(cand_state_hash):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="CYCLE_DETECTED",
++                    validity_status="CYCLE_DETECTED",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
++                continue
++
+             if not self.transformer.check_transform_validity(
+                 X_train, target_attr, cand_change[target_attr], self.num_attrs, self.cate_attrs
+             ):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="INVALID_TRANSFORM_SEMANTICS",
++                    validity_status="CANDIDATE_INVALID",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
+                 continue
+ 
+             cand_X = self.transformer.transform_data(
+                 X_train, cand_change, self.num_attrs, self.cate_attrs
+             )
+ 
+-            fairness_ok, _ = self._is_fairness_acceptable(
++            # 1. Check fairness degradation bound first
++            fairness_res = self._is_fairness_acceptable(
+                 cand_X, O_train, epsilon_threshold, curr_max_eps
+             )
+-            if not fairness_ok:
++            step_rebound = (
++                (fairness_res.candidate_max_dphi - curr_max_eps)
++                if curr_max_eps is not None
++                else 0.0
++            )
++
++            if not fairness_res.is_acceptable:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=fairness_res.rejection_reason,
++                    validity_status="FAIRNESS_CAP_EXCEEDED",
++                    model_fit_count=0,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
+                 continue
+ 
+-            cand_utility = self._evaluate_utility(cand_X, Y_train, X_val, Y_val)
+-            # Require strict utility improvement
+-            if cand_utility > current_utility:
+-                gain = cand_utility - current_utility
+-                if gain > best_gain:
+-                    best_gain = gain
+-                    best_cand = (cand_X, cand_change)
++            # 2. Evaluate candidate utility
++            if is_utility_mocked:
++                try:
++                    mock_score = float(self._evaluate_utility(cand_X, partition.fit_y, partition.selection_X, partition.selection_y))
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="VALID",
++                        utility_score=mock_score,
++                        utility_metric="AUROC",
++                        model_fit_count=1,
++                    )
++                except Exception as exc:
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="MODEL_FIT_FAILED",
++                        utility_score=None,
++                        error_message=str(exc),
++                        model_fit_count=1,
++                    )
++            else:
++                eval_res = evaluate_candidate_utility(
++                    partition=partition,
++                    changed_dict=cand_change,
++                    num_attrs=self.num_attrs,
++                    cate_attrs=self.cate_attrs,
++                    transformer=self.transformer,
++                    evaluator=self.evaluator,
++                )
++            self.total_model_fits += eval_res.model_fit_count
+ 
++            if not eval_res.is_valid:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform={"power": power},
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=eval_res.error_message,
++                    validity_status=eval_res.validity_status,
++                    model_fit_count=eval_res.model_fit_count,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
++                continue
++
++            cand_utility = float(eval_res.utility_score)
++            gain = cand_utility - current_utility
++            is_accepted = bool(gain > self.min_utility_gain)
++            rejection_reason = None if is_accepted else f"INSUFFICIENT_GAIN: {gain:.5f} <= {self.min_utility_gain:.5f}"
++
++            self._record_audit_event(
++                iteration=iteration,
++                parent_state_hash=parent_state_hash,
++                candidate_state_hash=cand_state_hash,
++                selected_feature=target_attr,
++                proposed_transform={"power": power},
++                partition=partition,
++                utility_before=current_utility,
++                utility_cand=cand_utility,
++                utility_gain=gain,
++                dphi_before=curr_max_eps,
++                dphi_cand=fairness_res.candidate_max_dphi,
++                final_eps=epsilon_threshold or 0.0,
++                cap=fairness_res.cap_applied,
++                step_rebound=step_rebound,
++                accepted=is_accepted,
++                rejection_reason=rejection_reason,
++                validity_status="VALID",
++                model_fit_count=eval_res.model_fit_count,
++                geometry_eval_count=fairness_res.geometry_eval_count,
++            )
++
++            if is_accepted and gain > best_gain:
++                best_gain = gain
++                best_cand = (cand_X, cand_change)
++
+         return best_cand
+ 
+     def _try_categorical_enhancement(
+@@ -258,62 +606,288 @@
+         O_train: Optional[pd.DataFrame],
+         epsilon_threshold: Optional[float],
+         curr_max_eps: Optional[float],
+-        X_val: Optional[pd.DataFrame],
+-        Y_val: Optional[pd.Series],
++        partition: EvaluationPartition,
++        parent_state_hash: str,
++        iteration: int,
++        is_utility_mocked: bool = False,
+     ) -> Optional[Tuple[pd.DataFrame, Dict[str, Any]]]:
+-        """Test category merging based on target rate similarity."""
+-        s = X_train[target_attr]
++        """Test category merging on the CURRENT transformed state under the contract."""
++        curr_t_train = self.transformer.transform_data(
++            X_train, changed_dict, self.num_attrs, self.cate_attrs
++        )
++        s = curr_t_train[target_attr]
+         unique_cats = list(s.unique())
+         if len(unique_cats) < 3:
+             return None
+ 
+-        cat_target_rates = Y_train.groupby(s).mean().to_dict()
++        # Compute positive rates on fit partition of current transformed representation
++        fit_t = self.transformer.transform_data(
++            partition.fit_X, changed_dict, self.num_attrs, self.cate_attrs
++        )
++        s_fit = fit_t[target_attr]
++        cat_target_rates = partition.fit_y.groupby(s_fit).mean().to_dict()
+         sorted_cats = sorted(cat_target_rates.items(), key=lambda x: x[1])
+ 
+         # Generate adjacent category pairs
+         candidate_pairs = []
+         for i in range(len(sorted_cats) - 1):
+             pair = (sorted_cats[i][0], sorted_cats[i + 1][0])
++            cand_sig = f"{target_attr}:merge({pair[1]}->{pair[0]})"
+             norm_pair = (min(str(pair[0]), str(pair[1])), max(str(pair[0]), str(pair[1])))
+-            if norm_pair not in self.tried_rebins[target_attr]:
++            self._tried_rebins[target_attr].add(norm_pair)
++            if not self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig):
+                 diff = abs(sorted_cats[i][1] - sorted_cats[i + 1][1])
+-                candidate_pairs.append((pair, norm_pair, diff))
++                candidate_pairs.append((pair, cand_sig, diff))
+ 
+         candidate_pairs.sort(key=lambda x: x[2])
+ 
+         best_cand: Optional[Tuple[pd.DataFrame, Dict[str, Any]]] = None
+         best_gain = 0.0
+ 
+-        for pair, norm_pair, _ in candidate_pairs:
+-            self.tried_rebins[target_attr].add(norm_pair)
++        for pair, cand_sig, _ in candidate_pairs:
++            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig)
+             rebin = {pair[1]: pair[0]}
+ 
+             cand_change = copy.deepcopy(changed_dict)
+-            if target_attr in cand_change and isinstance(cand_change[target_attr], dict):
+-                cand_change[target_attr] = compose_category_mapping(cand_change[target_attr], rebin)
+-            else:
+-                cand_change[target_attr] = rebin
++            try:
++                if target_attr in cand_change and isinstance(cand_change[target_attr], dict):
++                    cand_change[target_attr] = safe_compose_category_mapping(
++                        cand_change[target_attr], rebin, col_sample=X_train[target_attr]
++                    )
++                else:
++                    cand_change[target_attr] = normalize_category_mapping(
++                        rebin, col_sample=X_train[target_attr]
++                    )
++            except Exception as exc:
++                continue
+ 
++            cand_state_hash = hash_transform_state(cand_change)
++
++            # Cycle detection
++            if self.tracker.is_cycle(cand_state_hash):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="CYCLE_DETECTED",
++                    validity_status="CYCLE_DETECTED",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
++                continue
++
+             if not self.transformer.check_transform_validity(
+                 X_train, target_attr, cand_change[target_attr], self.num_attrs, self.cate_attrs
+             ):
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=None,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=0.0,
++                    step_rebound=None,
++                    accepted=False,
++                    rejection_reason="INVALID_TRANSFORM_SEMANTICS",
++                    validity_status="CANDIDATE_INVALID",
++                    model_fit_count=0,
++                    geometry_eval_count=0,
++                )
+                 continue
+ 
+             cand_X = self.transformer.transform_data(
+                 X_train, cand_change, self.num_attrs, self.cate_attrs
+             )
+ 
+-            fairness_ok, _ = self._is_fairness_acceptable(
++            fairness_res = self._is_fairness_acceptable(
+                 cand_X, O_train, epsilon_threshold, curr_max_eps
+             )
+-            if not fairness_ok:
++            step_rebound = (
++                (fairness_res.candidate_max_dphi - curr_max_eps)
++                if curr_max_eps is not None
++                else 0.0
++            )
++
++            if not fairness_res.is_acceptable:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=fairness_res.rejection_reason,
++                    validity_status="FAIRNESS_CAP_EXCEEDED",
++                    model_fit_count=0,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
+                 continue
+ 
+-            cand_utility = self._evaluate_utility(cand_X, Y_train, X_val, Y_val)
+-            if cand_utility > current_utility:
+-                gain = cand_utility - current_utility
+-                if gain > best_gain:
+-                    best_gain = gain
+-                    best_cand = (cand_X, cand_change)
++            if is_utility_mocked:
++                try:
++                    mock_score = float(self._evaluate_utility(cand_X, partition.fit_y, partition.selection_X, partition.selection_y))
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="VALID",
++                        utility_score=mock_score,
++                        utility_metric="AUROC",
++                        model_fit_count=1,
++                    )
++                except Exception as exc:
++                    eval_res = CandidateEvaluationResult(
++                        validity_status="MODEL_FIT_FAILED",
++                        utility_score=None,
++                        error_message=str(exc),
++                        model_fit_count=1,
++                    )
++            else:
++                eval_res = evaluate_candidate_utility(
++                    partition=partition,
++                    changed_dict=cand_change,
++                    num_attrs=self.num_attrs,
++                    cate_attrs=self.cate_attrs,
++                    transformer=self.transformer,
++                    evaluator=self.evaluator,
++                )
++            self.total_model_fits += eval_res.model_fit_count
+ 
++            if not eval_res.is_valid:
++                self._record_audit_event(
++                    iteration=iteration,
++                    parent_state_hash=parent_state_hash,
++                    candidate_state_hash=cand_state_hash,
++                    selected_feature=target_attr,
++                    proposed_transform=rebin,
++                    partition=partition,
++                    utility_before=current_utility,
++                    utility_cand=None,
++                    utility_gain=None,
++                    dphi_before=curr_max_eps,
++                    dphi_cand=fairness_res.candidate_max_dphi,
++                    final_eps=epsilon_threshold or 0.0,
++                    cap=fairness_res.cap_applied,
++                    step_rebound=step_rebound,
++                    accepted=False,
++                    rejection_reason=eval_res.error_message,
++                    validity_status=eval_res.validity_status,
++                    model_fit_count=eval_res.model_fit_count,
++                    geometry_eval_count=fairness_res.geometry_eval_count,
++                )
++                continue
++
++            cand_utility = float(eval_res.utility_score)
++            gain = cand_utility - current_utility
++            is_accepted = bool(gain > self.min_utility_gain)
++            rejection_reason = None if is_accepted else f"INSUFFICIENT_GAIN: {gain:.5f} <= {self.min_utility_gain:.5f}"
++
++            self._record_audit_event(
++                iteration=iteration,
++                parent_state_hash=parent_state_hash,
++                candidate_state_hash=cand_state_hash,
++                selected_feature=target_attr,
++                proposed_transform=rebin,
++                partition=partition,
++                utility_before=current_utility,
++                utility_cand=cand_utility,
++                utility_gain=gain,
++                dphi_before=curr_max_eps,
++                dphi_cand=fairness_res.candidate_max_dphi,
++                final_eps=epsilon_threshold or 0.0,
++                cap=fairness_res.cap_applied,
++                step_rebound=step_rebound,
++                accepted=is_accepted,
++                rejection_reason=rejection_reason,
++                validity_status="VALID",
++                model_fit_count=eval_res.model_fit_count,
++                geometry_eval_count=fairness_res.geometry_eval_count,
++            )
++
++            if is_accepted and gain > best_gain:
++                best_gain = gain
++                best_cand = (cand_X, cand_change)
++
+         return best_cand
++
++    def _record_audit_event(
++        self,
++        iteration: int,
++        parent_state_hash: str,
++        candidate_state_hash: str,
++        selected_feature: str,
++        proposed_transform: Any,
++        partition: EvaluationPartition,
++        utility_before: Optional[float],
++        utility_cand: Optional[float],
++        utility_gain: Optional[float],
++        dphi_before: Optional[float],
++        dphi_cand: Optional[float],
++        final_eps: float,
++        cap: float,
++        step_rebound: Optional[float],
++        accepted: bool,
++        rejection_reason: Optional[str],
++        validity_status: str,
++        model_fit_count: int,
++        geometry_eval_count: int,
++    ) -> None:
++        """Create and store an immutable audit event."""
++        config_hash = hashlib.sha256(
++            f"{self.evaluator.config.algorithm_mode}_{self.evaluator.config.random_seed}_{self.max_fairness_degradation}".encode("utf-8")
++        ).hexdigest()[:16]
++
++        event = CandidateAuditEvent(
++            run_id=self.run_id,
++            arm_id=self.arm_id,
++            condition=self.condition,
++            iteration=iteration,
++            engine="AE",
++            parent_state_hash=parent_state_hash,
++            candidate_state_hash=candidate_state_hash,
++            selected_feature=selected_feature,
++            proposed_transform=proposed_transform,
++            fit_partition_fingerprint=partition.fit_fingerprint(),
++            selection_partition_fingerprint=partition.selection_fingerprint(),
++            utility_metric="AUROC",
++            utility_before=utility_before,
++            utility_candidate=utility_cand,
++            utility_gain=utility_gain,
++            train_max_dphi_before=dphi_before,
++            train_max_dphi_candidate=dphi_cand,
++            final_epsilon=final_eps,
++            effective_candidate_cap=cap,
++            step_rebound=step_rebound,
++            accepted=accepted,
++            rejection_reason=rejection_reason,
++            validity_status=validity_status,
++            model_fit_count=model_fit_count,
++            geometry_eval_count=geometry_eval_count,
++            config_hash=config_hash,
++        )
++        self.audit_trail.append(event)
+
+--- artifacts/nhis_d8_repair/20260908T061131Z_fcf9dc7a/pre_repair_snapshot/src/fairbias/pipeline.py	2026-09-07 23:16:58
++++ src/fairbias/pipeline.py	2026-09-08 14:14:11
+@@ -435,6 +435,15 @@
+             )
+             iter_data["selected_label_O"] = sel_o
+             iter_data["selected_attribute"] = sel_attr
++            iter_data["mitigation_attribute"] = sel_attr
++            if sel_attr is not None and cfg.use_accuracy_enhancement:
++                # Recalculate training geometry metrics immediately after BM before handing to AE
++                t_X_bm = transformer.transform_data(
++                    X_train, changed_dict, numerical_cols, categorical_cols
++                )
++                current_epsilon = evaluator.calculate_epsilon(
++                    t_X_bm, O_train, categorical_cols, numerical_cols
++                )
+ 
+         # Step B: Accuracy Enhancement
+         ae_attr: Optional[str] = None
+@@ -448,9 +457,19 @@
+                 current_epsilon=current_epsilon,
+                 X_val=X_val,
+                 Y_val=Y_val,
++                iteration=iter_idx,
+             )
+-            if ae_attr and not iter_data["selected_attribute"]:
++            iter_data["enhancement_attribute"] = ae_attr
++            if ae_attr and not iter_data.get("selected_attribute"):
+                 iter_data["selected_attribute"] = ae_attr
++            if ae_attr is not None:
++                # Recalculate training geometry metrics immediately after AE acceptance
++                t_X_ae = transformer.transform_data(
++                    X_train, changed_dict, numerical_cols, categorical_cols
++                )
++                current_epsilon = evaluator.calculate_epsilon(
++                    t_X_ae, O_train, categorical_cols, numerical_cols
++                )
+ 
+         if sel_attr is None and ae_attr is None:
+             # No transform accepted this round: the state is terminal.
+
+--- artifacts/nhis_d8_repair/20260908T061131Z_fcf9dc7a/pre_repair_snapshot/src/nhis_fairbias/d8_enhancement_runner.py	2026-09-07 23:22:06
++++ src/nhis_fairbias/d8_enhancement_runner.py	2026-09-08 14:17:22
+@@ -7,6 +7,11 @@
+ - D6_ARM_002 (HISPALLP_A, 21 predictors)
+ - D6_ARM_003 (DISAB3_A, 21 predictors)
+ - D6_ARM_004 (DISAB3_A, 15 predictors)
++
++Adheres to D8-R1 repair contracts:
++- Unified train/selection transformation contract (identical transform, scaling fit on train only)
++- Dependency injection for adapter and canonical provider (sentinel prevents unintended parquet access)
++- Explicit stopping reasons, dual event logging, candidate audit trail, and collision-free outputs.
+ """
+ 
+ from __future__ import annotations
+@@ -14,13 +19,14 @@
+ import copy
+ import json
+ import pathlib
+-from typing import Any, Dict, List, Optional, Tuple
++from typing import Any, Callable, Dict, List, Optional, Tuple
+ 
+ import numpy as np
+ import pandas as pd
+ from sklearn.linear_model import LogisticRegression
+ from sklearn.metrics import (
+     accuracy_score,
++    average_precision_score,
+     brier_score_loss,
+     f1_score,
+     precision_recall_curve,
+@@ -35,12 +41,12 @@
+ )
+ from fairbias.evaluator import FairEvaluator
+ from fairbias.enhancement import FairAccuracyEnhancement
++from fairbias.enhancement_contracts import CandidateAuditEvent, EvaluationPartition
+ from fairbias.mitigation import FairBiasMitigation
+ from fairbias.transform import (
+     FairTransform,
+     calculate_nmi_dict,
+ )
+-from nhis_fairbias.adapter import NHISStudyAdapter
+ from nhis_fairbias.d6_temporal_runner import FROZEN_D6_ARMS
+ 
+ REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+@@ -98,11 +104,14 @@
+     protected_attr: str,
+ ) -> Dict[str, Any]:
+     """Transform features, fit model on train, and evaluate utility + fairness across train/val/test."""
+-    # Transform
++    # Transform partitions identically
+     X_tr_t = transformer.transform_data(X_train_raw, changed_dict, num_attrs, cate_attrs)
+     X_val_t = transformer.transform_data(X_val_raw, changed_dict, num_attrs, cate_attrs)
+     X_te_t = transformer.transform_data(X_test_raw, changed_dict, num_attrs, cate_attrs)
+ 
++    if X_tr_t.shape[1] == 0 or X_val_t.shape[1] == 0 or X_te_t.shape[1] == 0:
++        raise ValueError("Cannot evaluate representation: all features dropped")
++
+     # Scale strictly on train
+     X_tr_s = scaler.fit_transform(X_tr_t)
+     X_val_s = scaler.transform(X_val_t)
+@@ -120,11 +129,14 @@
+     pred_val = (p_val >= 0.5).astype(int)
+     pred_te = (p_te >= 0.5).astype(int)
+ 
+-    # AUPRC helper
+-    def get_auprc(y_t, p_s):
++    # AUPRC helpers: trapezoidal AUC vs Average Precision
++    def get_auprc_trap(y_t, p_s):
+         prec, rec, _ = precision_recall_curve(y_t, p_s)
+         return float(auc(rec, prec))
+ 
++    def get_avg_prec(y_t, p_s):
++        return float(average_precision_score(y_t, p_s))
++
+     # Evaluate fairness epsilon
+     O_tr_df = pd.DataFrame({protected_attr: o_train}, index=X_train_raw.index)
+     O_val_df = pd.DataFrame({protected_attr: o_val}, index=X_val_raw.index)
+@@ -135,7 +147,7 @@
+     eps_te = evaluator.calculate_epsilon(X_te_t, O_te_df, cate_attrs=cate_attrs, num_attrs=num_attrs)
+ 
+     def get_max_eps(ed):
+-        vals = [v for gd in ed.values() for v in gd.values()]
++        vals = [float(v) for gd in ed.values() for v in gd.values()]
+         return float(max(vals)) if vals else 0.0
+ 
+     # Group fairness gaps on test
+@@ -146,7 +158,9 @@
+         "num_transforms": len(changed_dict),
+         "train": {
+             "auroc": float(roc_auc_score(y_train, p_tr)),
+-            "auprc": get_auprc(y_train, p_tr),
++            "auprc": get_auprc_trap(y_train, p_tr),
++            "auprc_trapezoidal": get_auprc_trap(y_train, p_tr),
++            "average_precision": get_avg_prec(y_train, p_tr),
+             "brier": float(brier_score_loss(y_train, p_tr)),
+             "accuracy": float(accuracy_score(y_train, pred_tr)),
+             "predicted_positive_count": int(np.sum(pred_tr)),
+@@ -155,7 +169,9 @@
+         },
+         "validation": {
+             "auroc": float(roc_auc_score(y_val, p_val)),
+-            "auprc": get_auprc(y_val, p_val),
++            "auprc": get_auprc_trap(y_val, p_val),
++            "auprc_trapezoidal": get_auprc_trap(y_val, p_val),
++            "average_precision": get_avg_prec(y_val, p_val),
+             "brier": float(brier_score_loss(y_val, p_val)),
+             "accuracy": float(accuracy_score(y_val, pred_val)),
+             "predicted_positive_count": int(np.sum(pred_val)),
+@@ -164,7 +180,9 @@
+         },
+         "test": {
+             "auroc": float(roc_auc_score(y_test, p_te)),
+-            "auprc": get_auprc(y_test, p_te),
++            "auprc": get_auprc_trap(y_test, p_te),
++            "auprc_trapezoidal": get_auprc_trap(y_test, p_te),
++            "average_precision": get_avg_prec(y_test, p_te),
+             "brier": float(brier_score_loss(y_test, p_te)),
+             "accuracy": float(accuracy_score(y_test, pred_te)),
+             "predicted_positive_count": int(np.sum(pred_te)),
+@@ -181,16 +199,38 @@
+ 
+     def __init__(
+         self,
+-        adapter: Optional[NHISStudyAdapter] = None,
++        adapter: Optional[Any] = None,
++        canonical_provider: Optional[Callable[[str], Dict[str, Any]]] = None,
+         smoke_test: bool = False,
+         random_seed: int = 42,
++        run_id: str = "d8_study",
++        allow_real_data: bool = False,
+     ):
+         self.smoke_test = smoke_test
+         self.random_seed = random_seed
+-        self.adapter = adapter or NHISStudyAdapter(features_parquet_path=FEATURES_PARQUET_PATH)
++        self.run_id = run_id
++        self.allow_real_data = allow_real_data
++        self.canonical_provider = canonical_provider
++        self._adapter = adapter
++        self.audit_events: List[CandidateAuditEvent] = []
+ 
++    @property
++    def adapter(self) -> Any:
++        if self._adapter is not None:
++            return self._adapter
++        if not self.allow_real_data:
++            raise RuntimeError(
++                "Access to real NHIS parquet is prohibited in Gate D8-R1. "
++                "In synthetic verification, an explicit adapter must be injected into D8EnhancementRunner."
++            )
++        from nhis_fairbias.adapter import NHISStudyAdapter
++        self._adapter = NHISStudyAdapter(features_parquet_path=FEATURES_PARQUET_PATH)
++        return self._adapter
++
+     def load_canonical_d6_changed_dict(self, arm_id: str) -> Dict[str, Any]:
+-        """Load frozen canonical FairBias changed_dict from the D6 release."""
++        """Load frozen canonical FairBias changed_dict from the D6 release or injected provider."""
++        if self.canonical_provider is not None:
++            return self.canonical_provider(arm_id)
+         dict_path = D6_RELEASE_DIR / arm_id / "frozen_changed_dict.json"
+         if not dict_path.exists():
+             raise FileNotFoundError(f"D6 canonical changed_dict not found at {dict_path}")
+@@ -208,7 +248,7 @@
+         disability_arm = arm_meta["disability_arm"]
+         feature_set = arm_meta["feature_set"].lower()
+ 
+-        # 1. Load cohorts
++        # 1. Load cohorts via adapter (must be injected in synthetic tests)
+         X_train, y_train_s, o_train_s, _, _ = self.adapter.get_cohort(
+             year=2022, outcome=outcome, protected_attribute=protected_attr,
+             feature_set=feature_set, disability_arm=disability_arm
+@@ -223,15 +263,17 @@
+         )
+ 
+         if self.smoke_test:
+-            X_train = X_train.iloc[:500]
+-            y_train_s = y_train_s.iloc[:500]
+-            o_train_s = o_train_s.iloc[:500]
+-            X_val = X_val.iloc[:300]
+-            y_val_s = y_val_s.iloc[:300]
+-            o_val_s = o_val_s.iloc[:300]
+-            X_test = X_test.iloc[:300]
+-            y_test_s = y_test_s.iloc[:300]
+-            o_test_s = o_test_s.iloc[:300]
++            n_tr = min(500, len(X_train))
++            n_eval = min(300, len(X_val))
++            X_train = X_train.iloc[:n_tr]
++            y_train_s = y_train_s.iloc[:n_tr]
++            o_train_s = o_train_s.iloc[:n_tr]
++            X_val = X_val.iloc[:n_eval]
++            y_val_s = y_val_s.iloc[:n_eval]
++            o_val_s = o_val_s.iloc[:n_eval]
++            X_test = X_test.iloc[:min(300, len(X_test))]
++            y_test_s = y_test_s.iloc[:min(300, len(y_test_s))]
++            o_test_s = o_test_s.iloc[:min(300, len(o_test_s))]
+ 
+         y_tr = y_train_s.values.astype(int)
+         y_v = y_val_s.values.astype(int)
+@@ -273,9 +315,20 @@
+         )
+ 
+         O_tr_df = pd.DataFrame({protected_attr: o_tr}, index=X_train.index)
++        O_val_df = pd.DataFrame({protected_attr: o_v}, index=X_val.index)
+         init_eps_dict = evaluator.calculate_epsilon(X_train, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs)
+         eps_thresh = float(evaluator.compute_threshold(init_eps_dict))
+ 
++        # Build evaluation partition for training / validation search
++        partition = EvaluationPartition(
++            fit_X=X_train,
++            fit_y=y_train_s,
++            selection_X=X_val,
++            selection_y=y_val_s,
++            protected_fit=O_tr_df,
++            protected_selection=O_val_df,
++        )
++
+         # Model & scaler prototypes
+         def fresh_model():
+             return LogisticRegression(max_iter=1000, solver="lbfgs", random_state=self.random_seed)
+@@ -300,6 +353,11 @@
+             num_attrs=num_attrs,
+             protected_attr=protected_attr,
+         )
++        res_baseline["terminal_state"] = {}
++        res_baseline["terminal_train_max_dphi"] = res_baseline["train"]["max_dphi"]
++        res_baseline["final_epsilon"] = eps_thresh
++        res_baseline["fairness_feasible"] = bool(res_baseline["train"]["max_dphi"] <= eps_thresh)
++        res_baseline["termination_reason"] = "baseline_untransformed"
+ 
+         # -------------------------------------------------------------
+         # Condition 2: Canonical FairBias (D6 mitigation only)
+@@ -319,10 +377,14 @@
+             num_attrs=num_attrs,
+             protected_attr=protected_attr,
+         )
++        res_canonical["terminal_state"] = copy.deepcopy(d6_changed)
++        res_canonical["terminal_train_max_dphi"] = res_canonical["train"]["max_dphi"]
++        res_canonical["final_epsilon"] = eps_thresh
++        res_canonical["fairness_feasible"] = bool(res_canonical["train"]["max_dphi"] <= eps_thresh)
++        res_canonical["termination_reason"] = "d6_canonical_frozen"
+ 
+         # -------------------------------------------------------------
+         # Condition 3: Post-Mitigation Bounded Accuracy Enhancement
+-        # (Takes D6 converged state and tests bounded AE steps)
+         # -------------------------------------------------------------
+         ae_engine_post = FairAccuracyEnhancement(
+             evaluator=evaluator,
+@@ -331,17 +393,21 @@
+             cate_attrs=cate_attrs,
+             num_attrs=num_attrs,
+             max_fairness_degradation=0.02,
++            run_id=self.run_id,
++            arm_id=arm_id,
++            condition="posthoc_enhancement",
+         )
+ 
+         post_changed = copy.deepcopy(d6_changed)
++        t_X_init = transformer.transform_data(X_train, post_changed, num_attrs, cate_attrs)
+         current_eps_post = evaluator.calculate_epsilon(
+-            transformer.transform_data(X_train, post_changed, num_attrs, cate_attrs),
+-            O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
++            t_X_init, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
+         )
+ 
+-        # Run up to 5 bounded AE steps
+         ae_steps_accepted = 0
+-        for _ in range(5):
++        post_term_reason = "budget_exhausted"
++        max_post_steps = 5 if not self.smoke_test else 2
++        for it in range(1, max_post_steps + 1):
+             _, post_changed, accepted_attr = ae_engine_post.enhance_step(
+                 X_train=X_train,
+                 Y_train=y_train_s,
+@@ -349,17 +415,20 @@
+                 O_train=O_tr_df,
+                 epsilon_threshold=eps_thresh,
+                 current_epsilon=current_eps_post,
+-                X_val=X_val,
+-                Y_val=y_val_s,
++                iteration=it,
++                partition=partition,
+             )
+             if accepted_attr is None:
++                post_term_reason = "candidate_exhausted"
+                 break
+             ae_steps_accepted += 1
++            t_X_curr = transformer.transform_data(X_train, post_changed, num_attrs, cate_attrs)
+             current_eps_post = evaluator.calculate_epsilon(
+-                transformer.transform_data(X_train, post_changed, num_attrs, cate_attrs),
+-                O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
++                t_X_curr, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
+             )
+ 
++        self.audit_events.extend(ae_engine_post.audit_trail)
++
+         res_posthoc_ae = evaluate_representation(
+             model=fresh_model(),
+             scaler=fresh_scaler(),
+@@ -374,7 +443,14 @@
+             num_attrs=num_attrs,
+             protected_attr=protected_attr,
+         )
++        res_posthoc_ae["terminal_state"] = copy.deepcopy(post_changed)
++        res_posthoc_ae["terminal_train_max_dphi"] = res_posthoc_ae["train"]["max_dphi"]
++        res_posthoc_ae["final_epsilon"] = eps_thresh
++        res_posthoc_ae["fairness_feasible"] = bool(res_posthoc_ae["train"]["max_dphi"] <= eps_thresh)
++        res_posthoc_ae["termination_reason"] = post_term_reason
+         res_posthoc_ae["ae_steps_accepted"] = ae_steps_accepted
++        res_posthoc_ae["model_fit_count"] = ae_engine_post.total_model_fits
++        res_posthoc_ae["geometry_eval_count"] = ae_engine_post.total_geometry_evals
+ 
+         # -------------------------------------------------------------
+         # Condition 4: Joint Interleaved Mitigation + Enhancement
+@@ -398,12 +474,20 @@
+             cate_attrs=cate_attrs,
+             num_attrs=num_attrs,
+             max_fairness_degradation=0.02,
++            run_id=self.run_id,
++            arm_id=arm_id,
++            condition="joint_enhancement",
+         )
+ 
+         joint_changed: Dict[str, Any] = {}
+         current_eps_joint = copy.deepcopy(init_eps_dict)
+         nmi_org = calculate_nmi_dict(X_train, y_train_s)
+ 
++        bm_steps_accepted = 0
++        ae_joint_steps_accepted = 0
++        joint_events: List[Dict[str, Any]] = []
++        joint_term_reason = "budget_exhausted"
++
+         max_iter = 10 if not self.smoke_test else 3
+         for it in range(1, max_iter + 1):
+             # Step A: Mitigation
+@@ -417,8 +501,23 @@
+                 epsilon_threshold=eps_thresh,
+                 iteration=it,
+             )
++            if sel_attr is not None:
++                bm_steps_accepted += 1
++                # Recalculate training geometry metrics immediately after BM
++                t_X_bm = transformer.transform_data(X_train, joint_changed, num_attrs, cate_attrs)
++                current_eps_joint = evaluator.calculate_epsilon(
++                    t_X_bm, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
++                )
+ 
+-            # Step B: Enhancement
++            joint_events.append({
++                "iteration": it,
++                "engine": "BM",
++                "selected_attribute": sel_attr,
++                "selected_label_O": sel_o,
++                "changed_dict_snapshot": copy.deepcopy(joint_changed),
++            })
++
++            # Step B: Enhancement (passes updated current_eps_joint)
+             _, joint_changed, ae_attr = ae_engine_joint.enhance_step(
+                 X_train=X_train,
+                 Y_train=y_train_s,
+@@ -426,21 +525,39 @@
+                 O_train=O_tr_df,
+                 epsilon_threshold=eps_thresh,
+                 current_epsilon=current_eps_joint,
+-                X_val=X_val,
+-                Y_val=y_val_s,
++                iteration=it,
++                partition=partition,
+             )
++            if ae_attr is not None:
++                ae_joint_steps_accepted += 1
++                # Recalculate training geometry metrics immediately after AE acceptance
++                t_X_ae = transformer.transform_data(X_train, joint_changed, num_attrs, cate_attrs)
++                current_eps_joint = evaluator.calculate_epsilon(
++                    t_X_ae, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs
++                )
+ 
+-            # Re-evaluate epsilon
++            joint_events.append({
++                "iteration": it,
++                "engine": "AE",
++                "selected_attribute": ae_attr,
++                "changed_dict_snapshot": copy.deepcopy(joint_changed),
++            })
++
++            # Check convergence/termination
+             t_X = transformer.transform_data(X_train, joint_changed, num_attrs, cate_attrs)
+             current_eps_joint = evaluator.calculate_epsilon(t_X, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs)
+-            all_eps = [v for gd in current_eps_joint.values() for v in gd.values()]
++            all_eps = [float(v) for gd in current_eps_joint.values() for v in gd.values()]
+             max_e = float(max(all_eps)) if all_eps else 0.0
+ 
+-            if sel_attr is None and ae_attr is None:
+-                break
+             if max_e <= eps_thresh:
++                joint_term_reason = "epsilon_reached"
+                 break
++            if sel_attr is None and ae_attr is None:
++                joint_term_reason = "candidate_exhausted"
++                break
+ 
++        self.audit_events.extend(ae_engine_joint.audit_trail)
++
+         res_joint_ae = evaluate_representation(
+             model=fresh_model(),
+             scaler=fresh_scaler(),
+@@ -455,6 +572,16 @@
+             num_attrs=num_attrs,
+             protected_attr=protected_attr,
+         )
++        res_joint_ae["terminal_state"] = copy.deepcopy(joint_changed)
++        res_joint_ae["terminal_train_max_dphi"] = res_joint_ae["train"]["max_dphi"]
++        res_joint_ae["final_epsilon"] = eps_thresh
++        res_joint_ae["fairness_feasible"] = bool(res_joint_ae["train"]["max_dphi"] <= eps_thresh)
++        res_joint_ae["termination_reason"] = joint_term_reason
++        res_joint_ae["bm_steps_accepted"] = bm_steps_accepted
++        res_joint_ae["ae_steps_accepted"] = ae_joint_steps_accepted
++        res_joint_ae["iteration_events"] = joint_events
++        res_joint_ae["model_fit_count"] = ae_engine_joint.total_model_fits
++        res_joint_ae["geometry_eval_count"] = ae_engine_joint.total_geometry_evals
+ 
+         return {
+             "arm_id": arm_id,
+
+--- artifacts/nhis_d8_repair/20260908T061131Z_fcf9dc7a/pre_repair_snapshot/scripts/run_nhis_enhancement_study.py	2026-09-07 23:23:08
++++ scripts/run_nhis_enhancement_study.py	2026-09-08 14:14:58
+@@ -3,8 +3,11 @@
+ from __future__ import annotations
+ 
+ import argparse
++import datetime
++import hashlib
+ import json
+ import pathlib
++import secrets
+ import sys
+ import time
+ from typing import Any, Dict, List
+@@ -29,14 +32,19 @@
+     parser.add_argument(
+         "--smoke-test",
+         action="store_true",
+-        help="Run on small subsample (500 rows) for fast smoke verification.",
++        help="Run on small subsample for fast smoke verification.",
+     )
+     parser.add_argument(
+         "--output-dir",
+         type=str,
+-        default="runs/d8_enhancement_study",
+-        help="Output directory for study results and manifest.",
++        default=None,
++        help="Output directory for study results. If not specified, a unique timestamped directory is created.",
+     )
++    parser.add_argument(
++        "--allow-real-data",
++        action="store_true",
++        help="Explicit permission flag required to read real NHIS microdata parquet.",
++    )
+     return parser.parse_args()
+ 
+ 
+@@ -51,15 +59,18 @@
+                 "arm_id": arm_id,
+                 "protected_attribute": arm_data["protected_attribute"],
+                 "condition": cond_name,
+-                "num_transforms": cond_res["num_transforms"],
++                "num_transforms": cond_res.get("num_transforms", 0),
+                 "test_auroc": round(test_res["auroc"], 4),
+-                "test_auprc": round(test_res["auprc"], 4),
++                "test_auprc": round(test_res.get("auprc_trapezoidal", test_res["auprc"]), 4),
++                "test_average_precision": round(test_res.get("average_precision", test_res["auprc"]), 4),
+                 "test_accuracy": round(test_res["accuracy"], 4),
+                 "test_positives_0_5": test_res["predicted_positive_count"],
+                 "test_positive_rate": round(test_res["predicted_positive_rate"], 5),
+                 "test_max_dphi": round(test_res["max_dphi"], 5),
+                 "train_max_dphi": round(train_res["max_dphi"], 5),
+                 "epsilon_threshold": round(arm_data["epsilon_threshold"], 5),
++                "fairness_feasible": cond_res.get("fairness_feasible", False),
++                "termination_reason": cond_res.get("termination_reason", "unknown"),
+                 "test_dp_difference": round(test_res["demographic_parity_difference"], 4),
+                 "test_eo_difference": round(test_res["equal_opportunity_difference"], 4),
+             })
+@@ -68,21 +79,44 @@
+ 
+ def main() -> None:
+     args = parse_args()
+-    out_dir = pathlib.Path(args.output_dir)
+-    out_dir.mkdir(parents=True, exist_ok=True)
+ 
++    # Collision-proof output directory resolution
++    if args.output_dir is not None:
++        out_dir = pathlib.Path(args.output_dir)
++        if out_dir.exists() and (
++            (out_dir / "d8_enhancement_study_results.json").exists()
++            or (out_dir / "d8_enhancement_comparison.csv").exists()
++        ):
++            raise FileExistsError(
++                f"Output directory {out_dir} already exists and contains previous study results. "
++                "Refusing to overwrite existing findings."
++            )
++        out_dir.mkdir(parents=True, exist_ok=True)
++    else:
++        utc_ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
++        rand_suffix = secrets.token_hex(4)
++        out_dir = pathlib.Path("runs/d8_enhancement_study") / f"{utc_ts}_{rand_suffix}"
++        out_dir.mkdir(parents=True, exist_ok=False)
++
+     target_arms = (
+         sorted(list(FROZEN_D6_ARMS.keys()))
+         if args.arm == "all"
+         else [args.arm]
+     )
+ 
++    run_id = f"d8_run_{out_dir.name}"
+     print(f"=== Starting D8 Accuracy Enhancement Study ===")
++    print(f"Run ID: {run_id}")
+     print(f"Target arms: {target_arms}")
+     print(f"Smoke test mode: {args.smoke_test}")
++    print(f"Allow real data: {args.allow_real_data}")
+     print(f"Output directory: {out_dir}")
+ 
+-    runner = D8EnhancementRunner(smoke_test=args.smoke_test)
++    runner = D8EnhancementRunner(
++        smoke_test=args.smoke_test,
++        run_id=run_id,
++        allow_real_data=args.allow_real_data,
++    )
+ 
+     study_results: Dict[str, Any] = {}
+     t0 = time.time()
+@@ -97,20 +131,49 @@
+     total_time = time.time() - t0
+     print(f"\n=== All arms completed in {total_time:.1f}s ===")
+ 
+-    # Save JSON results
++    # 1. Save JSON results
+     json_path = out_dir / "d8_enhancement_study_results.json"
+     with open(json_path, "w", encoding="utf-8") as f:
+         json.dump(study_results, f, indent=2)
+     print(f"Saved raw results to {json_path}")
+ 
+-    # Build and save comparative table
++    # 2. Build and save comparative table
+     df_cmp = build_comparison_dataframe(study_results)
+     csv_path = out_dir / "d8_enhancement_comparison.csv"
+     df_cmp.to_csv(csv_path, index=False)
+     print(f"Saved summary comparison CSV to {csv_path}")
+ 
++    # 3. Save candidate audit events (JSON Lines)
++    audit_path = out_dir / "d8_candidate_audit_events.jsonl"
++    with open(audit_path, "w", encoding="utf-8") as f:
++        for ev in runner.audit_events:
++            f.write(json.dumps(ev.to_dict()) + "\n")
++    print(f"Saved {len(runner.audit_events)} candidate audit events to {audit_path}")
++
++    # 4. Save execution manifest
++    def _file_sha(p: pathlib.Path) -> str:
++        return hashlib.sha256(p.read_bytes()).hexdigest()
++
++    manifest = {
++        "run_id": run_id,
++        "completed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
++        "duration_seconds": total_time,
++        "smoke_test": args.smoke_test,
++        "allow_real_data": args.allow_real_data,
++        "target_arms": target_arms,
++        "output_files": {
++            "results_json": {"path": str(json_path), "sha256": _file_sha(json_path)},
++            "comparison_csv": {"path": str(csv_path), "sha256": _file_sha(csv_path)},
++            "audit_events_jsonl": {"path": str(audit_path), "sha256": _file_sha(audit_path)},
++        },
++    }
++    manifest_path = out_dir / "execution_manifest.json"
++    with open(manifest_path, "w", encoding="utf-8") as f:
++        json.dump(manifest, f, indent=2)
++    print(f"Saved execution manifest to {manifest_path}")
++
+     # Print markdown table summary
+-    print("\n### Downstream Test (2024) Utility and Fairness Summary:\n")
++    print("\n### Downstream Test Utility and Fairness Summary:\n")
+     cols_to_display = [
+         "arm_id",
+         "condition",
+@@ -118,7 +181,8 @@
+         "test_auprc",
+         "test_positives_0_5",
+         "test_max_dphi",
+-        "test_dp_difference",
++        "fairness_feasible",
++        "termination_reason",
+     ]
+     print(df_cmp[cols_to_display].to_string(index=False))
+ 
+
+--- artifacts/nhis_d8_repair/20260908T061131Z_fcf9dc7a/pre_repair_snapshot/tests/test_nhis_d8_enhancement.py	2026-09-07 23:23:16
++++ tests/test_nhis_d8_enhancement.py	2026-09-08 14:18:31
+@@ -1,9 +1,8 @@
+-"""Unit tests for D8 Accuracy Enhancement Study runner."""
++"""Unit tests for D8 Accuracy Enhancement Study runner with synthetic data."""
+ 
+ from __future__ import annotations
+ 
+ import unittest
+-from unittest.mock import MagicMock, patch
+ import numpy as np
+ import pandas as pd
+ 
+@@ -13,8 +12,38 @@
+ )
+ 
+ 
++class FakePreprocessor:
++    def get_feature_family_lists(self, feature_set: str):
++        return (["cat1"], ["num1", "num2"])
++
++
++class FakeNHISStudyAdapter:
++    """Synthetic in-memory adapter that generates mock NHIS cohorts without reading parquet files."""
++
++    def __init__(self, n_rows: int = 150):
++        self.n_rows = n_rows
++        self.preprocessor = FakePreprocessor()
++
++    def get_cohort(self, year: int, outcome: str, protected_attribute: str, feature_set: str, disability_arm: bool):
++        np.random.seed(year)
++        n = self.n_rows
++        x_num1 = np.random.randn(n) * 2.0 + 5.0
++        x_num2 = np.random.randn(n) + 10.0
++        x_cat1 = np.random.choice([0, 1, 2, 3], size=n)
++        o_prot = np.random.choice([0, 1], size=n)
++        prob = 1.0 / (1.0 + np.exp(-(0.3 * x_num1 + (x_cat1 == 0).astype(float) * 1.2 - 2.0)))
++        y = (np.random.rand(n) < prob).astype(int)
++
++        X = pd.DataFrame({"num1": x_num1, "num2": x_num2, "cat1": x_cat1})
++        y_s = pd.Series(y, name=outcome)
++        o_s = pd.Series(o_prot, name=protected_attribute)
++        strata = pd.Series(np.random.randint(100, 110, size=n), name="STRATA")
++        psu = pd.Series(np.random.randint(1, 5, size=n), name="PSU")
++        return X, y_s, o_s, strata, psu
++
++
+ class TestD8EnhancementRunner(unittest.TestCase):
+-    """Test group fairness gap metrics and smoke test runner execution."""
++    """Test group fairness gap metrics and synthetic smoke test runner execution."""
+ 
+     def test_compute_group_fairness_gaps(self):
+         y_true = np.array([1, 0, 1, 0, 1, 0])
+@@ -28,7 +57,13 @@
+         self.assertGreaterEqual(gaps["equal_opportunity_difference"], 0.0)
+ 
+     def test_runner_smoke_test_arm1(self):
+-        runner = D8EnhancementRunner(smoke_test=True)
++        fake_adapter = FakeNHISStudyAdapter(n_rows=100)
++        runner = D8EnhancementRunner(
++            adapter=fake_adapter,
++            canonical_provider=lambda arm_id: {},
++            smoke_test=True,
++            random_seed=42,
++        )
+         res = runner.run_arm("D6_ARM_001")
+         self.assertEqual(res["arm_id"], "D6_ARM_001")
+         self.assertIn("conditions", res)

@@ -1,0 +1,70 @@
+{
+  "review_dir": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_codex_review/20260908T062327Z_ef10b683",
+  "protected_changed_since_precheck": [],
+  "shared_or_old_results_changed": [],
+  "worker_output_hash_mismatches": [],
+  "inputs": [
+    {
+      "path": "src/fairbias/enhancement.py",
+      "bytes": 36897,
+      "mtime_ns": 1788848298739676059,
+      "sha256": "6efd3ec9303b9620b41de350ad50998058db68ed4f35fb28d6953d443ff81b77"
+    },
+    {
+      "path": "src/fairbias/pipeline.py",
+      "bytes": 36364,
+      "mtime_ns": 1788848051786621632,
+      "sha256": "71082b87094d4b633044b597c361731f36e0b53b871cc4f712f39efed675a240"
+    },
+    {
+      "path": "src/fairbias/enhancement_contracts.py",
+      "bytes": 12339,
+      "mtime_ns": 1788848167609190378,
+      "sha256": "e24a2eba67102557805ca109351d02772d9495a71e40718aa4b97d23f35fa5d7"
+    },
+    {
+      "path": "src/fairbias/enhancement_state.py",
+      "bytes": 7348,
+      "mtime_ns": 1788847992641334463,
+      "sha256": "9d00d4e240763a436f844257a6f298b3af5b6f7521bf1791304928bf3744a151"
+    },
+    {
+      "path": "src/nhis_fairbias/d8_enhancement_runner.py",
+      "bytes": 24944,
+      "mtime_ns": 1788848242168300535,
+      "sha256": "bb4a410ba35f18debad6db0a6040c2bfa6f3379ecc0a6cf93f7f0529bd7e2f27"
+    },
+    {
+      "path": "scripts/run_nhis_enhancement_study.py",
+      "bytes": 7226,
+      "mtime_ns": 1788848098895847312,
+      "sha256": "af82631e4a7f6a4ac6a58e21405c9894134ad563a7bf242fbe7cc56b63bfbd1a"
+    },
+    {
+      "path": "tests/test_fairbias_enhancement.py",
+      "bytes": 5758,
+      "mtime_ns": 1788794259036431433,
+      "sha256": "d33ee31734d6242c6eea79ddb96af105773a6975d0a0fae9ff3f0efa90dac9fc"
+    },
+    {
+      "path": "tests/test_nhis_d8_enhancement.py",
+      "bytes": 2917,
+      "mtime_ns": 1788848311649044559,
+      "sha256": "02dd848f04b141f54853165bd689747e3dcc589ccd363b3d9715d57e05707bc2"
+    },
+    {
+      "path": "tests/test_fairbias_enhancement_contracts.py",
+      "bytes": 17010,
+      "mtime_ns": 1788848214281991757,
+      "sha256": "a19e90490a2c39871c6ee0df76f7da0a41b8aad6a4ccf1a7a50ddd79c0e5649f"
+    },
+    {
+      "path": "tests/test_nhis_d8_synthetic_contracts.py",
+      "bytes": 5549,
+      "mtime_ns": 1788848231215531762,
+      "sha256": "8a4fa53d6ff9ed2cc08a88a4028791e2247d36d5732f1f404dc29f448c75aa2f"
+    }
+  ],
+  "head": "b595e59b67d8781a3dca41199487909fdb9ed42d",
+  "note": "Protected source/data files fingerprinted as opaque bytes only; no microdata table loaded. Baseline .gitignore drift remains recorded."
+}

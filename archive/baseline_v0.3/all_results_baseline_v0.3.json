@@ -1,0 +1,525 @@
+{
+  "config_parameters": {
+    "DATASET": {
+      "path": "data_COMPAS.csv",
+      "label_Y": "two_year_recid",
+      "label_O": [
+        "sex"
+      ]
+    },
+    "DATASET_INFO": {
+      "credit": {
+        "data": "data_Credit_Card.csv"
+      },
+      "compas": {
+        "data": "data_COMPAS.csv"
+      }
+    },
+    "PARAMS_CAT_FROM_NUM_BINS": 20,
+    "PARAMS_CAT_FROM_NUM_RATIO": 0.1,
+    "PARAMS_EVAL_CAT": "cat-a",
+    "PARAMS_EVAL_DIST_METRIC": "euclidean",
+    "PARAMS_EVAL_H_ORDER": "default",
+    "PARAMS_EVAL_MAX_COMPONENTS": 15,
+    "PARAMS_EVAL_METRIC_ACCURACY": [
+      "ACC",
+      "F1",
+      "Recall",
+      "Precision"
+    ],
+    "PARAMS_EVAL_METRIC_FAIRNESS": [
+      "BNC",
+      "BPC",
+      "CUAE",
+      "EOpp",
+      "EO",
+      "FDRP",
+      "FORP",
+      "FNRB",
+      "FPRB",
+      "NPVP",
+      "OAE",
+      "PPVP",
+      "SP"
+    ],
+    "PARAMS_EVAL_NORM": "min-max",
+    "PARAMS_EVAL_NUM": "num-a",
+    "PARAMS_EVAL_SCALE": "mean",
+    "PARAMS_EVAL_SLOPE_THRESHOLD": 0.01,
+    "PARAMS_EVAL_SUM": "d1B",
+    "PARAMS_MAIN_AE_IMPORTANCE_MEASURE": "a1",
+    "PARAMS_MAIN_AE_REBIN_METHOD": "r1",
+    "PARAMS_MAIN_ALPHA_O": 0.8,
+    "PARAMS_MAIN_BM_REBIN_METHOD": "r1",
+    "PARAMS_MAIN_CLASSIFIER": "LR",
+    "PARAMS_MAIN_MAX_ITERATION": 5,
+    "PARAMS_MAIN_STEP": "d3B",
+    "PARAMS_MAIN_THRESHOLD_ACCURACY": 0.01,
+    "PARAMS_MAIN_THRESHOLD_EPSILON": 0.5,
+    "PARAMS_MAIN_THRESHOLD_PHI": 100,
+    "PARAMS_MAIN_THRESHOLD_PHI_ADAPT": "None",
+    "PARAMS_MAIN_TRAINING_RATE": 0.5,
+    "PARAMS_NUM_TO_CAT_CUTS_O": 2,
+    "PARAMS_NUM_TO_CAT_CUTS_Y": 2,
+    "PARAMS_NUM_TO_CAT_METHOD_O": "median",
+    "PARAMS_NUM_TO_CAT_METHOD_Y": "median",
+    "PARAMS_TRANSFORM": "poly",
+    "PARAMS_TRANSFORM_LOG_EPSILON": 1e-05,
+    "PARAMS_TRANSFORM_MULTI": "t1",
+    "PARAMS_TRANSFORM_N_BINS": 10,
+    "PARAMS_TRANSFORM_STREAM": "d4A",
+    "PARAMS_TRANSFORM_STREAM_CONFIG": {
+      "p": 102,
+      "q": 173,
+      "emin": 0.5,
+      "emax": 2,
+      "order": 0,
+      "length": 10
+    },
+    "PARAMS_TRANSFORM_X_MAX": 1000000000.0,
+    "SEED": 0,
+    "USE_ACCURACY_ENHANCEMENT": false,
+    "USE_BIAS_MITIGATION": true,
+    "VERBOSE": true
+  },
+  "initial_metrics": {
+    "ACC": 0.7510799136069114,
+    "F1": 0.7466169453394549,
+    "Recall": 0.7510799136069114,
+    "Precision": 0.7556296365855949,
+    "BNC": {
+      "sex": 0.03353538590516614
+    },
+    "BPC": {
+      "sex": 0.03353538590516614
+    },
+    "CUAE": {
+      "sex": 0.09138230190861774
+    },
+    "EOpp": {
+      "sex": 0.06590850348927368
+    },
+    "EO": {
+      "sex": 0.06590850348927371
+    },
+    "FDRP": {
+      "sex": 0.09138230190861768
+    },
+    "FORP": {
+      "sex": 0.09138230190861768
+    },
+    "FNRB": {
+      "sex": 0.06590850348927371
+    },
+    "FPRB": {
+      "sex": 0.06590850348927371
+    },
+    "NPVP": {
+      "sex": 0.09138230190861774
+    },
+    "OAE": {
+      "sex": 0.05607886736390555
+    },
+    "PPVP": {
+      "sex": 0.09138230190861774
+    },
+    "SP": {
+      "sex": 0.11898779011993427
+    }
+  },
+  "initial_epsilon": {
+    "sex": {
+      "c_charge_degree": 2.3632396602372703,
+      "score_text": 0.8124363303144019,
+      "priors_count": 0.6733266768286899,
+      "race": 0.2930401314111728,
+      "age_cat": 0.04764411097850377,
+      "juv_other_count": 0.04246522751158844,
+      "days_b_screening_arrest": 0.019548664295249797,
+      "juv_misd_count": 0.01694030115236755,
+      "juv_fel_count": 0.014551020818055116,
+      "age": 0.004687760461654908,
+      "compas_screening_date": 0.0003636869010948371,
+      "out_custody": 0.00020684482133177164,
+      "in_custody": 0.0001943109297837494,
+      "c_days_from_compas": 8.17339353208574e-05,
+      "dob": 4.9000462406728507e-05,
+      "c_jail_out": 3.697542774697896e-05,
+      "c_jail_in": 3.6888027693502835e-05,
+      "type_of_assessment": 8.645271476928998e-15,
+      "origin": 0.0
+    }
+  },
+  "iterations": [
+    {
+      "iteration": 1,
+      "metrics": {
+        "ACC": 0.7510799136069114,
+        "F1": 0.7460416624188787,
+        "Recall": 0.7510799136069114,
+        "Precision": 0.7568795284425479,
+        "BNC": {
+          "sex": 0.031614241054963355
+        },
+        "BPC": {
+          "sex": 0.031614241054963355
+        },
+        "CUAE": {
+          "sex": 0.08036956005562901
+        },
+        "EOpp": {
+          "sex": 0.06292387047473502
+        },
+        "EO": {
+          "sex": 0.06292387047473502
+        },
+        "FDRP": {
+          "sex": 0.08036956005562904
+        },
+        "FORP": {
+          "sex": 0.08036956005562904
+        },
+        "FNRB": {
+          "sex": 0.06292387047473491
+        },
+        "FPRB": {
+          "sex": 0.06292387047473491
+        },
+        "NPVP": {
+          "sex": 0.08036956005562901
+        },
+        "OAE": {
+          "sex": 0.037857515323842184
+        },
+        "PPVP": {
+          "sex": 0.08036956005562901
+        },
+        "SP": {
+          "sex": 0.11340331959188893
+        }
+      },
+      "changed_dict": {
+        "c_charge_degree": {
+          "0": 1
+        }
+      },
+      "selected_attributes": {
+        "iteration": 1,
+        "selected_label_O": "sex",
+        "selected_attribute": "c_charge_degree"
+      }
+    },
+    {
+      "iteration": 2,
+      "metrics": {
+        "ACC": 0.7548596112311015,
+        "F1": 0.7498561274043893,
+        "Recall": 0.7548596112311015,
+        "Precision": 0.7610005432694219,
+        "BNC": {
+          "sex": 0.023387675949189668
+        },
+        "BPC": {
+          "sex": 0.023387675949189668
+        },
+        "CUAE": {
+          "sex": 0.09294190273681313
+        },
+        "EOpp": {
+          "sex": 0.04042388214008785
+        },
+        "EO": {
+          "sex": 0.04042388214008788
+        },
+        "FDRP": {
+          "sex": 0.09294190273681324
+        },
+        "FORP": {
+          "sex": 0.09294190273681324
+        },
+        "FNRB": {
+          "sex": 0.04042388214008788
+        },
+        "FPRB": {
+          "sex": 0.04042388214008788
+        },
+        "NPVP": {
+          "sex": 0.09294190273681313
+        },
+        "OAE": {
+          "sex": 0.04782022648786388
+        },
+        "PPVP": {
+          "sex": 0.09294190273681313
+        },
+        "SP": {
+          "sex": 0.09816704217869127
+        }
+      },
+      "changed_dict": {
+        "c_charge_degree": {
+          "0": 1
+        },
+        "score_text": {
+          "1": 0
+        }
+      },
+      "selected_attributes": {
+        "iteration": 2,
+        "selected_label_O": "sex",
+        "selected_attribute": "score_text"
+      }
+    },
+    {
+      "iteration": 3,
+      "metrics": {
+        "ACC": 0.7532397408207343,
+        "F1": 0.7481610120381503,
+        "Recall": 0.7532397408207343,
+        "Precision": 0.7593724357609547,
+        "BNC": {
+          "sex": 0.023174916945149615
+        },
+        "BPC": {
+          "sex": 0.023174916945149615
+        },
+        "CUAE": {
+          "sex": 0.0917890435448857
+        },
+        "EOpp": {
+          "sex": 0.04750581545619015
+        },
+        "EO": {
+          "sex": 0.04750581545619023
+        },
+        "FDRP": {
+          "sex": 0.0917890435448857
+        },
+        "FORP": {
+          "sex": 0.0917890435448857
+        },
+        "FNRB": {
+          "sex": 0.04750581545619023
+        },
+        "FPRB": {
+          "sex": 0.04750581545619023
+        },
+        "NPVP": {
+          "sex": 0.0917890435448857
+        },
+        "OAE": {
+          "sex": 0.04979781383130488
+        },
+        "PPVP": {
+          "sex": 0.0917890435448857
+        },
+        "SP": {
+          "sex": 0.10479638721356965
+        }
+      },
+      "changed_dict": {
+        "c_charge_degree": {
+          "0": 1
+        },
+        "score_text": {
+          "1": 0
+        },
+        "race": "dropped"
+      },
+      "selected_attributes": {
+        "iteration": 3,
+        "selected_label_O": "sex",
+        "selected_attribute": "race"
+      }
+    },
+    {
+      "iteration": 4,
+      "metrics": {
+        "ACC": 0.7473002159827213,
+        "F1": 0.7421424397032033,
+        "Recall": 0.7473002159827213,
+        "Precision": 0.7529487438550928,
+        "BNC": {
+          "sex": 0.027857740469238945
+        },
+        "BPC": {
+          "sex": 0.027857740469238945
+        },
+        "CUAE": {
+          "sex": 0.08540154308084069
+        },
+        "EOpp": {
+          "sex": 0.057383704269748814
+        },
+        "EO": {
+          "sex": 0.057383704269748814
+        },
+        "FDRP": {
+          "sex": 0.08540154308084075
+        },
+        "FORP": {
+          "sex": 0.08540154308084075
+        },
+        "FNRB": {
+          "sex": 0.05738370426974876
+        },
+        "FPRB": {
+          "sex": 0.05738370426974876
+        },
+        "NPVP": {
+          "sex": 0.08540154308084069
+        },
+        "OAE": {
+          "sex": 0.04611615619988385
+        },
+        "PPVP": {
+          "sex": 0.08540154308084069
+        },
+        "SP": {
+          "sex": 0.11638839421875463
+        }
+      },
+      "changed_dict": {
+        "c_charge_degree": {
+          "0": 1
+        },
+        "score_text": {
+          "1": 0,
+          "0": 2
+        },
+        "race": "dropped"
+      },
+      "selected_attributes": {
+        "iteration": 4,
+        "selected_label_O": "sex",
+        "selected_attribute": "score_text"
+      }
+    },
+    {
+      "iteration": 5,
+      "metrics": {
+        "ACC": 0.7505399568034558,
+        "F1": 0.7453628450611339,
+        "Recall": 0.7505399568034558,
+        "Precision": 0.7565914316256978,
+        "BNC": {
+          "sex": 0.027137014327251574
+        },
+        "BPC": {
+          "sex": 0.027137014327251574
+        },
+        "CUAE": {
+          "sex": 0.08381512605042019
+        },
+        "EOpp": {
+          "sex": 0.06015378737224186
+        },
+        "EO": {
+          "sex": 0.06015378737224186
+        },
+        "FDRP": {
+          "sex": 0.08381512605042016
+        },
+        "FORP": {
+          "sex": 0.08381512605042016
+        },
+        "FNRB": {
+          "sex": 0.06015378737224186
+        },
+        "FPRB": {
+          "sex": 0.06015378737224186
+        },
+        "NPVP": {
+          "sex": 0.08381512605042019
+        },
+        "OAE": {
+          "sex": 0.04580525192101459
+        },
+        "PPVP": {
+          "sex": 0.08381512605042019
+        },
+        "SP": {
+          "sex": 0.11871427306447335
+        }
+      },
+      "changed_dict": {
+        "c_charge_degree": {
+          "0": 1
+        },
+        "score_text": {
+          "1": 0,
+          "0": 2
+        },
+        "race": "dropped",
+        "age_cat": {
+          "0": 1
+        }
+      },
+      "selected_attributes": {
+        "iteration": 5,
+        "selected_label_O": "sex",
+        "selected_attribute": "age_cat"
+      }
+    }
+  ],
+  "final_results": {
+    "metrics": {
+      "ACC": 0.7489200863930886,
+      "F1": 0.744889023834513,
+      "Recall": 0.7489200863930886,
+      "Precision": 0.7524102982322681,
+      "BNC": {
+        "sex": 0.030419716794302998
+      },
+      "BPC": {
+        "sex": 0.030419716794302998
+      },
+      "CUAE": {
+        "sex": 0.08745522243201753
+      },
+      "EOpp": {
+        "sex": 0.058499181528387956
+      },
+      "EO": {
+        "sex": 0.05849918152838804
+      },
+      "FDRP": {
+        "sex": 0.08745522243201753
+      },
+      "FORP": {
+        "sex": 0.08745522243201753
+      },
+      "FNRB": {
+        "sex": 0.05849918152838804
+      },
+      "FPRB": {
+        "sex": 0.05849918152838804
+      },
+      "NPVP": {
+        "sex": 0.08745522243201753
+      },
+      "OAE": {
+        "sex": 0.04778283926445559
+      },
+      "PPVP": {
+        "sex": 0.08745522243201753
+      },
+      "SP": {
+        "sex": 0.11596532826966027
+      }
+    },
+    "changed_dict": {
+      "c_charge_degree": {
+        "0": 1
+      },
+      "score_text": {
+        "1": 0,
+        "0": 2
+      },
+      "race": "dropped",
+      "age_cat": {
+        "0": 1
+      }
+    }
+  }
+}

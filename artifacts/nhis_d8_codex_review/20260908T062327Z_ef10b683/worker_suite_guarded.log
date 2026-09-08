@@ -1,0 +1,73 @@
+test_fairness_degradation_bound_rejection (tests.test_fairbias_enhancement.TestFairAccuracyEnhancement.test_fairness_degradation_bound_rejection) ... ok
+test_monotonic_exponent_tracking_no_oscillation (tests.test_fairbias_enhancement.TestFairAccuracyEnhancement.test_monotonic_exponent_tracking_no_oscillation) ... ok
+test_ranking_identifies_top_feature (tests.test_fairbias_enhancement.TestFairAccuracyEnhancement.test_ranking_identifies_top_feature) ... ok
+test_successful_enhancement_improves_utility (tests.test_fairbias_enhancement.TestFairAccuracyEnhancement.test_successful_enhancement_improves_utility) ... ok
+test_utility_rejection_when_score_drops (tests.test_fairbias_enhancement.TestFairAccuracyEnhancement.test_utility_rejection_when_score_drops) ... ok
+test_compute_group_fairness_gaps (tests.test_nhis_d8_enhancement.TestD8EnhancementRunner.test_compute_group_fairness_gaps) ... ok
+test_runner_smoke_test_arm1 (tests.test_nhis_d8_enhancement.TestD8EnhancementRunner.test_runner_smoke_test_arm1) ... ok
+test_all_features_dropped_returns_explicit_invalid_status (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_all_features_dropped_returns_explicit_invalid_status) ... ok
+test_audit_event_logged_for_every_candidate (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_audit_event_logged_for_every_candidate) ... ok
+test_backward_compatibility_ae_disabled (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_backward_compatibility_ae_disabled) ... ERROR
+test_category_mapping_conflicting_keys_rejected (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_category_mapping_conflicting_keys_rejected) ... ok
+test_category_mapping_json_round_trip (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_category_mapping_json_round_trip) ... ok
+test_category_mapping_preserves_string_categories (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_category_mapping_preserves_string_categories) ... ok
+test_category_mapping_transitive_composition (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_category_mapping_transitive_composition) ... ok
+test_column_dropped_allows_evaluation_of_remaining_features (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_column_dropped_allows_evaluation_of_remaining_features) ... ok
+test_cycle_detection (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_cycle_detection) ... ok
+test_explicit_error_on_non_finite_output (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_explicit_error_on_non_finite_output) ... ok
+test_explicit_error_on_single_class_selection (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_explicit_error_on_single_class_selection) ... ok
+test_fairness_guard_boundary_and_rejection (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_fairness_guard_boundary_and_rejection) ... ok
+test_index_contract_validation (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_index_contract_validation) ... ok
+test_partition_contract_identical_transforms_and_scaler_isolation (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_partition_contract_identical_transforms_and_scaler_isolation) ... ok
+test_selection_score_matches_independent_oracle (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_selection_score_matches_independent_oracle) ... ok
+test_state_cache_reevaluates_when_other_feature_changes (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_state_cache_reevaluates_when_other_feature_changes) ... ok
+test_transactional_safety_no_mutation_on_rejection (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_transactional_safety_no_mutation_on_rejection) ... ok
+test_candidate_audit_events_logged (tests.test_nhis_d8_synthetic_contracts.TestNHISD8SyntheticContracts.test_candidate_audit_events_logged) ... ok
+test_output_collision_prevention (tests.test_nhis_d8_synthetic_contracts.TestNHISD8SyntheticContracts.test_output_collision_prevention) ... ok
+test_sentinel_raises_error_if_real_parquet_accessed_without_permission (tests.test_nhis_d8_synthetic_contracts.TestNHISD8SyntheticContracts.test_sentinel_raises_error_if_real_parquet_accessed_without_permission) ... ok
+test_synthetic_runner_all_conditions (tests.test_nhis_d8_synthetic_contracts.TestNHISD8SyntheticContracts.test_synthetic_runner_all_conditions) ... ok
+
+======================================================================
+ERROR: test_backward_compatibility_ae_disabled (tests.test_fairbias_enhancement_contracts.TestFairBiasEnhancementContracts.test_backward_compatibility_ae_disabled)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lkc/Downloads/code_v_0_3/tests/test_fairbias_enhancement_contracts.py", line 372, in test_backward_compatibility_ae_disabled
+    run_res = run_fairbias_pipeline(cfg)
+  File "/Users/lkc/Downloads/code_v_0_3/src/fairbias/pipeline.py", line 258, in run_fairbias_pipeline
+    X_raw, Y_raw, O_raw, categorical_cols, numerical_cols = loader.prepare_data()
+                                                            ~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/lkc/Downloads/code_v_0_3/src/fairbias/data.py", line 185, in prepare_data
+    self.load_raw()
+    ~~~~~~~~~~~~~^^
+  File "/Users/lkc/Downloads/code_v_0_3/src/fairbias/data.py", line 121, in load_raw
+    df = pd.read_csv(data_path)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ~~~~~~~~~~^
+        f,
+        ^^
+    ...<6 lines>...
+        storage_options=self.options.get("storage_options", None),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+        handle,
+    ...<3 lines>...
+        newline="",
+    )
+  File "<stdin>", line 8, in guard
+RuntimeError: CODEX_REVIEW_DATA_ACCESS_BLOCKED
+
+----------------------------------------------------------------------
+Ran 28 tests in 3.315s
+
+FAILED (errors=1)

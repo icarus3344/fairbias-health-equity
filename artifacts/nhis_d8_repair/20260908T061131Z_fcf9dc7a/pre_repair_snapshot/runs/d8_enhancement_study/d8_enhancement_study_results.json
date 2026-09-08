@@ -1,0 +1,886 @@
+{
+  "D6_ARM_001": {
+    "arm_id": "D6_ARM_001",
+    "protected_attribute": "SEX_A",
+    "outcome": "MEDDL12M_A",
+    "epsilon_threshold": 0.0005,
+    "conditions": {
+      "baseline": {
+        "changed_dict": {},
+        "num_transforms": 0,
+        "train": {
+          "auroc": 0.7801078717488028,
+          "auprc": 0.20753512593545503,
+          "brier": 0.055874318599122674,
+          "accuracy": 0.9344626593806922,
+          "predicted_positive_count": 104,
+          "predicted_positive_rate": 0.0037887067395264117,
+          "max_dphi": 0.004774633346897523
+        },
+        "validation": {
+          "auroc": 0.7791293076210748,
+          "auprc": 0.20040403018410208,
+          "brier": 0.05740914642346165,
+          "accuracy": 0.9325067459097585,
+          "predicted_positive_count": 111,
+          "predicted_positive_rate": 0.003791372066810124,
+          "max_dphi": 0.0041984390108669965
+        },
+        "test": {
+          "auroc": 0.7516813909908746,
+          "auprc": 0.2149867894128643,
+          "brier": 0.06827592877775196,
+          "accuracy": 0.9196599690880989,
+          "predicted_positive_count": 130,
+          "predicted_positive_rate": 0.00401854714064915,
+          "max_dphi": 0.003925332189776624,
+          "demographic_parity_difference": 0.0005829991820541875,
+          "equal_opportunity_difference": 0.00029304592565330273
+        }
+      },
+      "canonical_fairbias": {
+        "changed_dict": {
+          "agep_a": "dropped",
+          "asev_a": {
+            "1": 2
+          },
+          "diff_a": {
+            "2": 1
+          },
+          "empwrkft1_a": {
+            "-1": 1,
+            "2": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hearingdf_a": {
+            "1": 2
+          },
+          "notcov_a": {
+            "2": 1
+          },
+          "pcnt18uptc": {
+            "power": 5.0
+          },
+          "pcntlt18tc": {
+            "power": 9.0
+          },
+          "usualpl_a": {
+            "1": 2
+          }
+        },
+        "num_transforms": 10,
+        "train": {
+          "auroc": 0.7052838948556306,
+          "auprc": 0.1346163549656572,
+          "brier": 0.05836033190421488,
+          "accuracy": 0.9355191256830601,
+          "predicted_positive_count": 1,
+          "predicted_positive_rate": 3.6429872495446266e-05,
+          "max_dphi": 0.0004898156234365889
+        },
+        "validation": {
+          "auroc": 0.7050300381246706,
+          "auprc": 0.143490228520482,
+          "brier": 0.059353991547950305,
+          "accuracy": 0.9341462581548656,
+          "predicted_positive_count": 1,
+          "predicted_positive_rate": 3.4156505106397514e-05,
+          "max_dphi": 0.0008270803389527094
+        },
+        "test": {
+          "auroc": 0.663616305761805,
+          "auprc": 0.14053124925481011,
+          "brier": 0.07141176915486382,
+          "accuracy": 0.9207109737248841,
+          "predicted_positive_count": 2,
+          "predicted_positive_rate": 6.182380216383307e-05,
+          "max_dphi": 0.0014029670252156666,
+          "demographic_parity_difference": 1.0181610690484973e-05,
+          "equal_opportunity_difference": 0.0
+        }
+      },
+      "posthoc_enhancement": {
+        "changed_dict": {
+          "agep_a": "dropped",
+          "asev_a": {
+            "1": 2
+          },
+          "diff_a": {
+            "2": 1
+          },
+          "empwrkft1_a": {
+            "-1": 1,
+            "2": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hearingdf_a": {
+            "1": 2
+          },
+          "notcov_a": {
+            "2": 1
+          },
+          "pcnt18uptc": {
+            "power": 5.0
+          },
+          "pcntlt18tc": {
+            "power": 9.0
+          },
+          "usualpl_a": {
+            "1": 2
+          }
+        },
+        "num_transforms": 10,
+        "train": {
+          "auroc": 0.7052838948556306,
+          "auprc": 0.1346163549656572,
+          "brier": 0.05836033190421488,
+          "accuracy": 0.9355191256830601,
+          "predicted_positive_count": 1,
+          "predicted_positive_rate": 3.6429872495446266e-05,
+          "max_dphi": 0.0004898156234365889
+        },
+        "validation": {
+          "auroc": 0.7050300381246706,
+          "auprc": 0.143490228520482,
+          "brier": 0.059353991547950305,
+          "accuracy": 0.9341462581548656,
+          "predicted_positive_count": 1,
+          "predicted_positive_rate": 3.4156505106397514e-05,
+          "max_dphi": 0.0008270803389527094
+        },
+        "test": {
+          "auroc": 0.663616305761805,
+          "auprc": 0.14053124925481011,
+          "brier": 0.07141176915486382,
+          "accuracy": 0.9207109737248841,
+          "predicted_positive_count": 2,
+          "predicted_positive_rate": 6.182380216383307e-05,
+          "max_dphi": 0.0014029670252156666,
+          "demographic_parity_difference": 1.0181610690484973e-05,
+          "equal_opportunity_difference": 0.0
+        },
+        "ae_steps_accepted": 0
+      },
+      "joint_enhancement": {
+        "changed_dict": {
+          "empwrkft1_a": {
+            "-1": 1,
+            "2": 1
+          },
+          "visiondf_a": {
+            "3": 2
+          },
+          "empwrklsw1_a": {
+            "2": 2,
+            "1": 2
+          },
+          "cogmemdff_a": {
+            "3": 2
+          },
+          "pcnt18uptc": {
+            "power": 3.0
+          },
+          "ratcat_a": {
+            "2": 9
+          },
+          "usualpl_a": {
+            "1": 2
+          },
+          "phstat_a": {
+            "5": 4
+          },
+          "pcntlt18tc": {
+            "power": 3.0
+          },
+          "uppslfcr_a": {
+            "1": 4
+          },
+          "educp_a": {
+            "1": 3
+          },
+          "diff_a": {
+            "2": 1,
+            "3": 2
+          },
+          "agep_a": {
+            "power": 0.14285714285714285
+          }
+        },
+        "num_transforms": 13,
+        "train": {
+          "auroc": 0.7690523261121158,
+          "auprc": 0.19557591977784727,
+          "brier": 0.05656593643979298,
+          "accuracy": 0.9338433515482696,
+          "predicted_positive_count": 93,
+          "predicted_positive_rate": 0.0033879781420765027,
+          "max_dphi": 0.00048411085699333876
+        },
+        "validation": {
+          "auroc": 0.7681857620229269,
+          "auprc": 0.18663931767932646,
+          "brier": 0.05824229206988092,
+          "accuracy": 0.9318236158076305,
+          "predicted_positive_count": 93,
+          "predicted_positive_rate": 0.003176554974894969,
+          "max_dphi": 0.0007487439578803717
+        },
+        "test": {
+          "auroc": 0.7367835824757651,
+          "auprc": 0.20387047980030168,
+          "brier": 0.06894029817487159,
+          "accuracy": 0.9193508500772798,
+          "predicted_positive_count": 116,
+          "predicted_positive_rate": 0.0035857805255023185,
+          "max_dphi": 0.0013089710497108296,
+          "demographic_parity_difference": 0.00015634890611329784,
+          "equal_opportunity_difference": 0.0011564285453200245
+        }
+      }
+    }
+  },
+  "D6_ARM_002": {
+    "arm_id": "D6_ARM_002",
+    "protected_attribute": "HISPALLP_A",
+    "outcome": "MEDDL12M_A",
+    "epsilon_threshold": 0.002,
+    "conditions": {
+      "baseline": {
+        "changed_dict": {},
+        "num_transforms": 0,
+        "train": {
+          "auroc": 0.7803173019326684,
+          "auprc": 0.20747801862469656,
+          "brier": 0.05589274091624176,
+          "accuracy": 0.9344333952573489,
+          "predicted_positive_count": 106,
+          "predicted_positive_rate": 0.0038611445015116746,
+          "max_dphi": 0.005296285916572864
+        },
+        "validation": {
+          "auroc": 0.7791136828055484,
+          "auprc": 0.20042619281908447,
+          "brier": 0.05744844148231978,
+          "accuracy": 0.9324522760646109,
+          "predicted_positive_count": 109,
+          "predicted_positive_rate": 0.003722296212819725,
+          "max_dphi": 0.005818100015899521
+        },
+        "test": {
+          "auroc": 0.7513692505002743,
+          "auprc": 0.2144953489123524,
+          "brier": 0.06831259098633022,
+          "accuracy": 0.9196723844846237,
+          "predicted_positive_count": 127,
+          "predicted_positive_rate": 0.00392520475969711,
+          "max_dphi": 0.00539223561886632,
+          "demographic_parity_difference": 0.008724007961716004,
+          "equal_opportunity_difference": 0.038135593220338986
+        }
+      },
+      "canonical_fairbias": {
+        "changed_dict": {
+          "agep_a": {
+            "power": 9.0
+          },
+          "asev_a": {
+            "1": 2
+          },
+          "empwrkft1_a": {
+            "-1": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hypev_a": {
+            "2": 1
+          },
+          "notcov_a": {
+            "1": 2
+          },
+          "pcnt18uptc": "dropped",
+          "pcntlt18tc": {
+            "power": 3.0
+          },
+          "region": "dropped"
+        },
+        "num_transforms": 9,
+        "train": {
+          "auroc": 0.7600561254108381,
+          "auprc": 0.17305013882886336,
+          "brier": 0.05694144087187458,
+          "accuracy": 0.9351254871962992,
+          "predicted_positive_count": 25,
+          "predicted_positive_rate": 0.000910647288092376,
+          "max_dphi": 0.0019089239325927004
+        },
+        "validation": {
+          "auroc": 0.7618132590305886,
+          "auprc": 0.17862941707864388,
+          "brier": 0.05798162634323163,
+          "accuracy": 0.9338865553392753,
+          "predicted_positive_count": 23,
+          "predicted_positive_rate": 0.0007854386504115015,
+          "max_dphi": 0.00278722753011136
+        },
+        "test": {
+          "auroc": 0.732767917846384,
+          "auprc": 0.1797963966210886,
+          "brier": 0.069687799132281,
+          "accuracy": 0.9204759697110184,
+          "predicted_positive_count": 43,
+          "predicted_positive_rate": 0.001329006335960439,
+          "max_dphi": 0.002124829973526943,
+          "demographic_parity_difference": 0.0037593984962406013,
+          "equal_opportunity_difference": 0.0136986301369863
+        }
+      },
+      "posthoc_enhancement": {
+        "changed_dict": {
+          "agep_a": {
+            "power": 9.0
+          },
+          "asev_a": {
+            "1": 2
+          },
+          "empwrkft1_a": {
+            "-1": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hypev_a": {
+            "2": 1
+          },
+          "notcov_a": {
+            "1": 2
+          },
+          "pcnt18uptc": "dropped",
+          "pcntlt18tc": {
+            "power": 3.0
+          },
+          "region": "dropped"
+        },
+        "num_transforms": 9,
+        "train": {
+          "auroc": 0.7600561254108381,
+          "auprc": 0.17305013882886336,
+          "brier": 0.05694144087187458,
+          "accuracy": 0.9351254871962992,
+          "predicted_positive_count": 25,
+          "predicted_positive_rate": 0.000910647288092376,
+          "max_dphi": 0.0019089239325927004
+        },
+        "validation": {
+          "auroc": 0.7618132590305886,
+          "auprc": 0.17862941707864388,
+          "brier": 0.05798162634323163,
+          "accuracy": 0.9338865553392753,
+          "predicted_positive_count": 23,
+          "predicted_positive_rate": 0.0007854386504115015,
+          "max_dphi": 0.00278722753011136
+        },
+        "test": {
+          "auroc": 0.732767917846384,
+          "auprc": 0.1797963966210886,
+          "brier": 0.069687799132281,
+          "accuracy": 0.9204759697110184,
+          "predicted_positive_count": 43,
+          "predicted_positive_rate": 0.001329006335960439,
+          "max_dphi": 0.002124829973526943,
+          "demographic_parity_difference": 0.0037593984962406013,
+          "equal_opportunity_difference": 0.0136986301369863
+        },
+        "ae_steps_accepted": 0
+      },
+      "joint_enhancement": {
+        "changed_dict": {
+          "region": "dropped",
+          "agep_a": {
+            "power": 5.0
+          }
+        },
+        "num_transforms": 2,
+        "train": {
+          "auroc": 0.7884070471553322,
+          "auprc": 0.2147224408153465,
+          "brier": 0.055502519264943456,
+          "accuracy": 0.9341784140166831,
+          "predicted_positive_count": 111,
+          "predicted_positive_rate": 0.0040432739591301494,
+          "max_dphi": 0.00362129550917642
+        },
+        "validation": {
+          "auroc": 0.7866491386286977,
+          "auprc": 0.20721394596967163,
+          "brier": 0.057090836461681435,
+          "accuracy": 0.9327254721169279,
+          "predicted_positive_count": 107,
+          "predicted_positive_rate": 0.0036539971997404637,
+          "max_dphi": 0.003908941077270811
+        },
+        "test": {
+          "auroc": 0.7653201730768033,
+          "auprc": 0.22188266499392048,
+          "brier": 0.06785423393213305,
+          "accuracy": 0.9198887343532685,
+          "predicted_positive_count": 124,
+          "predicted_positive_rate": 0.0038324833874208005,
+          "max_dphi": 0.004793796105185429,
+          "demographic_parity_difference": 0.006444645718665087,
+          "equal_opportunity_difference": 0.036016949152542374
+        }
+      }
+    }
+  },
+  "D6_ARM_003": {
+    "arm_id": "D6_ARM_003",
+    "protected_attribute": "DISAB3_A",
+    "outcome": "MEDDL12M_A",
+    "epsilon_threshold": 0.005,
+    "conditions": {
+      "baseline": {
+        "changed_dict": {},
+        "num_transforms": 0,
+        "train": {
+          "auroc": 0.7803314107882083,
+          "auprc": 0.20745524144339234,
+          "brier": 0.05589638782393868,
+          "accuracy": 0.9344286182652727,
+          "predicted_positive_count": 106,
+          "predicted_positive_rate": 0.0038614258132672764,
+          "max_dphi": 0.010975073253965194
+        },
+        "validation": {
+          "auroc": 0.7789055681211667,
+          "auprc": 0.2003456977266236,
+          "brier": 0.0574564386890407,
+          "accuracy": 0.9324158185916263,
+          "predicted_positive_count": 110,
+          "predicted_positive_rate": 0.003756574004507889,
+          "max_dphi": 0.010415761460930944
+        },
+        "test": {
+          "auroc": 0.7512725309249968,
+          "auprc": 0.21401955399863165,
+          "brier": 0.06831441818963664,
+          "accuracy": 0.9196389936329357,
+          "predicted_positive_count": 131,
+          "predicted_positive_rate": 0.004048958397725165,
+          "max_dphi": 0.009259601659762166,
+          "demographic_parity_difference": 0.013106438960193386,
+          "equal_opportunity_difference": 0.053660614979933435
+        }
+      },
+      "canonical_fairbias": {
+        "changed_dict": {
+          "agep_a": {
+            "power": 0.14285714285714285
+          },
+          "cogmemdff_a": {
+            "3": 1
+          },
+          "diff_a": {
+            "3": 1
+          },
+          "empwrkft1_a": {
+            "-1": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hypev_a": {
+            "1": 2
+          }
+        },
+        "num_transforms": 6,
+        "train": {
+          "auroc": 0.7709020958359816,
+          "auprc": 0.19817916734514823,
+          "brier": 0.05634680052488344,
+          "accuracy": 0.9340279042657826,
+          "predicted_positive_count": 83,
+          "predicted_positive_rate": 0.0030235692688790937,
+          "max_dphi": 0.004968898499490106
+        },
+        "validation": {
+          "auroc": 0.768286949821869,
+          "auprc": 0.19052973364723236,
+          "brier": 0.05796283360650856,
+          "accuracy": 0.9322792159005533,
+          "predicted_positive_count": 92,
+          "predicted_positive_rate": 0.003141861894679325,
+          "max_dphi": 0.004934014062025638
+        },
+        "test": {
+          "auroc": 0.7343827887279166,
+          "auprc": 0.2024529868141535,
+          "brier": 0.06895976770398354,
+          "accuracy": 0.9196080855535637,
+          "predicted_positive_count": 104,
+          "predicted_positive_rate": 0.003214440254682574,
+          "max_dphi": 0.0045761675719929945,
+          "demographic_parity_difference": 0.004904557271407588,
+          "equal_opportunity_difference": 0.0277601569801618
+        }
+      },
+      "posthoc_enhancement": {
+        "changed_dict": {
+          "agep_a": {
+            "power": 7.0
+          },
+          "cogmemdff_a": {
+            "3": 1
+          },
+          "diff_a": {
+            "3": 1,
+            "2": 4
+          },
+          "empwrkft1_a": {
+            "-1": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hypev_a": {
+            "1": 2
+          },
+          "phstat_a": {
+            "4": 3
+          },
+          "uppslfcr_a": {
+            "3": 1
+          },
+          "chlev_a": {
+            "2": 1
+          }
+        },
+        "num_transforms": 9,
+        "train": {
+          "auroc": 0.7839980182759485,
+          "auprc": 0.20752964313788796,
+          "brier": 0.05581002150922579,
+          "accuracy": 0.9339550471749664,
+          "predicted_positive_count": 103,
+          "predicted_positive_rate": 0.003752140177042731,
+          "max_dphi": 0.008487486504117722
+        },
+        "validation": {
+          "auroc": 0.7840853018021603,
+          "auprc": 0.20074230578634444,
+          "brier": 0.05737691981251589,
+          "accuracy": 0.9324499692643945,
+          "predicted_positive_count": 95,
+          "predicted_positive_rate": 0.003244313912984086,
+          "max_dphi": 0.007980851496170184
+        },
+        "test": {
+          "auroc": 0.7588425400821719,
+          "auprc": 0.21400690621486523,
+          "brier": 0.06824483764108968,
+          "accuracy": 0.9199171663472832,
+          "predicted_positive_count": 100,
+          "predicted_positive_rate": 0.003090807937194783,
+          "max_dphi": 0.008143803898527181,
+          "demographic_parity_difference": 0.006568232027373616,
+          "equal_opportunity_difference": 0.03447156637613496
+        },
+        "ae_steps_accepted": 5
+      },
+      "joint_enhancement": {
+        "changed_dict": {
+          "empwrklsw1_a": {
+            "2": 2,
+            "1": 2
+          },
+          "usualpl_a": {
+            "3": -1
+          },
+          "diff_a": {
+            "3": 1,
+            "4": 1
+          },
+          "visiondf_a": {
+            "3": 1,
+            "2": 1
+          },
+          "empwrkft1_a": {
+            "-1": 1,
+            "2": -2
+          },
+          "cogmemdff_a": {
+            "-1": 2,
+            "3": 1
+          },
+          "ratcat_a": {
+            "1": 4
+          },
+          "hypev_a": {
+            "1": 2
+          },
+          "phstat_a": {
+            "2": 1,
+            "4": 1
+          },
+          "agep_a": {
+            "power": 0.14285714285714285
+          },
+          "comdiff_a": {
+            "-1": 2
+          }
+        },
+        "num_transforms": 11,
+        "train": {
+          "auroc": 0.7484152807468072,
+          "auprc": 0.17943833411025817,
+          "brier": 0.05728704576479398,
+          "accuracy": 0.9333357619030273,
+          "predicted_positive_count": 74,
+          "predicted_positive_rate": 0.002695712360205457,
+          "max_dphi": 0.005712480349263281
+        },
+        "validation": {
+          "auroc": 0.7479768495111245,
+          "auprc": 0.1734131850812417,
+          "brier": 0.058845999522260384,
+          "accuracy": 0.9320060105184073,
+          "predicted_positive_count": 74,
+          "predicted_positive_rate": 0.0025271497848507614,
+          "max_dphi": 0.005579124320170369
+        },
+        "test": {
+          "auroc": 0.7131735012340427,
+          "auprc": 0.18333124291428515,
+          "brier": 0.06997695646624286,
+          "accuracy": 0.9193608209185882,
+          "predicted_positive_count": 80,
+          "predicted_positive_rate": 0.002472646349755826,
+          "max_dphi": 0.005346074446743836,
+          "demographic_parity_difference": 0.0017797428968205574,
+          "equal_opportunity_difference": 0.010934057336665779
+        }
+      }
+    }
+  },
+  "D6_ARM_004": {
+    "arm_id": "D6_ARM_004",
+    "protected_attribute": "DISAB3_A",
+    "outcome": "MEDDL12M_A",
+    "epsilon_threshold": 0.005,
+    "conditions": {
+      "baseline": {
+        "changed_dict": {},
+        "num_transforms": 0,
+        "train": {
+          "auroc": 0.766754390075364,
+          "auprc": 0.1925745822652365,
+          "brier": 0.0565311743952697,
+          "accuracy": 0.9338457615387418,
+          "predicted_positive_count": 78,
+          "predicted_positive_rate": 0.0028414265418381843,
+          "max_dphi": 0.017879003311150353
+        },
+        "validation": {
+          "auroc": 0.7625650951766704,
+          "auprc": 0.18808387469505097,
+          "brier": 0.05807944123214249,
+          "accuracy": 0.932108462536712,
+          "predicted_positive_count": 95,
+          "predicted_positive_rate": 0.003244313912984086,
+          "max_dphi": 0.017135218445324295
+        },
+        "test": {
+          "auroc": 0.7352557123378971,
+          "auprc": 0.19859757512642312,
+          "brier": 0.06911467982872935,
+          "accuracy": 0.9194844532360759,
+          "predicted_positive_count": 88,
+          "predicted_positive_rate": 0.0027199109847314087,
+          "max_dphi": 0.015507363936082754,
+          "demographic_parity_difference": 0.002110122569181487,
+          "equal_opportunity_difference": 0.01351797109907258
+        }
+      },
+      "canonical_fairbias": {
+        "changed_dict": {
+          "agep_a": "dropped",
+          "chlev_a": {
+            "1": 2
+          },
+          "dibev_a": {
+            "1": 2
+          },
+          "empwrkft1_a": {
+            "-1": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hypev_a": {
+            "1": 2
+          },
+          "pcntlt18tc": {
+            "power": 3.0
+          },
+          "phstat_a": {
+            "4": 2,
+            "5": 1
+          }
+        },
+        "num_transforms": 8,
+        "train": {
+          "auroc": 0.723732608490482,
+          "auprc": 0.1673775094917228,
+          "brier": 0.05774762358475389,
+          "accuracy": 0.9335907617208845,
+          "predicted_positive_count": 59,
+          "predicted_positive_rate": 0.002149284179082729,
+          "max_dphi": 0.0036295643168928887
+        },
+        "validation": {
+          "auroc": 0.7105834823020472,
+          "auprc": 0.16069244215933232,
+          "brier": 0.05940495381393019,
+          "accuracy": 0.9319718598456389,
+          "predicted_positive_count": 67,
+          "predicted_positive_rate": 0.0022880950754729868,
+          "max_dphi": 0.003410376643171294
+        },
+        "test": {
+          "auroc": 0.6669734185222992,
+          "auprc": 0.1590047878617062,
+          "brier": 0.07115199180169943,
+          "accuracy": 0.9192680966804723,
+          "predicted_positive_count": 67,
+          "predicted_positive_rate": 0.0020708413179205045,
+          "max_dphi": 0.004587592679942476,
+          "demographic_parity_difference": 9.98355591424879e-05,
+          "equal_opportunity_difference": 0.003875870643610205
+        }
+      },
+      "posthoc_enhancement": {
+        "changed_dict": {
+          "agep_a": "dropped",
+          "chlev_a": {
+            "1": 2
+          },
+          "dibev_a": {
+            "1": 2
+          },
+          "empwrkft1_a": {
+            "-1": 1
+          },
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "hypev_a": {
+            "1": 2
+          },
+          "pcntlt18tc": {
+            "power": 3.0
+          },
+          "phstat_a": {
+            "4": 2,
+            "5": 1
+          }
+        },
+        "num_transforms": 8,
+        "train": {
+          "auroc": 0.723732608490482,
+          "auprc": 0.1673775094917228,
+          "brier": 0.05774762358475389,
+          "accuracy": 0.9335907617208845,
+          "predicted_positive_count": 59,
+          "predicted_positive_rate": 0.002149284179082729,
+          "max_dphi": 0.0036295643168928887
+        },
+        "validation": {
+          "auroc": 0.7105834823020472,
+          "auprc": 0.16069244215933232,
+          "brier": 0.05940495381393019,
+          "accuracy": 0.9319718598456389,
+          "predicted_positive_count": 67,
+          "predicted_positive_rate": 0.0022880950754729868,
+          "max_dphi": 0.003410376643171294
+        },
+        "test": {
+          "auroc": 0.6669734185222992,
+          "auprc": 0.1590047878617062,
+          "brier": 0.07115199180169943,
+          "accuracy": 0.9192680966804723,
+          "predicted_positive_count": 67,
+          "predicted_positive_rate": 0.0020708413179205045,
+          "max_dphi": 0.004587592679942476,
+          "demographic_parity_difference": 9.98355591424879e-05,
+          "equal_opportunity_difference": 0.003875870643610205
+        },
+        "ae_steps_accepted": 0
+      },
+      "joint_enhancement": {
+        "changed_dict": {
+          "empwrklsw1_a": {
+            "2": 1
+          },
+          "usualpl_a": {
+            "3": -1
+          },
+          "empwrkft1_a": {
+            "-1": 1
+          },
+          "ratcat_a": {
+            "7": 6
+          },
+          "hypev_a": {
+            "1": 2
+          },
+          "phstat_a": {
+            "3": 2
+          },
+          "educp_a": {
+            "1": 3
+          },
+          "region": {
+            "3": 4
+          },
+          "pcnt18uptc": {
+            "power": 7.0
+          }
+        },
+        "num_transforms": 9,
+        "train": {
+          "auroc": 0.757908581538331,
+          "auprc": 0.18438401476131516,
+          "brier": 0.05691148651962961,
+          "accuracy": 0.9335179046300681,
+          "predicted_positive_count": 81,
+          "predicted_positive_rate": 0.00295071217806273,
+          "max_dphi": 0.011803673963058748
+        },
+        "validation": {
+          "auroc": 0.7516146095540944,
+          "auprc": 0.18258409037746065,
+          "brier": 0.058375957555800495,
+          "accuracy": 0.9321767638822485,
+          "predicted_positive_count": 81,
+          "predicted_positive_rate": 0.002766204494228536,
+          "max_dphi": 0.011932134999194871
+        },
+        "test": {
+          "auroc": 0.7221637572290756,
+          "auprc": 0.19002760911414796,
+          "brier": 0.06959002670782613,
+          "accuracy": 0.9193608209185882,
+          "predicted_positive_count": 86,
+          "predicted_positive_rate": 0.002658094825987513,
+          "max_dphi": 0.01125063131632338,
+          "demographic_parity_difference": 0.0018751222684123803,
+          "equal_opportunity_difference": 0.014935740475254054
+        }
+      }
+    }
+  }
+}
