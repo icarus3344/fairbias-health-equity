@@ -1,0 +1,30 @@
+{
+  "d6_train_val_release_dir": "/Users/lkc/Downloads/code_v_0_3/docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609",
+  "features_parquet_path": "/Users/lkc/Downloads/code_v_0_3/data/processed/nhis/nhis_2022_2024_features.parquet",
+  "features_parquet_sha256": "49f415132ff0be0228f8533f9f74c48cd79ff6fa8be66db085f7329d9b083383",
+  "features_parquet_size_bytes": 2740478,
+  "protected_baseline_tag": "inherited-code-v0.3-baseline-20260828",
+  "r4_baseline_commit": "3bc3c40b7edabdbbd0cb443fd7bfca2d4d1e6909",
+  "arms_evaluated": [
+    "D6_ARM_001",
+    "D6_ARM_002",
+    "D6_ARM_003",
+    "D6_ARM_004"
+  ],
+  "authoritative_thresholds": {
+    "D6_ARM_001": 0.0005,
+    "D6_ARM_002": 0.002,
+    "D6_ARM_003": 0.005,
+    "D6_ARM_004": 0.005
+  },
+  "canonical_reference_hashes": {
+    "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_001/frozen_changed_dict.json": "333c01b0518435355b5fa2b6519d8200fd9424572b74e6d3329972edc24c42eb",
+    "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_002/frozen_changed_dict.json": "117405d4d68653a6b1d41cf474e17b1b42f6faa5ecb9e992c228cf49a706b49f",
+    "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_003/frozen_changed_dict.json": "12e3502af5e51798c45afafd4a7750acd943d4f3acedad34ce95197d27936b65",
+    "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_004/frozen_changed_dict.json": "b0c232ce526c79047c3d2eb6f6b570018005a2609ebaa412c011d9b8fba63fe7",
+    "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_001/train_dphi_before_after.json": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456",
+    "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_002/train_dphi_before_after.json": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f",
+    "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_003/train_dphi_before_after.json": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c",
+    "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_004/train_dphi_before_after.json": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834"
+  }
+}

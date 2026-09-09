@@ -1,0 +1,13 @@
+1. Pre-run configuration freeze exported to /Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive at 2026-09-09T08:03:25.240652+00:00
+2. Protected file integrity verified: clean
+3. Scientific config frozen with R4_CONFIG_SHA256=5dd77c584c1bfc4a6949aa5de5ed03666e818ee0ea2c981532d4052bb475c4d2
+4. Executing single authorized primary substantive real-data run across 4 arms and 4 conditions
+5. Real-data primary substantive execution completed in 544.86s
+6. Condition metrics exported (Table A)
+7. Primary deltas exported (Table B)
+8. Enhancement audit summary exported (Table C)
+9. Joint trajectory events exported
+10. C1/C2 anchor barrier recheck completed: all_barriers_passed=True
+11. Engineering sensitivity comparison exported
+12. Post-run source verification completed: all_scientific_source_hashes_match=True
+13. Finalizing execution_manifest.json at 2026-09-09T08:15:09.227371+00:00

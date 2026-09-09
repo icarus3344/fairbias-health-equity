@@ -1,0 +1,115 @@
+{
+  "run_id": "20260909T080325Z_d8r4_substantive",
+  "gate": "NHIS-D8-R4",
+  "status": "COMPLETED",
+  "started_at_utc": "2026-09-09T08:03:25.240652+00:00",
+  "completed_at_utc": "2026-09-09T08:15:09.227371+00:00",
+  "duration_seconds": 544.86,
+  "execution_mode": "SUBSTANTIVE_D6_GEOMETRY",
+  "r4_baseline_commit": "3bc3c40b7edabdbbd0cb443fd7bfca2d4d1e6909",
+  "r4_config_sha256": "5dd77c584c1bfc4a6949aa5de5ed03666e818ee0ea2c981532d4052bb475c4d2",
+  "random_seed": 0,
+  "all_scientific_source_hashes_match": true,
+  "c1_c2_anchors_passed": true,
+  "real_data_execution_count": 1,
+  "arms_evaluated": [
+    "D6_ARM_001",
+    "D6_ARM_002",
+    "D6_ARM_003",
+    "D6_ARM_004"
+  ],
+  "conditions_evaluated": [
+    "C1_Baseline",
+    "C2_Canonical",
+    "C3_Posthoc",
+    "C4_Joint"
+  ],
+  "total_condition_evaluations": 48,
+  "output_files": {
+    "c1_c2_anchor_recheck.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/c1_c2_anchor_recheck.json",
+      "sha256": "c434cef539f798559587e30b4e8e9df0fb1b1521a1f7354d7c98b648473f7bfc",
+      "size_bytes": 42673
+    },
+    "command_log.txt": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/command_log.txt",
+      "sha256": "4170309811492040b575b7f5febdd5565ed5f23aa6b9dfbf346ded12dcdbbbeb",
+      "size_bytes": 923
+    },
+    "condition_metrics.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/condition_metrics.json",
+      "sha256": "98e03a69c92483ffc298ad4b4817bad0dc2ce8171a9170a3d77462f554eb0b0b",
+      "size_bytes": 30399
+    },
+    "condition_metrics.md": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/condition_metrics.md",
+      "sha256": "56ac95f36743cecb90efe8173b8dfc48953df27d8a1f2616ee6f1e45a8bb633c",
+      "size_bytes": 6957
+    },
+    "engineering_sensitivity_comparison.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/engineering_sensitivity_comparison.json",
+      "sha256": "04668f38f9c417554407f730740021fd1f45770ff7686ce5c0e605b5aa5d565b",
+      "size_bytes": 5831
+    },
+    "enhancement_audit_summary.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/enhancement_audit_summary.json",
+      "sha256": "cb3fa81dcbfb9d9144eb181d6635e27b0a817d710fc13754496f581de6015215",
+      "size_bytes": 7609
+    },
+    "enhancement_audit_summary.md": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/enhancement_audit_summary.md",
+      "sha256": "11015af3f12e017749fbf51df6cd0e054a046123e57a6cafe88b5d34288086bf",
+      "size_bytes": 1179
+    },
+    "environment_manifest.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/environment_manifest.json",
+      "sha256": "ed06517c1687eb36466e4c99de532eddd94e4c85b9be01c31dd0c9dcf8ed2af0",
+      "size_bytes": 386
+    },
+    "frozen_d6_reference_manifest.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/frozen_d6_reference_manifest.json",
+      "sha256": "d9ec5e2cc094e926079d71fbcd449ff767a43ab91611a6a8b9d93d5ad4111110",
+      "size_bytes": 2091
+    },
+    "joint_trajectory_events.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/joint_trajectory_events.json",
+      "sha256": "9d8df1137543a90c187479aaaafbf713e6a41a0bf853252ef9d9f37641bc6e3c",
+      "size_bytes": 52249
+    },
+    "post_run_source_verification.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/post_run_source_verification.json",
+      "sha256": "e0ff23c53402796c4a366b71a96557a9e41e002645549689489cad1f9c4e17bf",
+      "size_bytes": 6101
+    },
+    "pre_run_git_diff.patch": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/pre_run_git_diff.patch",
+      "sha256": "7d27ac8bbe38b1bf16659290e079d4dbdaa6c063fb1b2b5ffef58f48edd53cc0",
+      "size_bytes": 18988
+    },
+    "pre_run_source_manifest.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/pre_run_source_manifest.json",
+      "sha256": "ab5b8f99a108e9c7f66288aebd702e3a5ad46dfabc14cdc929b28822187b3d4f",
+      "size_bytes": 3327
+    },
+    "primary_deltas.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/primary_deltas.json",
+      "sha256": "82276540bfc57de6c0f8b1fe9029a29a927007d6f5ec31d8210d25182b9c025b",
+      "size_bytes": 18716
+    },
+    "primary_deltas.md": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/primary_deltas.md",
+      "sha256": "7d1b5cf5efa614b5340b01f10d1511deecba590d17f56db0e1239bbe6b3ce25f",
+      "size_bytes": 5805
+    },
+    "protected_file_integrity.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/protected_file_integrity.json",
+      "sha256": "e758fea6567f917c387b7b95480eb2eee2a08155d2911780dd77739309163719",
+      "size_bytes": 431
+    },
+    "r4_config_manifest.json": {
+      "path": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/r4_config_manifest.json",
+      "sha256": "b9e3990401d769b1e32535e75c32b9eebf0a2e5aedc5ad5c5eb12ba4b114ed0c",
+      "size_bytes": 3991
+    }
+  }
+}

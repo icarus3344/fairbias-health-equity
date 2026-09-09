@@ -1,0 +1,82 @@
+{
+  "src/nhis_fairbias/d8_enhancement_runner.py": {
+    "sha256": "7af968b11fd061a1acd88f50c398147f8cfb7ef949b48380e836b2544a991e08",
+    "bytes": 55145
+  },
+  "scripts/run_nhis_enhancement_study.py": {
+    "sha256": "1637d9530985d64c5b00c4d6be6ee5ae26976f0f9c68f09322609cc4d330ce6b",
+    "bytes": 12597
+  },
+  "scripts/run_nhis_d8_r4_substantive.py": {
+    "sha256": "617f83cc9269e39f9a7a7cf83beb12bf1f109261ea229ceb9d3fd7742c80ce60",
+    "bytes": 40040
+  },
+  "src/fairbias/enhancement.py": {
+    "sha256": "4b87e743ae8bba29efe5a879044a757ac61301cc290cd0aef24b8f54801f250e",
+    "bytes": 45225
+  },
+  "src/fairbias/enhancement_contracts.py": {
+    "sha256": "434f5b35391b87492fdc49c488a3eadd71802ae07200bc8f53c73bafa7d25db1",
+    "bytes": 21025
+  },
+  "src/fairbias/enhancement_state.py": {
+    "sha256": "82689b5c308e3c9f3a3d65482d344e517ca550a4c79fc0779a97bb81a304e0c2",
+    "bytes": 7391
+  },
+  "src/fairbias/mitigation.py": {
+    "sha256": "977c7547d9a3d4e5bab0623be9c4a9a31d4a13fd9011ff5c19d8a046ea2fb371",
+    "bytes": 30088
+  },
+  "src/fairbias/bias_metric.py": {
+    "sha256": "1d40a58eeb827bfe9fdc6415e6dc51a6d6d81f6bca3b025ce8f985bf2aa6aa6d",
+    "bytes": 22283
+  },
+  "src/fairbias/transform.py": {
+    "sha256": "7d7c9da3e0264d3528a6cb50ccd4816785472dd1373096dce02dc2c7989437a8",
+    "bytes": 9355
+  },
+  "src/fairbias/evaluator.py": {
+    "sha256": "bfb92a8389c9c6d09bc843a337e5da588eed256dc0b0e2869c7cdcb4b79b1a35",
+    "bytes": 15707
+  },
+  "src/fairbias/models.py": {
+    "sha256": "a6a30e7aab3211cfc202e07c8c3a2b3e4902963b1d0f65f51870c0d38871948f",
+    "bytes": 2990
+  },
+  "src/fairbias/config.py": {
+    "sha256": "7ea50ea868adc79fac4f7e1482eed3474e0635eff3b9f600d4450bf52ac06145",
+    "bytes": 20716
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_001/frozen_changed_dict.json": {
+    "sha256": "333c01b0518435355b5fa2b6519d8200fd9424572b74e6d3329972edc24c42eb",
+    "bytes": 643
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_002/frozen_changed_dict.json": {
+    "sha256": "117405d4d68653a6b1d41cf474e17b1b42f6faa5ecb9e992c228cf49a706b49f",
+    "bytes": 575
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_003/frozen_changed_dict.json": {
+    "sha256": "12e3502af5e51798c45afafd4a7750acd943d4f3acedad34ce95197d27936b65",
+    "bytes": 494
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7/D6_ARM_004/frozen_changed_dict.json": {
+    "sha256": "b0c232ce526c79047c3d2eb6f6b570018005a2609ebaa412c011d9b8fba63fe7",
+    "bytes": 556
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_001/train_dphi_before_after.json": {
+    "sha256": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456",
+    "bytes": 2066
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_002/train_dphi_before_after.json": {
+    "sha256": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f",
+    "bytes": 2005
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_003/train_dphi_before_after.json": {
+    "sha256": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c",
+    "bytes": 2081
+  },
+  "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_004/train_dphi_before_after.json": {
+    "sha256": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834",
+    "bytes": 1555
+  }
+}

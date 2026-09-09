@@ -1,0 +1,301 @@
+{
+  "gate": "NHIS-D8-R4B",
+  "status": "CONFIG_RECONCILED",
+  "historical_r4_config_sha256": "5dd77c584c1bfc4a6949aa5de5ed03666e818ee0ea2c981532d4052bb475c4d2",
+  "historical_r4_config_sha256_status": "NON_AUTHORITATIVE_FOR_EXECUTED_CONFIGURATION",
+  "posthoc_executed_config_sha256": "b25ecdb82f8f7c74ea6cf0239d9acdd3b7cb79868adaa570705a788dfba90be0",
+  "total_fields_audited": 21,
+  "total_matches": 15,
+  "total_mismatches": 6,
+  "field_comparisons": [
+    {
+      "field": "algorithm_mode",
+      "historical_r4_manifest_value": "tang2024_paper_faithful",
+      "actual_executed_value": "tang2024_paper_faithful",
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:622",
+      "notes": "Exact match: paper-faithful algorithm mode used in runner"
+    },
+    {
+      "field": "mds_fixed_components",
+      "historical_r4_manifest_value": null,
+      "actual_executed_value": null,
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:631",
+      "notes": "Exact match: None specifies paper-faithful stress-elbow heuristic"
+    },
+    {
+      "field": "classifier",
+      "historical_r4_manifest_value": {
+        "type": "LogisticRegression",
+        "solver": "lbfgs",
+        "max_iter": 1000,
+        "random_state": 0,
+        "probability_threshold": 0.5
+      },
+      "actual_executed_value": {
+        "type": "LogisticRegression",
+        "solver": "lbfgs",
+        "max_iter": 1000,
+        "random_state": 0,
+        "probability_threshold": 0.5
+      },
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:694",
+      "notes": "Exact match: LogisticRegression(solver='lbfgs', max_iter=1000, random_state=0)"
+    },
+    {
+      "field": "random_seed",
+      "historical_r4_manifest_value": 0,
+      "actual_executed_value": 0,
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:434, 623, 694",
+      "notes": "Exact match: seed 0 used throughout"
+    },
+    {
+      "field": "scaler",
+      "historical_r4_manifest_value": {
+        "type": "MinMaxScaler",
+        "feature_range": [
+          0,
+          1
+        ],
+        "fit_partition_strictly": "train_only"
+      },
+      "actual_executed_value": {
+        "type": "MinMaxScaler",
+        "feature_range": [
+          0,
+          1
+        ],
+        "fit_partition_strictly": "train_only"
+      },
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:697",
+      "notes": "Exact match: MinMaxScaler(feature_range=(0, 1)) fit on train partition strictly"
+    },
+    {
+      "field": "eval_norm",
+      "historical_r4_manifest_value": "min-max",
+      "actual_executed_value": "min-max",
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:625",
+      "notes": "Exact match: min-max normalization used"
+    },
+    {
+      "field": "AE max_fairness_degradation",
+      "historical_r4_manifest_value": 0.0,
+      "actual_executed_value": 0.02,
+      "match": false,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:813, 957; src/fairbias/enhancement.py:45",
+      "notes": "MISMATCH: Historical manifest reported 0.0; actual executed code in runner explicitly passed max_fairness_degradation=0.02 to FairAccuracyEnhancement for both C3 and C4"
+    },
+    {
+      "field": "AE min_utility_gain",
+      "historical_r4_manifest_value": 0.001,
+      "actual_executed_value": 0.0,
+      "match": false,
+      "evidence_source_file": "src/fairbias/enhancement.py:47",
+      "notes": "MISMATCH: Historical manifest reported 0.001; actual executed code in runner left min_utility_gain as default in FairAccuracyEnhancement.__init__, which is 0.0"
+    },
+    {
+      "field": "AE polynomial exponent grid",
+      "historical_r4_manifest_value": [
+        2,
+        3
+      ],
+      "actual_executed_value": [
+        0.14285714285714285,
+        0.2,
+        0.3333333333333333,
+        3.0,
+        5.0,
+        7.0
+      ],
+      "match": false,
+      "evidence_source_file": "src/fairbias/enhancement.py:32, 46",
+      "notes": "MISMATCH: Historical manifest reported [2, 3]; actual executed code used DEFAULT_POLY_GRID = (1/7, 1/5, 1/3, 3.0, 5.0, 7.0)"
+    },
+    {
+      "field": "AE categorical candidate semantics",
+      "historical_r4_manifest_value": [
+        "one_hot",
+        "drop"
+      ],
+      "actual_executed_value": [
+        "adjacent_pairwise_category_merging_sorted_by_target_rate"
+      ],
+      "match": false,
+      "evidence_source_file": "src/fairbias/enhancement.py:771-830",
+      "notes": "MISMATCH: Historical manifest claimed ['one_hot', 'drop']; actual executed FairAccuracyEnhancement implements pairwise adjacent category merging sorted by target positive rate, and does not evaluate one-hot or drop transforms"
+    },
+    {
+      "field": "AE numerical candidate semantics",
+      "historical_r4_manifest_value": [
+        "binning",
+        "polynomial",
+        "log",
+        "scaling",
+        "drop"
+      ],
+      "actual_executed_value": [
+        "polynomial"
+      ],
+      "match": false,
+      "evidence_source_file": "src/fairbias/enhancement.py:551-620",
+      "notes": "MISMATCH: Historical manifest claimed ['binning', 'polynomial', 'log', 'scaling', 'drop']; actual executed FairAccuracyEnhancement evaluates polynomial powers from poly_exponents grid only"
+    },
+    {
+      "field": "C3 max steps",
+      "historical_r4_manifest_value": 10,
+      "actual_executed_value": 5,
+      "match": false,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:828",
+      "notes": "MISMATCH: Historical manifest reported 10; actual executed code line 828 sets max_post_steps = 5 if not self.smoke_test else 2"
+    },
+    {
+      "field": "C4 max iterations",
+      "historical_r4_manifest_value": 10,
+      "actual_executed_value": 10,
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:975",
+      "notes": "Exact match: max_iter = 10 if not self.smoke_test else 3"
+    },
+    {
+      "field": "frozen epsilon per arm",
+      "historical_r4_manifest_value": {
+        "D6_ARM_001": 0.0005,
+        "D6_ARM_002": 0.002,
+        "D6_ARM_003": 0.005,
+        "D6_ARM_004": 0.005
+      },
+      "actual_executed_value": {
+        "D6_ARM_001": 0.0005,
+        "D6_ARM_002": 0.002,
+        "D6_ARM_003": 0.005,
+        "D6_ARM_004": 0.005
+      },
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:72-163; docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609",
+      "notes": "Exact match: Arm 1: 0.0005, Arm 2: 0.002, Arm 3: 0.005, Arm 4: 0.005"
+    },
+    {
+      "field": "epsilon source",
+      "historical_r4_manifest_value": {
+        "D6_ARM_001": "FROZEN_D6_TRAIN_REFERENCE",
+        "D6_ARM_002": "FROZEN_D6_TRAIN_REFERENCE",
+        "D6_ARM_003": "FROZEN_D6_TRAIN_REFERENCE",
+        "D6_ARM_004": "FROZEN_D6_TRAIN_REFERENCE"
+      },
+      "actual_executed_value": {
+        "D6_ARM_001": "FROZEN_D6_TRAIN_REFERENCE",
+        "D6_ARM_002": "FROZEN_D6_TRAIN_REFERENCE",
+        "D6_ARM_003": "FROZEN_D6_TRAIN_REFERENCE",
+        "D6_ARM_004": "FROZEN_D6_TRAIN_REFERENCE"
+      },
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:160, 679",
+      "notes": "Exact match: FROZEN_D6_TRAIN_REFERENCE across all arms"
+    },
+    {
+      "field": "threshold propagation semantics",
+      "historical_r4_manifest_value": "unspecified / implicit",
+      "actual_executed_value": "Authoritative training thresholds loaded from D6 release and held immutable across all search steps and evaluation stages",
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:673-680, 836, 986, 1046",
+      "notes": "Authoritative D6 training thresholds loaded from release artifacts and propagated immutably"
+    },
+    {
+      "field": "cycle detection",
+      "historical_r4_manifest_value": "changed_dict_hash_in_committed_states_set",
+      "actual_executed_value": "changed_dict_hash_in_committed_states_set",
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:965, 991, 1005; src/fairbias/enhancement.py:585",
+      "notes": "Exact match: changed_dict_hash checked against committed_joint_states_set / tracker cycle detection"
+    },
+    {
+      "field": "probability threshold",
+      "historical_r4_manifest_value": 0.5,
+      "actual_executed_value": 0.5,
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:284",
+      "notes": "Exact match: 0.5 classification threshold"
+    },
+    {
+      "field": "temporal split",
+      "historical_r4_manifest_value": {
+        "train_year": 2022,
+        "validation_year": 2023,
+        "test_year": 2024
+      },
+      "actual_executed_value": {
+        "train_year": 2022,
+        "validation_year": 2023,
+        "test_year": 2024
+      },
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:560, 564, 568",
+      "notes": "Exact match: train=2022, validation=2023, test=2024"
+    },
+    {
+      "field": "protected arm definitions",
+      "historical_r4_manifest_value": {
+        "D6_ARM_001": {
+          "protected_attr": "SEX_A",
+          "outcome": "MEDDL12M_A"
+        },
+        "D6_ARM_002": {
+          "protected_attr": "HISPALLP_A",
+          "outcome": "MEDDL12M_A"
+        },
+        "D6_ARM_003": {
+          "protected_attr": "DISAB3_A",
+          "outcome": "MEDDL12M_A"
+        },
+        "D6_ARM_004": {
+          "protected_attr": "DISAB3_A",
+          "outcome": "MEDDL12M_A"
+        }
+      },
+      "actual_executed_value": {
+        "D6_ARM_001": {
+          "protected_attr": "SEX_A",
+          "outcome": "MEDDL12M_A"
+        },
+        "D6_ARM_002": {
+          "protected_attr": "HISPALLP_A",
+          "outcome": "MEDDL12M_A"
+        },
+        "D6_ARM_003": {
+          "protected_attr": "DISAB3_A",
+          "outcome": "MEDDL12M_A"
+        },
+        "D6_ARM_004": {
+          "protected_attr": "DISAB3_A",
+          "outcome": "MEDDL12M_A"
+        }
+      },
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:56-62",
+      "notes": "Exact match: Arm 1 (SEX_A), Arm 2 (HISPALLP_A), Arm 3 (DISAB3_A full), Arm 4 (DISAB3_A exclude_disability)"
+    },
+    {
+      "field": "canonical state hashes",
+      "historical_r4_manifest_value": {
+        "D6_ARM_001_hash": "40511e6c0d55b0ff",
+        "D6_ARM_002_hash": "4c0bbba5d40022d6",
+        "D6_ARM_003_hash": "38fa54a06a9c6427",
+        "D6_ARM_004_hash": "ff0a2fb81596b598"
+      },
+      "actual_executed_value": {
+        "D6_ARM_001_hash": "40511e6c0d55b0ff",
+        "D6_ARM_002_hash": "4c0bbba5d40022d6",
+        "D6_ARM_003_hash": "38fa54a06a9c6427",
+        "D6_ARM_004_hash": "ff0a2fb81596b598"
+      },
+      "match": true,
+      "evidence_source_file": "src/nhis_fairbias/d8_enhancement_runner.py:538-547; artifacts/nhis_d8_r2b/20260908T102300Z_d8r2b_eval/canonical_state_reproduction.json",
+      "notes": "Exact match: D6 canonical changed dict hashes match R2B/D6 exactly"
+    }
+  ]
+}

@@ -1,0 +1,2401 @@
+{
+  "D6_ARM_001": [
+    {
+      "iteration": 1,
+      "engine": "BM",
+      "selected_attribute": "empwrkft1_a",
+      "parent_state_hash": "44136fa355b3678a",
+      "resulting_state_hash": "0b8dfa320e2073a1",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "engine": "AE",
+      "selected_attribute": "notcov_a",
+      "parent_state_hash": "0b8dfa320e2073a1",
+      "resulting_state_hash": "4bdf37d1d2810fc7",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": {
+          "2": -1
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "BM",
+      "selected_attribute": "empwrklsw1_a",
+      "parent_state_hash": "4bdf37d1d2810fc7",
+      "resulting_state_hash": "8aa25a4fc904c4a5",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "AE",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "8aa25a4fc904c4a5",
+      "resulting_state_hash": "6c782ef97688fb9d",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "BM",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "6c782ef97688fb9d",
+      "resulting_state_hash": "7fbd54789d620174",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "7fbd54789d620174",
+      "resulting_state_hash": "16221b849576fd66",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": {
+          "2": 4
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "BM",
+      "selected_attribute": "pcnt18uptc",
+      "parent_state_hash": "16221b849576fd66",
+      "resulting_state_hash": "de78c6a54cc05665",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": {
+          "2": 4
+        },
+        "pcnt18uptc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "de78c6a54cc05665",
+      "resulting_state_hash": "744b4a96aecb4f1e",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": {
+          "2": 4,
+          "1": -1
+        },
+        "pcnt18uptc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "BM",
+      "selected_attribute": "notcov_a",
+      "parent_state_hash": "744b4a96aecb4f1e",
+      "resulting_state_hash": "c455313c7a04a770",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": {
+          "2": 4,
+          "1": -1
+        },
+        "pcnt18uptc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "c455313c7a04a770",
+      "resulting_state_hash": "ca71fe973c0057df",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": {
+          "2": 4,
+          "1": -1
+        },
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": {
+          "3": 2
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "BM",
+      "selected_attribute": "pcntlt18tc",
+      "parent_state_hash": "ca71fe973c0057df",
+      "resulting_state_hash": "b1460165051d49fe",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": {
+          "2": 4,
+          "1": -1
+        },
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": {
+          "3": 2
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "b1460165051d49fe",
+      "resulting_state_hash": "37cf15bda5b5270e",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": {
+          "2": 4,
+          "1": -1,
+          "3": 4
+        },
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": {
+          "3": 2
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "BM",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "37cf15bda5b5270e",
+      "resulting_state_hash": "ac6f90a757d3a974",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": {
+          "3": 2
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "ac6f90a757d3a974",
+      "resulting_state_hash": "0003d869e097687b",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "1": 4
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "BM",
+      "selected_attribute": "empwrkft1_a",
+      "parent_state_hash": "0003d869e097687b",
+      "resulting_state_hash": "4ac8a9ffcb061123",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1,
+          "2": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "1": 4
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "4ac8a9ffcb061123",
+      "resulting_state_hash": "b4cb23d6dbb71554",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1,
+          "2": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": {
+          "3": -1,
+          "1": 4,
+          "2": -1
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "engine": "BM",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "b4cb23d6dbb71554",
+      "resulting_state_hash": "c33482b350097cf8",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1,
+          "2": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": "dropped",
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "c33482b350097cf8",
+      "resulting_state_hash": "7336387be9b4c8a6",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1,
+          "2": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": "dropped",
+        "pcntlt18tc": {
+          "power": 3.0
+        },
+        "ratcat_a": {
+          "2": 9
+        }
+      }
+    },
+    {
+      "iteration": 10,
+      "engine": "BM",
+      "selected_attribute": "diff_a",
+      "parent_state_hash": "7336387be9b4c8a6",
+      "resulting_state_hash": "ed1fc775619e5709",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1,
+          "2": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": "dropped",
+        "pcntlt18tc": {
+          "power": 3.0
+        },
+        "ratcat_a": {
+          "2": 9
+        },
+        "diff_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 10,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "ed1fc775619e5709",
+      "resulting_state_hash": "bc4fb10c249fb5b7",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrkft1_a": {
+          "-1": 1,
+          "2": 1
+        },
+        "notcov_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "1": 3
+        },
+        "visiondf_a": "dropped",
+        "pcnt18uptc": {
+          "power": 3.0
+        },
+        "cogmemdff_a": "dropped",
+        "pcntlt18tc": {
+          "power": 3.0
+        },
+        "ratcat_a": {
+          "2": 9,
+          "3": 7
+        },
+        "diff_a": {
+          "2": 1
+        }
+      }
+    }
+  ],
+  "D6_ARM_002": [
+    {
+      "iteration": 1,
+      "engine": "BM",
+      "selected_attribute": "region",
+      "parent_state_hash": "44136fa355b3678a",
+      "resulting_state_hash": "765af0e25973f191",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "engine": "AE",
+      "selected_attribute": "notcov_a",
+      "parent_state_hash": "765af0e25973f191",
+      "resulting_state_hash": "7c42f40de84bce1e",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": {
+          "2": -1
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "BM",
+      "selected_attribute": "agep_a",
+      "parent_state_hash": "7c42f40de84bce1e",
+      "resulting_state_hash": "afa088a4cfec1564",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "agep_a": {
+          "power": 5.0
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "AE",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "afa088a4cfec1564",
+      "resulting_state_hash": "a2b2911223d41055",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "BM",
+      "selected_attribute": "notcov_a",
+      "parent_state_hash": "a2b2911223d41055",
+      "resulting_state_hash": "d84391c0dc9a923d",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "AE",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "d84391c0dc9a923d",
+      "resulting_state_hash": "12c3ce01ea42b7d1",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "BM",
+      "selected_attribute": "pcnt18uptc",
+      "parent_state_hash": "12c3ce01ea42b7d1",
+      "resulting_state_hash": "eb0c31666eb88ed8",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped"
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "eb0c31666eb88ed8",
+      "resulting_state_hash": "b8cf8b4cf6ab754a",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "BM",
+      "selected_attribute": "hypev_a",
+      "parent_state_hash": "b8cf8b4cf6ab754a",
+      "resulting_state_hash": "aeba33d1b2c7682f",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4
+        },
+        "hypev_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "aeba33d1b2c7682f",
+      "resulting_state_hash": "637273d92798cdfd",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4
+        },
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "BM",
+      "selected_attribute": "empwrklsw1_a",
+      "parent_state_hash": "637273d92798cdfd",
+      "resulting_state_hash": "67267c79d34e7253",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4
+        },
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "67267c79d34e7253",
+      "resulting_state_hash": "643c3a3dc9e22f17",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 5.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4
+        },
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "-1": 1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "BM",
+      "selected_attribute": "agep_a",
+      "parent_state_hash": "643c3a3dc9e22f17",
+      "resulting_state_hash": "7bfa48910f86a35f",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4
+        },
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "-1": 1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "7bfa48910f86a35f",
+      "resulting_state_hash": "4bfcb2b745736acf",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4,
+          "1": -1
+        },
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "-1": 1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "BM",
+      "selected_attribute": "pcntlt18tc",
+      "parent_state_hash": "4bfcb2b745736acf",
+      "resulting_state_hash": "9712397dafb1c092",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4,
+          "1": -1
+        },
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "-1": 1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "9712397dafb1c092",
+      "resulting_state_hash": "101d1df2c0598337",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": {
+          "2": 4,
+          "1": -1,
+          "3": 4
+        },
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "-1": 1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "engine": "BM",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "101d1df2c0598337",
+      "resulting_state_hash": "1fbb6e5ba77f6e6d",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": "dropped",
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "-1": 1
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "1fbb6e5ba77f6e6d",
+      "resulting_state_hash": "416f73c5f63094d6",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": "dropped",
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": {
+          "3": 2,
+          "-1": 4,
+          "1": 4
+        },
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 10,
+      "engine": "BM",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "416f73c5f63094d6",
+      "resulting_state_hash": "957b1688593b430e",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": "dropped",
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 10,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "957b1688593b430e",
+      "resulting_state_hash": "2fa5f58ebee88072",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "region": {
+          "4": 2,
+          "3": 2
+        },
+        "notcov_a": "dropped",
+        "agep_a": {
+          "power": 7.0
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "pcnt18uptc": "dropped",
+        "visiondf_a": "dropped",
+        "hypev_a": {
+          "2": 1
+        },
+        "cogmemdff_a": "dropped",
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        },
+        "ratcat_a": {
+          "2": 9
+        }
+      }
+    }
+  ],
+  "D6_ARM_003": [
+    {
+      "iteration": 1,
+      "engine": "BM",
+      "selected_attribute": "empwrklsw1_a",
+      "parent_state_hash": "44136fa355b3678a",
+      "resulting_state_hash": "76623a4ebfd39bd7",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "engine": "AE",
+      "selected_attribute": "notcov_a",
+      "parent_state_hash": "76623a4ebfd39bd7",
+      "resulting_state_hash": "3dc9717a40490f07",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "BM",
+      "selected_attribute": "diff_a",
+      "parent_state_hash": "3dc9717a40490f07",
+      "resulting_state_hash": "998325249a5008e4",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "AE",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "998325249a5008e4",
+      "resulting_state_hash": "eb4b0b71e3fecdc0",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "BM",
+      "selected_attribute": "empwrkft1_a",
+      "parent_state_hash": "eb4b0b71e3fecdc0",
+      "resulting_state_hash": "461ec87b052142ca",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "AE",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "461ec87b052142ca",
+      "resulting_state_hash": "f4e9424ca4d8cd26",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "BM",
+      "selected_attribute": "hypev_a",
+      "parent_state_hash": "f4e9424ca4d8cd26",
+      "resulting_state_hash": "13b1873d91d8be4a",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "13b1873d91d8be4a",
+      "resulting_state_hash": "c0ee6b8b9aa4c275",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": 4
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "BM",
+      "selected_attribute": "agep_a",
+      "parent_state_hash": "c0ee6b8b9aa4c275",
+      "resulting_state_hash": "f5a8db20f09a42c3",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": 4
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "f5a8db20f09a42c3",
+      "resulting_state_hash": "7b9754effdeed8aa",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": 4
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        },
+        "cogmemdff_a": {
+          "1": 4
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "BM",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "7b9754effdeed8aa",
+      "resulting_state_hash": "bcd7d635cd099cb0",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": 4
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        },
+        "cogmemdff_a": {
+          "1": 4,
+          "3": 4
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "AE",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "bcd7d635cd099cb0",
+      "resulting_state_hash": "0a851a5ab43f67df",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": 4,
+          "1": -1
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        },
+        "cogmemdff_a": {
+          "1": 4,
+          "3": 4
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "BM",
+      "selected_attribute": "visiondf_a",
+      "parent_state_hash": "0a851a5ab43f67df",
+      "resulting_state_hash": "0289a6b8ce8e3487",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": -1,
+          "1": -1,
+          "4": -1
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        },
+        "cogmemdff_a": {
+          "1": 4,
+          "3": 4
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "AE",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "0289a6b8ce8e3487",
+      "resulting_state_hash": "28f8ee998682cf72",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": -1,
+          "1": -1,
+          "4": -1
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        },
+        "cogmemdff_a": {
+          "1": 4,
+          "3": 4,
+          "-1": 2
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "BM",
+      "selected_attribute": "cogmemdff_a",
+      "parent_state_hash": "28f8ee998682cf72",
+      "resulting_state_hash": "bf727db2b4ac2fb1",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": -1,
+          "1": -1,
+          "4": -1
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        },
+        "cogmemdff_a": "dropped"
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "bf727db2b4ac2fb1",
+      "resulting_state_hash": "dcd70ae58126b7e3",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": -1,
+          "1": -1,
+          "4": -1
+        },
+        "agep_a": {
+          "power": 0.3333333333333333
+        },
+        "cogmemdff_a": "dropped",
+        "ratcat_a": {
+          "2": 9
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "engine": "BM",
+      "selected_attribute": "agep_a",
+      "parent_state_hash": "dcd70ae58126b7e3",
+      "resulting_state_hash": "16e86371ee7fb35d",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": -1,
+          "1": -1,
+          "4": -1
+        },
+        "agep_a": {
+          "power": 0.14285714285714285
+        },
+        "cogmemdff_a": "dropped",
+        "ratcat_a": {
+          "2": 9
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "16e86371ee7fb35d",
+      "resulting_state_hash": "322e6506ac0d5fc3",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "diff_a": {
+          "3": 1
+        },
+        "usualpl_a": {
+          "2": 3,
+          "-1": 1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "visiondf_a": {
+          "2": -1,
+          "1": -1,
+          "4": -1
+        },
+        "agep_a": {
+          "power": 0.14285714285714285
+        },
+        "cogmemdff_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7
+        }
+      }
+    }
+  ],
+  "D6_ARM_004": [
+    {
+      "iteration": 1,
+      "engine": "BM",
+      "selected_attribute": "empwrklsw1_a",
+      "parent_state_hash": "44136fa355b3678a",
+      "resulting_state_hash": "76623a4ebfd39bd7",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "engine": "AE",
+      "selected_attribute": "notcov_a",
+      "parent_state_hash": "76623a4ebfd39bd7",
+      "resulting_state_hash": "3dc9717a40490f07",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "BM",
+      "selected_attribute": "empwrkft1_a",
+      "parent_state_hash": "3dc9717a40490f07",
+      "resulting_state_hash": "8aa25a4fc904c4a5",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "engine": "AE",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "8aa25a4fc904c4a5",
+      "resulting_state_hash": "6c782ef97688fb9d",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": 3
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "BM",
+      "selected_attribute": "hypev_a",
+      "parent_state_hash": "6c782ef97688fb9d",
+      "resulting_state_hash": "514d024818697e06",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": 3
+        },
+        "hypev_a": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "engine": "AE",
+      "selected_attribute": "usualpl_a",
+      "parent_state_hash": "514d024818697e06",
+      "resulting_state_hash": "b760839712d49e18",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "BM",
+      "selected_attribute": "agep_a",
+      "parent_state_hash": "b760839712d49e18",
+      "resulting_state_hash": "638e73345baa7810",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped"
+      }
+    },
+    {
+      "iteration": 4,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "638e73345baa7810",
+      "resulting_state_hash": "7a6f72436038d8b5",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "BM",
+      "selected_attribute": "phstat_a",
+      "parent_state_hash": "7a6f72436038d8b5",
+      "resulting_state_hash": "240e52a68f43d532",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9
+        },
+        "phstat_a": {
+          "4": 2
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "240e52a68f43d532",
+      "resulting_state_hash": "6c2a150b74a9d6b4",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7
+        },
+        "phstat_a": {
+          "4": 2
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "BM",
+      "selected_attribute": "chlev_a",
+      "parent_state_hash": "6c2a150b74a9d6b4",
+      "resulting_state_hash": "116e863274fc94a7",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7
+        },
+        "phstat_a": {
+          "4": 2
+        },
+        "chlev_a": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "116e863274fc94a7",
+      "resulting_state_hash": "35ca0d8612342113",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7,
+          "1": 4
+        },
+        "phstat_a": {
+          "4": 2
+        },
+        "chlev_a": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "BM",
+      "selected_attribute": "dibev_a",
+      "parent_state_hash": "35ca0d8612342113",
+      "resulting_state_hash": "824cc7e8ee8902b4",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7,
+          "1": 4
+        },
+        "phstat_a": {
+          "4": 2
+        },
+        "chlev_a": {
+          "1": 2
+        },
+        "dibev_a": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "824cc7e8ee8902b4",
+      "resulting_state_hash": "b583033c9fca5daa",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7,
+          "1": 4,
+          "5": 7
+        },
+        "phstat_a": {
+          "4": 2
+        },
+        "chlev_a": {
+          "1": 2
+        },
+        "dibev_a": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "BM",
+      "selected_attribute": "pcntlt18tc",
+      "parent_state_hash": "b583033c9fca5daa",
+      "resulting_state_hash": "1a535594c7ec1e10",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7,
+          "1": 4,
+          "5": 7
+        },
+        "phstat_a": {
+          "4": 2
+        },
+        "chlev_a": {
+          "1": 2
+        },
+        "dibev_a": {
+          "1": 2
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "engine": "AE",
+      "selected_attribute": "ratcat_a",
+      "parent_state_hash": "1a535594c7ec1e10",
+      "resulting_state_hash": "cfe12b363df949cd",
+      "engine_accepted": true,
+      "trajectory_committed": true,
+      "cycle_detected": false,
+      "changed_dict_snapshot": {
+        "empwrklsw1_a": {
+          "2": 1
+        },
+        "notcov_a": {
+          "2": -1
+        },
+        "empwrkft1_a": {
+          "-1": 1
+        },
+        "usualpl_a": {
+          "2": -1,
+          "3": -1
+        },
+        "hypev_a": {
+          "1": 2
+        },
+        "agep_a": "dropped",
+        "ratcat_a": {
+          "2": 9,
+          "3": 7,
+          "1": 4,
+          "5": 7,
+          "8": 9
+        },
+        "phstat_a": {
+          "4": 2
+        },
+        "chlev_a": {
+          "1": 2
+        },
+        "dibev_a": {
+          "1": 2
+        },
+        "pcntlt18tc": {
+          "power": 3.0
+        }
+      }
+    }
+  ]
+}

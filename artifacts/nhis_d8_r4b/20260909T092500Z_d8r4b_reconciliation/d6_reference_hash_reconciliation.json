@@ -1,0 +1,64 @@
+{
+  "gate": "NHIS-D8-R4B",
+  "status": "REFERENCE_HASHES_RECONCILED",
+  "canonical_bytes_ever_changed": false,
+  "determination": "The canonical D6 release artifacts NEVER changed. Exact byte inspection of Git blobs at R2 closure (commit cab6b63), R4 baseline (commit 3bc3c40), the original D6 release commit (bdf154c), and the current repository worktree confirms that all blobs are 100% bitwise identical and match the hashes reported in the R3D report (and in the R4 artifact frozen_d6_reference_manifest.json). The discrepancy was caused strictly by erroneous hash strings recorded in the markdown body of docs/reports/NHIS_D8_R4_PRIMARY_SUBSTANTIVE_EXECUTION_20260909T080325Z.md.",
+  "records": [
+    {
+      "arm_id": "D6_ARM_001",
+      "path": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_001/train_dphi_before_after.json",
+      "R3D_reported_sha256": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456",
+      "R4_reported_sha256": "bf9a6fa5899933ee66ef11d5952d7e5dca52d431d8e1216508933e144365774a",
+      "current_worktree_sha256": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456",
+      "R4_baseline_commit_blob_sha256": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456",
+      "R2_closure_commit_blob_sha256": "a834ddbf14bb2d669d0c9e3588a3548d5919c650fec285f5ee383c19bf7f6456",
+      "worktree_equals_r4_baseline_commit": true,
+      "worktree_equals_r2_closure_commit": true,
+      "worktree_equals_r3d_reported": true,
+      "worktree_equals_r4_reported": false,
+      "all_git_and_disk_blobs_equal": true
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "path": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_002/train_dphi_before_after.json",
+      "R3D_reported_sha256": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f",
+      "R4_reported_sha256": "4fc2194a2b27cc362d2a450535e5a26a310c85e25287f3b23267597bceae0e22",
+      "current_worktree_sha256": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f",
+      "R4_baseline_commit_blob_sha256": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f",
+      "R2_closure_commit_blob_sha256": "0e2fa3dc13e90baef19c2a5ee0a04f5f1e9296a60179414a2a939f8f97ec240f",
+      "worktree_equals_r4_baseline_commit": true,
+      "worktree_equals_r2_closure_commit": true,
+      "worktree_equals_r3d_reported": true,
+      "worktree_equals_r4_reported": false,
+      "all_git_and_disk_blobs_equal": true
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "path": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_003/train_dphi_before_after.json",
+      "R3D_reported_sha256": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c",
+      "R4_reported_sha256": "287661cf6654f595f9d6eb44fe115e5899ea2ea7730e70a75f80bcf2e2ffb2ae",
+      "current_worktree_sha256": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c",
+      "R4_baseline_commit_blob_sha256": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c",
+      "R2_closure_commit_blob_sha256": "b8841a000d75b9d17efa1a22643afd9fad23a10b01fc00253ac838a3619b8d0c",
+      "worktree_equals_r4_baseline_commit": true,
+      "worktree_equals_r2_closure_commit": true,
+      "worktree_equals_r3d_reported": true,
+      "worktree_equals_r4_reported": false,
+      "all_git_and_disk_blobs_equal": true
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "path": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_004/train_dphi_before_after.json",
+      "R3D_reported_sha256": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834",
+      "R4_reported_sha256": "7b243be44443ff45cffea61a2936a28292c97486e9273c5df3ec183569738f76",
+      "current_worktree_sha256": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834",
+      "R4_baseline_commit_blob_sha256": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834",
+      "R2_closure_commit_blob_sha256": "78027fa24763addfa7b018cc10d934c243264a2de49999cb1c0591a02e6a5834",
+      "worktree_equals_r4_baseline_commit": true,
+      "worktree_equals_r2_closure_commit": true,
+      "worktree_equals_r3d_reported": true,
+      "worktree_equals_r4_reported": false,
+      "all_git_and_disk_blobs_equal": true
+    }
+  ]
+}

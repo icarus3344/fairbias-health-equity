@@ -1,0 +1,14 @@
+1. NHIS-D8-R4B reconciliation initiated under RUN_ID=20260909T092500Z_d8r4b_reconciliation
+2. Verified 20 pre-run scientific source files and reference artifacts: all byte-for-byte identical
+3. Verified git diff against R4_BASELINE_COMMIT 3bc3c40 equals pre_run_git_diff.patch (7d27ac8bbe38b1bf16659290e079d4dbdaa6c063fb1b2b5ffef58f48edd53cc0, 18988 bytes)
+4. Reconstructed actual executed configuration and reconciled against historical r4_config_manifest.json (identified 6 explicit mismatches)
+5. Generated posthoc_executed_config_manifest.json with POSTHOC_EXECUTED_CONFIG_SHA256=b25ecdb82f8f7c74ea6cf0239d9acdd3b7cb79868adaa570705a788dfba90be0
+6. Reconciled D6 reference artifact hashes: canonical blobs bitwise identical across all accepted commits and current worktree; resolved report text mismatch
+7. Recorded governance incidents: R4-GOV-01, R4-GOV-02, R4-GOV-03, and R4-GOV-04 (preflight failure 20260909T075934Z_d8r4_substantive)
+8. Reconciled execution manifest: verified 544.86s computation duration from original runtime output; set ambiguous timestamps to null
+9. Performed POST_HOC_AGGREGATE_C1_C2_ANCHOR_RECHECK: Cohort 4/4 PASS, State 4/4 PASS, Metrics 136/136 PASS (0 NHIS access)
+10. Corrected Table C candidate count semantics: null (NOT_RECORDED) across all 8 C3/C4 rows
+11. Preserved 4 primary model outputs bitwise identical: condition_metrics.json, primary_deltas.json, joint_trajectory_events.json, runs/d8_enhancement_study/d8_enhancement_study_results.json
+12. Compiled scientific synthesis distinguishing primary paper-faithful D6 geometry from exploratory engineering sensitivity
+13. Reconciled command provenance and verified protected baseline integrity (14 root files 0 diff)
+14. Zero real-data accesses, zero parquet reads, zero model fits, zero parameter tuning performed during R4B

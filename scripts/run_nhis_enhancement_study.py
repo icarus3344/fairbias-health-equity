@@ -64,6 +64,11 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Random seed for model fitting and evaluation (default: 0).",
     )
+    parser.add_argument(
+        "--r4-primary-authorized",
+        action="store_true",
+        help="Explicit supervisor authorization flag for the single primary Gate D8-R4 real-data execution.",
+    )
     return parser.parse_args()
 
 
@@ -114,11 +119,24 @@ def main() -> None:
                 f"Unknown execution mode: '{args.execution_mode}'. Valid modes are: {[m.value for m in D8ExecutionMode]}"
             )
 
-    if args.allow_real_data and mode != D8ExecutionMode.BASELINE_REPRODUCTION:
-        raise ValueError(
-            f"--allow-real-data is strictly prohibited without --baseline-reproduction-only "
-            f"(prohibited with mode '{mode.value}') at Gate D8-R3C/R3D."
-        )
+    if args.allow_real_data:
+        if mode == D8ExecutionMode.BASELINE_REPRODUCTION:
+            pass
+        elif mode == D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY:
+            if not args.r4_primary_authorized:
+                raise ValueError(
+                    "--allow-real-data is strictly prohibited without --baseline-reproduction-only "
+                    "or explicit --r4-primary-authorized flag. Gate D8-R4 primary authorization required."
+                )
+        else:
+            raise ValueError(
+                f"--allow-real-data is strictly prohibited without --baseline-reproduction-only (prohibited with mode '{mode.value}')."
+            )
+    elif args.r4_primary_authorized:
+        if mode != D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY:
+            raise ValueError(
+                f"--r4-primary-authorized is only valid with SUBSTANTIVE_D6_GEOMETRY, got '{mode.value}'."
+            )
 
     # Collision-proof output directory resolution
     if args.output_dir is not None:
@@ -148,6 +166,7 @@ def main() -> None:
     print(f"Execution mode: {mode.value}")
     print(f"Smoke test mode: {args.smoke_test}")
     print(f"Allow real data: {args.allow_real_data}")
+    print(f"R4 primary authorized: {args.r4_primary_authorized}")
     print(f"Baseline reproduction only: {mode == D8ExecutionMode.BASELINE_REPRODUCTION}")
     print(f"Random seed: {args.random_seed}")
     print(f"Output directory: {out_dir}")
@@ -162,6 +181,7 @@ def main() -> None:
         "execution_mode": mode.value,
         "smoke_test": args.smoke_test,
         "allow_real_data": args.allow_real_data,
+        "r4_primary_authorized": args.r4_primary_authorized,
         "baseline_reproduction_only": mode == D8ExecutionMode.BASELINE_REPRODUCTION,
         "random_seed": args.random_seed,
         "target_arms": target_arms,
@@ -175,6 +195,7 @@ def main() -> None:
             smoke_test=args.smoke_test,
             run_id=run_id,
             allow_real_data=args.allow_real_data,
+            r4_primary_authorized=args.r4_primary_authorized,
             random_seed=args.random_seed,
         )
 

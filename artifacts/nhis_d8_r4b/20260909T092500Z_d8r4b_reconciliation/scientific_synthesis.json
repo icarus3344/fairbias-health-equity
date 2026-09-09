@@ -1,0 +1,28 @@
+{
+  "gate": "NHIS-D8-R4B",
+  "synthesis_type": "PRIMARY_D6_VS_ENGINEERING_GEOMETRY_SENSITIVITY",
+  "distinction": {
+    "primary_result": "Paper-faithful D6 geometry (Tang et al. 2024 faithful stress-elbow dynamic MDS, mds_fixed_components=None, authoritative D6 training thresholds)",
+    "historical_sensitivity_result": "Engineering fixed-MDS geometry (R3 exploratory run with mds_fixed_components=2, dynamic thresholds)"
+  },
+  "descriptive_findings": {
+    "c3_state_trajectory_robustness": {
+      "is_robust": true,
+      "finding": "C3 (Posthoc Accuracy Enhancement) state trajectories are completely invariant to geometry choice. All 4 arms achieved 100% identical terminal state hashes between R4 (paper-faithful) and R3 (engineering): D6_ARM_001 (`e482706efb64d816`), D6_ARM_002 (`309b9c5094b28bc3`), D6_ARM_003 (`09d937d116efa19d`), and D6_ARM_004 (`0b813d22a7d611f1`). In all 4 arms, delta test AUROC between R4 and R3 was exactly 0.0000. This occurs because C3 initiates search from the frozen D6 canonical mitigation state, and the sequence of monotonic utility gains under the 0.02 degradation bound accepts the exact same sequence of feature transforms."
+    },
+    "c4_state_trajectory_sensitivity": {
+      "is_sensitive": true,
+      "finding": "C4 (Joint Interleaved Mitigation + Enhancement) state trajectories are highly geometry-sensitive. While Arm 1 converged to the same discrete state (`bc4fb10c249fb5b7`), Arms 2, 3, and 4 diverged completely: Arm 2 reached `2fa5f58ebee88072` (20 steps) vs `728280561dd4375e` (13 steps); Arm 3 reached `322e6506ac0d5fc3` (18 steps) vs `16e86371ee7fb35d` (16 steps); Arm 4 reached `cfe12b363df949cd` (16 steps) vs `3029dbe488c54f51` (13 steps). This sensitivity arises because Bias Mitigation recomputes multidimensional scaling and manifold representations in each interleaved step, where stress-elbow dimensionality vs fixed-2D causes different feature selections."
+    },
+    "surviving_utility_gains_under_primary_geometry": {
+      "finding": "Under the authoritative paper-faithful D6 geometry (R4): 1. C3 achieves consistent, modest test AUROC gains across all 4 arms vs C2 Canonical FairBias: Arm 1 (+0.0023), Arm 2 (+0.0019), Arm 3 (+0.0057), and Arm 4 (+0.0086). 2. C4 achieves large test AUROC gains on Arm 1 (+0.0388) and Arm 4 (+0.0196), while experiencing minor trade-offs on Arm 2 (-0.0026) and Arm 3 (-0.0046)."
+    },
+    "disappearing_apparent_engineering_gains": {
+      "finding": "In historical engineering geometry (R3), Arm 4 C4 appeared to achieve a test AUROC of 0.7520 (+0.0850 vs C2), but this apparent gain was entirely spurious because it operated in a severely fairness-infeasible regime (max_dphi = 0.01348, far exceeding the 0.00500 threshold, terminating with budget_exhausted). Under the authoritative paper-faithful geometry (R4), Arm 4 C4 successfully achieved true fairness feasibility (max_dphi = 0.00386 <= 0.00500, terminating with epsilon_reached), yielding a valid test AUROC of 0.6866. Thus, the apparent 0.7520 AUROC in engineering mode disappeared because it was an artifact of unconstrained bias."
+    },
+    "divergence_between_dphi_feasibility_and_dp_eo": {
+      "finding": "d_phi measures representation-space manifold Wasserstein distance between protected groups, providing a smooth, continuous metric of geometric disparity prior to classification. In contrast, Demographic Parity (DP) and Equal Opportunity (EO) gaps are discrete classification-space metrics evaluated at a fixed probability threshold (0.5). Because NHIS medical delay outcomes have low baseline prevalence (~6-7%), predicted positive counts in some subgroups are extremely sparse (e.g., 1 or 2 positive predictions), leading to volatile swings in EO difference (e.g. 0.11111) while DP difference remains tiny (e.g. 0.00005). Therefore, representation feasibility (max_dphi <= epsilon) does not imply zero discrete classification gap, and classification-space metrics must be interpreted alongside continuous representation distances."
+    }
+  },
+  "non_causal_disclaimer": "These findings are purely descriptive and empirical within the repeated cross-sectional NHIS temporal partitions. No causal claims of information loss, irreversibility, or unidentifiable data-generating processes are made."
+}

@@ -1,0 +1,146 @@
+{
+  "historical_r3_source": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r3/20260908T110640Z_d8r3_substantive",
+  "primary_r4_run_id": "20260909T080325Z_d8r4_substantive",
+  "arm_comparisons": {
+    "D6_ARM_001": {
+      "c3_comparison": {
+        "r4_state_hash": "e482706efb64d816",
+        "r3_state_hash": "e482706efb64d816",
+        "state_hash_match": true,
+        "r4_termination_reason": "budget_exhausted",
+        "r3_termination_reason": "budget_exhausted",
+        "r4_committed_steps": 5,
+        "r3_committed_steps": 5,
+        "test_auroc_r4": 0.6658977007005952,
+        "test_auroc_r3": 0.6658977007005952,
+        "delta_auroc_r4_minus_r3": 0.0,
+        "test_max_dphi_r4": 0.0018019171493744665,
+        "test_max_dphi_r3": 0.0018021105959438114,
+        "test_dp_gap_r4": 5.7149388501543034e-05,
+        "test_dp_gap_r3": 5.7149388501543034e-05
+      },
+      "c4_comparison": {
+        "r4_state_hash": "bc4fb10c249fb5b7",
+        "r3_state_hash": "bc4fb10c249fb5b7",
+        "state_hash_match": true,
+        "r4_termination_reason": "budget_exhausted",
+        "r3_termination_reason": "budget_exhausted",
+        "r4_committed_steps": 20,
+        "r3_committed_steps": 20,
+        "test_auroc_r4": 0.7023747656350726,
+        "test_auroc_r3": 0.7023747656350726,
+        "delta_auroc_r4_minus_r3": 0.0,
+        "test_max_dphi_r4": 0.0016585412333464007,
+        "test_max_dphi_r3": 0.0016584833032507065,
+        "test_dp_gap_r4": 4.696777781105806e-05,
+        "test_dp_gap_r3": 4.696777781105806e-05
+      },
+      "classification": "qualitatively robust across geometry"
+    },
+    "D6_ARM_002": {
+      "c3_comparison": {
+        "r4_state_hash": "309b9c5094b28bc3",
+        "r3_state_hash": "309b9c5094b28bc3",
+        "state_hash_match": true,
+        "r4_termination_reason": "budget_exhausted",
+        "r3_termination_reason": "budget_exhausted",
+        "r4_committed_steps": 5,
+        "r3_committed_steps": 5,
+        "test_auroc_r4": 0.7346949020453517,
+        "test_auroc_r3": 0.7346949020453517,
+        "delta_auroc_r4_minus_r3": 0.0,
+        "test_max_dphi_r4": 0.0034371857781183416,
+        "test_max_dphi_r3": 0.0035178512143674455,
+        "test_dp_gap_r4": 0.0037593984962406013,
+        "test_dp_gap_r3": 0.0037593984962406013
+      },
+      "c4_comparison": {
+        "r4_state_hash": "2fa5f58ebee88072",
+        "r3_state_hash": "728280561dd4375e",
+        "state_hash_match": false,
+        "r4_termination_reason": "budget_exhausted",
+        "r3_termination_reason": "budget_exhausted",
+        "r4_committed_steps": 20,
+        "r3_committed_steps": 13,
+        "test_auroc_r4": 0.730211005627295,
+        "test_auroc_r3": 0.745146858004158,
+        "delta_auroc_r4_minus_r3": -0.014935852376863012,
+        "test_max_dphi_r4": 0.0024760889299302543,
+        "test_max_dphi_r3": 0.004933353962809372,
+        "test_dp_gap_r4": 0.007936507936507936,
+        "test_dp_gap_r3": 0.007936507936507936
+      },
+      "classification": "magnitude-sensitive"
+    },
+    "D6_ARM_003": {
+      "c3_comparison": {
+        "r4_state_hash": "09d937d116efa19d",
+        "r3_state_hash": "09d937d116efa19d",
+        "state_hash_match": true,
+        "r4_termination_reason": "budget_exhausted",
+        "r3_termination_reason": "budget_exhausted",
+        "r4_committed_steps": 5,
+        "r3_committed_steps": 5,
+        "test_auroc_r4": 0.7400455714805341,
+        "test_auroc_r3": 0.7400455714805341,
+        "delta_auroc_r4_minus_r3": 0.0,
+        "test_max_dphi_r4": 0.005153122797960708,
+        "test_max_dphi_r3": 0.00515327754597731,
+        "test_dp_gap_r4": 0.005788540522737179,
+        "test_dp_gap_r3": 0.005788540522737179
+      },
+      "c4_comparison": {
+        "r4_state_hash": "322e6506ac0d5fc3",
+        "r3_state_hash": "16e86371ee7fb35d",
+        "state_hash_match": false,
+        "r4_termination_reason": "epsilon_reached",
+        "r3_termination_reason": "epsilon_reached",
+        "r4_committed_steps": 18,
+        "r3_committed_steps": 16,
+        "test_auroc_r4": 0.7298222420461717,
+        "test_auroc_r3": 0.7295458071777013,
+        "delta_auroc_r4_minus_r3": 0.0002764348684703988,
+        "test_max_dphi_r4": 0.004548512769974668,
+        "test_max_dphi_r3": 0.004557343503188544,
+        "test_dp_gap_r4": 0.007168517232797975,
+        "test_dp_gap_r3": 0.007098706768209333
+      },
+      "classification": "magnitude-sensitive"
+    },
+    "D6_ARM_004": {
+      "c3_comparison": {
+        "r4_state_hash": "0b813d22a7d611f1",
+        "r3_state_hash": "0b813d22a7d611f1",
+        "state_hash_match": true,
+        "r4_termination_reason": "budget_exhausted",
+        "r3_termination_reason": "budget_exhausted",
+        "r4_committed_steps": 5,
+        "r3_committed_steps": 5,
+        "test_auroc_r4": 0.6755809850372212,
+        "test_auroc_r3": 0.6755809850372212,
+        "delta_auroc_r4_minus_r3": 0.0,
+        "test_max_dphi_r4": 0.004063946127635874,
+        "test_max_dphi_r3": 0.004063989690056355,
+        "test_dp_gap_r4": 0.0001558535108893255,
+        "test_dp_gap_r3": 0.0001558535108893255
+      },
+      "c4_comparison": {
+        "r4_state_hash": "cfe12b363df949cd",
+        "r3_state_hash": "3029dbe488c54f51",
+        "state_hash_match": false,
+        "r4_termination_reason": "epsilon_reached",
+        "r3_termination_reason": "budget_exhausted",
+        "r4_committed_steps": 16,
+        "r3_committed_steps": 13,
+        "test_auroc_r4": 0.6865516852854965,
+        "test_auroc_r3": 0.7520259655729034,
+        "delta_auroc_r4_minus_r3": -0.06547428028740687,
+        "test_max_dphi_r4": 0.0038625474028666034,
+        "test_max_dphi_r3": 0.013484181471784986,
+        "test_dp_gap_r4": 0.001496044850915325,
+        "test_dp_gap_r3": 0.0034340813274954455
+      },
+      "classification": "magnitude-sensitive"
+    }
+  }
+}

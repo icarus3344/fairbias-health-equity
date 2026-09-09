@@ -1,0 +1,34 @@
+{
+  "gate": "NHIS-D8-R4B",
+  "status": "PRIMARY_OUTPUTS_PRESERVED_UNCHANGED",
+  "records": {
+    "artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/condition_metrics.json": {
+      "path": "artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/condition_metrics.json",
+      "sha256": "98e03a69c92483ffc298ad4b4817bad0dc2ce8171a9170a3d77462f554eb0b0b",
+      "size_bytes": 30399,
+      "classification": "PRIMARY_MODEL_OUTPUTS_FROM_SINGLE_R4_EXECUTION",
+      "modified": false
+    },
+    "artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/primary_deltas.json": {
+      "path": "artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/primary_deltas.json",
+      "sha256": "82276540bfc57de6c0f8b1fe9029a29a927007d6f5ec31d8210d25182b9c025b",
+      "size_bytes": 18716,
+      "classification": "PRIMARY_MODEL_OUTPUTS_FROM_SINGLE_R4_EXECUTION",
+      "modified": false
+    },
+    "artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/joint_trajectory_events.json": {
+      "path": "artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/joint_trajectory_events.json",
+      "sha256": "9d8df1137543a90c187479aaaafbf713e6a41a0bf853252ef9d9f37641bc6e3c",
+      "size_bytes": 52249,
+      "classification": "PRIMARY_MODEL_OUTPUTS_FROM_SINGLE_R4_EXECUTION",
+      "modified": false
+    },
+    "runs/d8_enhancement_study/d8_enhancement_study_results.json": {
+      "path": "runs/d8_enhancement_study/d8_enhancement_study_results.json",
+      "sha256": "944df70bd75a8c1a1bb0c6758540936123582fcab08bc64d5806583f09e4da11",
+      "size_bytes": 26751,
+      "classification": "PRIMARY_MODEL_OUTPUTS_FROM_SINGLE_R4_EXECUTION",
+      "modified": false
+    }
+  }
+}

@@ -428,11 +428,13 @@ class D8EnhancementRunner:
         allow_real_data: bool = False,
         baseline_reproduction_only: Optional[bool] = None,
         d6_release_dir: Optional[Union[str, pathlib.Path]] = None,
+        r4_primary_authorized: bool = False,
     ):
         self.smoke_test = smoke_test
         self.random_seed = random_seed
         self.run_id = run_id
         self.allow_real_data = allow_real_data
+        self._r4_primary_authorized = bool(r4_primary_authorized)
         self.canonical_provider = canonical_provider
         self.d6_release_dir = d6_release_dir
         self._adapter = adapter
@@ -459,12 +461,44 @@ class D8EnhancementRunner:
         else:
             raise ValueError(f"Invalid execution mode type: {type(raw_mode)}")
 
-        if self.allow_real_data and self._execution_mode != D8ExecutionMode.BASELINE_REPRODUCTION:
-            raise RuntimeError(
-                f"Access to real NHIS microdata is prohibited. Access is restricted to --baseline-reproduction-only mode "
-                f"(prohibited under mode '{self._execution_mode.value}'). "
-                "Gate D8-R3C/R3D is a synthetic-only verification gate; real NHIS execution is not authorized."
+        if self._r4_primary_authorized and self._execution_mode != D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY:
+            raise ValueError(
+                f"r4_primary_authorized is only valid with SUBSTANTIVE_D6_GEOMETRY, got '{self._execution_mode.value}'."
             )
+
+        if self.allow_real_data:
+            if self._execution_mode == D8ExecutionMode.BASELINE_REPRODUCTION:
+                pass
+            elif self._execution_mode == D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY:
+                if not self._r4_primary_authorized:
+                    raise RuntimeError(
+                        "Access to real NHIS microdata is prohibited without explicit r4_primary_authorized=True. "
+                        "Access is restricted to --baseline-reproduction-only mode unless explicitly authorized for Gate D8-R4."
+                    )
+                if self.d6_release_dir is not None:
+                    canonical_resolved = D6_TRAIN_VAL_RELEASE_DIR.resolve()
+                    injected_resolved = pathlib.Path(self.d6_release_dir).resolve()
+                    if injected_resolved != canonical_resolved:
+                        raise RuntimeError(
+                            f"Custom d6_release_dir is forbidden during real-data execution. "
+                            f"Expected canonical {canonical_resolved}, got {injected_resolved}."
+                        )
+            else:
+                raise RuntimeError(
+                    f"Access to real NHIS microdata is prohibited under execution mode '{self._execution_mode.value}'. "
+                    "Real NHIS execution is strictly not authorized for exploratory engineering mode."
+                )
+
+    @property
+    def r4_primary_authorized(self) -> bool:
+        return self._r4_primary_authorized
+
+    @r4_primary_authorized.setter
+    def r4_primary_authorized(self, value: Any) -> None:
+        raise AttributeError(
+            "Post-constructor mutation of r4_primary_authorized is prohibited. "
+            "Flag is immutable after construction."
+        )
 
     @property
     def execution_mode(self) -> D8ExecutionMode:

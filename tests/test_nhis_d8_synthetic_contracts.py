@@ -1821,5 +1821,248 @@ class TestNHISD8R3DGateContracts(unittest.TestCase):
         self.assertEqual(len(BLOCKED_ACCESS), 0)
 
 
+class TestNHISD8R4GateContracts(unittest.TestCase):
+    """Gate D8-R4 preflight contract verification suite.
+
+    Validates:
+    1. Substantive mode without allow_real_data cannot access NHIS.
+    2. Substantive mode with allow_real_data but without explicit R4 authorization fails.
+    3. Explicit R4 authorization with wrong execution mode fails.
+    4. EXPLORATORY_ENGINEERING real-data access remains prohibited.
+    5. Custom d6_release_dir under real-data R4 fails.
+    6. Canonical release path passes authorization check.
+    7. All four frozen thresholds load correctly.
+    8. Mocked dynamic threshold conflict cannot replace frozen epsilon.
+    9. C3 every iteration receives frozen epsilon.
+    10. C4 BM and AE receive the same frozen epsilon.
+    11. C1/C2 remain identical to reproduction mode on synthetic inputs.
+    12. No .parquet read occurs during preflight.
+    """
+
+    def setUp(self):
+        self.fake_adapter = FakeNHISStudyAdapter(n_rows=100)
+        self.canonical_dict = {"empwrkft1_a": {"fun": "poly", "order": 3}}
+
+    def test_r4_01_substantive_mode_without_allow_real_data_cannot_access_nhis(self):
+        """R4-01: Substantive mode without allow_real_data cannot access NHIS."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            allow_real_data=False,
+            r4_primary_authorized=False,
+        )
+        with self.assertRaises(RuntimeError) as ctx:
+            _ = runner.adapter
+        self.assertIn("Access to real NHIS parquet is prohibited without explicit allow_real_data authorization", str(ctx.exception))
+
+    def test_r4_02_substantive_with_allow_real_data_without_auth_fails(self):
+        """R4-02: Substantive mode with allow_real_data but without explicit R4 authorization fails."""
+        with self.assertRaises(RuntimeError) as ctx:
+            D8EnhancementRunner(
+                mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+                allow_real_data=True,
+                r4_primary_authorized=False,
+            )
+        self.assertIn("r4_primary_authorized=True", str(ctx.exception))
+
+        # CLI validation
+        with unittest.mock.patch("sys.argv", ["run.py", "--allow-real-data", "--execution-mode", "SUBSTANTIVE_D6_GEOMETRY"]):
+            with self.assertRaises(ValueError) as cli_ctx:
+                cli.main()
+            self.assertIn("--r4-primary-authorized", str(cli_ctx.exception))
+
+    def test_r4_03_explicit_r4_auth_with_wrong_mode_fails(self):
+        """R4-03: Explicit R4 authorization with wrong execution mode fails."""
+        with self.assertRaises(ValueError) as ctx1:
+            D8EnhancementRunner(
+                mode=D8ExecutionMode.BASELINE_REPRODUCTION,
+                allow_real_data=False,
+                r4_primary_authorized=True,
+            )
+        self.assertIn("r4_primary_authorized is only valid with SUBSTANTIVE_D6_GEOMETRY", str(ctx1.exception))
+
+        with self.assertRaises(ValueError) as ctx2:
+            D8EnhancementRunner(
+                mode=D8ExecutionMode.EXPLORATORY_ENGINEERING,
+                allow_real_data=False,
+                r4_primary_authorized=True,
+            )
+        self.assertIn("r4_primary_authorized is only valid with SUBSTANTIVE_D6_GEOMETRY", str(ctx2.exception))
+
+        # CLI validation
+        with unittest.mock.patch("sys.argv", ["run.py", "--r4-primary-authorized", "--execution-mode", "EXPLORATORY_ENGINEERING"]):
+            with self.assertRaises(ValueError) as cli_ctx:
+                cli.main()
+            self.assertIn("--r4-primary-authorized is only valid with SUBSTANTIVE_D6_GEOMETRY", str(cli_ctx.exception))
+
+    def test_r4_04_exploratory_real_data_access_remains_prohibited(self):
+        """R4-04: EXPLORATORY_ENGINEERING real-data access remains prohibited."""
+        with self.assertRaises(RuntimeError) as ctx:
+            D8EnhancementRunner(
+                mode=D8ExecutionMode.EXPLORATORY_ENGINEERING,
+                allow_real_data=True,
+            )
+        self.assertIn("Real NHIS execution is strictly not authorized for exploratory engineering mode", str(ctx.exception))
+
+        with unittest.mock.patch("sys.argv", ["run.py", "--allow-real-data", "--execution-mode", "EXPLORATORY_ENGINEERING"]):
+            with self.assertRaises(ValueError) as cli_ctx:
+                cli.main()
+            self.assertIn("strictly prohibited", str(cli_ctx.exception))
+            self.assertIn("EXPLORATORY_ENGINEERING", str(cli_ctx.exception))
+
+    def test_r4_05_custom_d6_release_dir_under_real_data_r4_fails(self):
+        """R4-05: Custom d6_release_dir under real-data R4 fails."""
+        custom_dir = pathlib.Path("/tmp/custom_d6_release_artifacts")
+        with self.assertRaises(RuntimeError) as ctx:
+            D8EnhancementRunner(
+                mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+                allow_real_data=True,
+                r4_primary_authorized=True,
+                d6_release_dir=custom_dir,
+            )
+        self.assertIn("Custom d6_release_dir is forbidden during real-data execution", str(ctx.exception))
+
+    def test_r4_06_canonical_release_path_passes_auth_check(self):
+        """R4-06: Canonical release path passes authorization check."""
+        from nhis_fairbias.d8_enhancement_runner import D6_TRAIN_VAL_RELEASE_DIR
+        # Injected canonical path
+        runner1 = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            allow_real_data=True,
+            r4_primary_authorized=True,
+            d6_release_dir=D6_TRAIN_VAL_RELEASE_DIR,
+            adapter=self.fake_adapter,
+        )
+        self.assertTrue(runner1.r4_primary_authorized)
+
+        # Default None (resolves to canonical)
+        runner2 = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            allow_real_data=True,
+            r4_primary_authorized=True,
+            d6_release_dir=None,
+            adapter=self.fake_adapter,
+        )
+        self.assertTrue(runner2.r4_primary_authorized)
+
+        # Property immutability check
+        with self.assertRaises(AttributeError):
+            runner2.r4_primary_authorized = False
+
+    def test_r4_07_all_four_frozen_thresholds_load_correctly(self):
+        """R4-07: All four frozen thresholds load correctly from canonical release."""
+        t1 = load_frozen_d6_threshold("D6_ARM_001")
+        t2 = load_frozen_d6_threshold("D6_ARM_002")
+        t3 = load_frozen_d6_threshold("D6_ARM_003")
+        t4 = load_frozen_d6_threshold("D6_ARM_004")
+
+        self.assertAlmostEqual(t1, 0.0005, places=6)
+        self.assertAlmostEqual(t2, 0.0020, places=6)
+        self.assertAlmostEqual(t3, 0.0050, places=6)
+        self.assertAlmostEqual(t4, 0.0050, places=6)
+
+    def test_r4_08_mocked_dynamic_threshold_conflict_cannot_replace_frozen_epsilon(self):
+        """R4-08: Mocked dynamic threshold conflict cannot replace frozen epsilon."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        with unittest.mock.patch.object(FairEvaluator, "compute_threshold", return_value=0.999):
+            res = runner.run_arm("D6_ARM_001")
+
+        self.assertEqual(res["epsilon_threshold"], 0.0005)
+        self.assertEqual(res["computed_initial_threshold_diagnostic"], 0.999)
+        self.assertEqual(res["epsilon_threshold_source"], "FROZEN_D6_TRAIN_REFERENCE")
+
+    def test_r4_09_c3_every_iteration_receives_frozen_epsilon(self):
+        """R4-09: C3 every iteration receives frozen epsilon."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        captured = []
+        orig_step = FairAccuracyEnhancement.enhance_step
+        def spy_step(engine, *args, **kwargs):
+            if "epsilon_threshold" in kwargs:
+                captured.append(kwargs["epsilon_threshold"])
+            return orig_step(engine, *args, **kwargs)
+
+        with unittest.mock.patch.object(FairAccuracyEnhancement, "enhance_step", spy_step):
+            res = runner.run_arm("D6_ARM_001")
+
+        self.assertGreater(len(captured), 0)
+        for t in captured:
+            self.assertEqual(t, 0.0005)
+
+    def test_r4_10_c4_bm_and_ae_receive_same_frozen_epsilon(self):
+        """R4-10: C4 BM and AE receive the same frozen epsilon."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        bm_captured = []
+        ae_captured = []
+        orig_bm = FairBiasMitigation.mitigate_step
+        orig_ae = FairAccuracyEnhancement.enhance_step
+        def spy_bm(engine, *args, **kwargs):
+            if "epsilon_threshold" in kwargs:
+                bm_captured.append(kwargs["epsilon_threshold"])
+            return orig_bm(engine, *args, **kwargs)
+        def spy_ae(engine, *args, **kwargs):
+            if "epsilon_threshold" in kwargs:
+                ae_captured.append(kwargs["epsilon_threshold"])
+            return orig_ae(engine, *args, **kwargs)
+
+        with unittest.mock.patch.object(FairBiasMitigation, "mitigate_step", spy_bm):
+            with unittest.mock.patch.object(FairAccuracyEnhancement, "enhance_step", spy_ae):
+                res = runner.run_arm("D6_ARM_002")
+
+        self.assertGreater(len(bm_captured), 0)
+        self.assertGreater(len(ae_captured), 0)
+        for t in bm_captured:
+            self.assertEqual(t, 0.0020)
+        for t in ae_captured:
+            self.assertEqual(t, 0.0020)
+
+    def test_r4_11_c1_c2_identical_to_reproduction_mode_synthetic(self):
+        """R4-11: C1/C2 remain identical to reproduction mode on synthetic inputs."""
+        runner_repro = D8EnhancementRunner(
+            mode=D8ExecutionMode.BASELINE_REPRODUCTION,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        runner_subst = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        res_repro = runner_repro.run_arm("D6_ARM_001")
+        res_subst = runner_subst.run_arm("D6_ARM_001")
+
+        for cond in ["baseline", "canonical_fairbias"]:
+            c_rep = res_repro["conditions"][cond]
+            c_sub = res_subst["conditions"][cond]
+            for split in ["train", "validation", "test"]:
+                self.assertAlmostEqual(c_rep[split]["auroc"], c_sub[split]["auroc"], places=6)
+                self.assertAlmostEqual(c_rep[split]["accuracy"], c_sub[split]["accuracy"], places=6)
+                self.assertAlmostEqual(c_rep[split]["max_dphi"], c_sub[split]["max_dphi"], places=6)
+
+    def test_r4_12_no_parquet_read_during_preflight(self):
+        """R4-12: Zero real-data parquet reads occur during synthetic preflight verification."""
+        self.assertEqual(len(BLOCKED_ACCESS), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

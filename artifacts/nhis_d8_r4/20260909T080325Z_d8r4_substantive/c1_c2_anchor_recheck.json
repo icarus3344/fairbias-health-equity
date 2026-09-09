@@ -1,0 +1,1663 @@
+{
+  "gate": "NHIS-D8-R4",
+  "reference_source": "/Users/lkc/Downloads/code_v_0_3/artifacts/nhis_d8_r2b/20260908T102300Z_d8r2b_eval",
+  "cohort_barrier": {
+    "D6_ARM_001": {
+      "train_n": {
+        "observed": 27450,
+        "reference": 27450,
+        "match": true
+      },
+      "train_positive": {
+        "observed": 1769,
+        "reference": 1769,
+        "match": true
+      },
+      "validation_n": {
+        "observed": 29277,
+        "reference": 29277,
+        "match": true
+      },
+      "validation_positive": {
+        "observed": 1929,
+        "reference": 1929,
+        "match": true
+      },
+      "test_n": {
+        "observed": 32350,
+        "reference": 32350,
+        "match": true
+      },
+      "test_positive": {
+        "observed": 2563,
+        "reference": 2563,
+        "match": true
+      },
+      "status": "PASS"
+    },
+    "D6_ARM_002": {
+      "train_n": {
+        "observed": 27453,
+        "reference": 27453,
+        "match": true
+      },
+      "train_positive": {
+        "observed": 1770,
+        "reference": 1770,
+        "match": true
+      },
+      "validation_n": {
+        "observed": 29283,
+        "reference": 29283,
+        "match": true
+      },
+      "validation_positive": {
+        "observed": 1931,
+        "reference": 1931,
+        "match": true
+      },
+      "test_n": {
+        "observed": 32355,
+        "reference": 32355,
+        "match": true
+      },
+      "test_positive": {
+        "observed": 2564,
+        "reference": 2564,
+        "match": true
+      },
+      "status": "PASS"
+    },
+    "D6_ARM_003": {
+      "train_n": {
+        "observed": 27451,
+        "reference": 27451,
+        "match": true
+      },
+      "train_positive": {
+        "observed": 1770,
+        "reference": 1770,
+        "match": true
+      },
+      "validation_n": {
+        "observed": 29282,
+        "reference": 29282,
+        "match": true
+      },
+      "validation_positive": {
+        "observed": 1931,
+        "reference": 1931,
+        "match": true
+      },
+      "test_n": {
+        "observed": 32354,
+        "reference": 32354,
+        "match": true
+      },
+      "test_positive": {
+        "observed": 2563,
+        "reference": 2563,
+        "match": true
+      },
+      "status": "PASS"
+    },
+    "D6_ARM_004": {
+      "train_n": {
+        "observed": 27451,
+        "reference": 27451,
+        "match": true
+      },
+      "train_positive": {
+        "observed": 1770,
+        "reference": 1770,
+        "match": true
+      },
+      "validation_n": {
+        "observed": 29282,
+        "reference": 29282,
+        "match": true
+      },
+      "validation_positive": {
+        "observed": 1931,
+        "reference": 1931,
+        "match": true
+      },
+      "test_n": {
+        "observed": 32354,
+        "reference": 32354,
+        "match": true
+      },
+      "test_positive": {
+        "observed": 2563,
+        "reference": 2563,
+        "match": true
+      },
+      "status": "PASS"
+    }
+  },
+  "state_barrier": {
+    "D6_ARM_001": {
+      "observed_hash": "40511e6c0d55b0ff",
+      "reference_hash": "40511e6c0d55b0ff",
+      "match": true,
+      "status": "PASS"
+    },
+    "D6_ARM_002": {
+      "observed_hash": "4c0bbba5d40022d6",
+      "reference_hash": "4c0bbba5d40022d6",
+      "match": true,
+      "status": "PASS"
+    },
+    "D6_ARM_003": {
+      "observed_hash": "38fa54a06a9c6427",
+      "reference_hash": "38fa54a06a9c6427",
+      "match": true,
+      "status": "PASS"
+    },
+    "D6_ARM_004": {
+      "observed_hash": "ff0a2fb81596b598",
+      "reference_hash": "ff0a2fb81596b598",
+      "match": true,
+      "status": "PASS"
+    }
+  },
+  "metric_barrier": [
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "train_2022",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.004774562999852669,
+      "reference": 0.004774562999852669,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7791293076210748,
+      "reference": 0.7791293076210748,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.2007556144414719,
+      "reference": 0.2007556144414719,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.9325067459097585,
+      "reference": 0.9325067459097585,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.0041983663102154135,
+      "reference": 0.0041983663102154135,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 111,
+      "reference": 111,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.003791372066810124,
+      "reference": 0.003791372066810124,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.001016352378684078,
+      "reference": 0.001016352378684078,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.0004896742601660613,
+      "reference": 0.0004896742601660613,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7516813909908746,
+      "reference": 0.7516813909908746,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.21530154489634734,
+      "reference": 0.21530154489634734,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.9196599690880989,
+      "reference": 0.9196599690880989,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.003925250716235319,
+      "reference": 0.003925250716235319,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 130,
+      "reference": 130,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.00401854714064915,
+      "reference": 0.00401854714064915,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.0005829991820541875,
+      "reference": 0.0005829991820541875,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.00029304592565330273,
+      "reference": 0.00029304592565330273,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "train_2022",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.0004898430802057542,
+      "reference": 0.0004898430802057542,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.7050300381246706,
+      "reference": 0.7050300381246706,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.14386587848089485,
+      "reference": 0.14386587848089485,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9341462581548656,
+      "reference": 0.9341462581548656,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.0008270540239015199,
+      "reference": 0.0008270540239015199,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 1,
+      "reference": 1,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 3.4156505106397514e-05,
+      "reference": 3.4156505106397514e-05,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 7.490075649764063e-05,
+      "reference": 7.490075649764063e-05,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.0012987012987012987,
+      "reference": 0.0012987012987012987,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.663616305761805,
+      "reference": 0.663616305761805,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.1408667675847245,
+      "reference": 0.1408667675847245,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9207109737248841,
+      "reference": 0.9207109737248841,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.0014029923016365678,
+      "reference": 0.0014029923016365678,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 2,
+      "reference": 2,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 6.182380216383307e-05,
+      "reference": 6.182380216383307e-05,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 1.0181610690484973e-05,
+      "reference": 1.0181610690484973e-05,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_001",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.0,
+      "reference": 0.0,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "train_2022",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.005221647220420581,
+      "reference": 0.005221647220420581,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7791136828055484,
+      "reference": 0.7791136828055484,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.20077642832585907,
+      "reference": 0.20077642832585907,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.9324522760646109,
+      "reference": 0.9324522760646109,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.0056532544651037575,
+      "reference": 0.0056532544651037575,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 109,
+      "reference": 109,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.003722296212819725,
+      "reference": 0.003722296212819725,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.011720587391728331,
+      "reference": 0.011720587391728331,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.1111111111111111,
+      "reference": 0.1111111111111111,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7513692505002743,
+      "reference": 0.7513692505002743,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.21480999255828503,
+      "reference": 0.21480999255828503,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.9196723844846237,
+      "reference": 0.9196723844846237,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.005281354828261284,
+      "reference": 0.005281354828261284,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 127,
+      "reference": 127,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.00392520475969711,
+      "reference": 0.00392520475969711,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.008724007961716004,
+      "reference": 0.008724007961716004,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.038135593220338986,
+      "reference": 0.038135593220338986,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "train_2022",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.0018873614190330987,
+      "reference": 0.0018873614190330987,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.7618132590305886,
+      "reference": 0.7618132590305886,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.17916408214505203,
+      "reference": 0.17916408214505203,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9338865553392753,
+      "reference": 0.9338865553392753,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.0027415587469006276,
+      "reference": 0.0027415587469006276,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 23,
+      "reference": 23,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 0.0007854386504115015,
+      "reference": 0.0007854386504115015,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 0.0051813471502590676,
+      "reference": 0.0051813471502590676,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.1111111111111111,
+      "reference": 0.1111111111111111,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.732767917846384,
+      "reference": 0.732767917846384,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.18007305052849834,
+      "reference": 0.18007305052849834,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9204759697110184,
+      "reference": 0.9204759697110184,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.0021079069902435557,
+      "reference": 0.0021079069902435557,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 43,
+      "reference": 43,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 0.001329006335960439,
+      "reference": 0.001329006335960439,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 0.0037593984962406013,
+      "reference": 0.0037593984962406013,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_002",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.0136986301369863,
+      "reference": 0.0136986301369863,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "train_2022",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.010974976082830412,
+      "reference": 0.010974976082830412,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7789055681211667,
+      "reference": 0.7789055681211667,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.20069572937732338,
+      "reference": 0.20069572937732338,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.9324158185916263,
+      "reference": 0.9324158185916263,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.010415619448701957,
+      "reference": 0.010415619448701957,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 110,
+      "reference": 110,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.003756574004507889,
+      "reference": 0.003756574004507889,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.008698523207611003,
+      "reference": 0.008698523207611003,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.036090374697969635,
+      "reference": 0.036090374697969635,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7512725309249968,
+      "reference": 0.7512725309249968,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.21433313492402795,
+      "reference": 0.21433313492402795,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.9196389936329357,
+      "reference": 0.9196389936329357,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.009258418703268718,
+      "reference": 0.009258418703268718,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 131,
+      "reference": 131,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.004048958397725165,
+      "reference": 0.004048958397725165,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.013106438960193386,
+      "reference": 0.013106438960193386,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.053660614979933435,
+      "reference": 0.053660614979933435,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "train_2022",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.004968475251586519,
+      "reference": 0.004968475251586519,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.768286949821869,
+      "reference": 0.768286949821869,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.19083870471607547,
+      "reference": 0.19083870471607547,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9322792159005533,
+      "reference": 0.9322792159005533,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.004932759769045493,
+      "reference": 0.004932759769045493,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 92,
+      "reference": 92,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 0.003141861894679325,
+      "reference": 0.003141861894679325,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 0.002576401754648109,
+      "reference": 0.002576401754648109,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.01171517184175412,
+      "reference": 0.01171517184175412,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.7343827887279166,
+      "reference": 0.7343827887279166,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.2027401500568511,
+      "reference": 0.2027401500568511,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9196080855535637,
+      "reference": 0.9196080855535637,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.004575527885988915,
+      "reference": 0.004575527885988915,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 104,
+      "reference": 104,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 0.003214440254682574,
+      "reference": 0.003214440254682574,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 0.004904557271407588,
+      "reference": 0.004904557271407588,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_003",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.0277601569801618,
+      "reference": 0.0277601569801618,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "train_2022",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.0178791614228464,
+      "reference": 0.0178791614228464,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7625650951766704,
+      "reference": 0.7625650951766704,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.18843906165955077,
+      "reference": 0.18843906165955077,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.932108462536712,
+      "reference": 0.932108462536712,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.017135980484520655,
+      "reference": 0.017135980484520655,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 95,
+      "reference": 95,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.003244313912984086,
+      "reference": 0.003244313912984086,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.0021032857794920164,
+      "reference": 0.0021032857794920164,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.005384254751343359,
+      "reference": 0.005384254751343359,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auroc",
+      "observed": 0.7352557123378971,
+      "reference": 0.7352557123378971,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "auprc",
+      "observed": 0.1989613824119812,
+      "reference": 0.1989613824119812,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "accuracy",
+      "observed": 0.9194844532360759,
+      "reference": 0.9194844532360759,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "max_dphi",
+      "observed": 0.015508179890542867,
+      "reference": 0.015508179890542867,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "predicted_positive_count",
+      "observed": 88,
+      "reference": 88,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "selection_rate",
+      "observed": 0.0027199109847314087,
+      "reference": 0.0027199109847314087,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "demographic_parity_gap",
+      "observed": 0.002110122569181487,
+      "reference": 0.002110122569181487,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "baseline",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.01351797109907258,
+      "reference": 0.01351797109907258,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "train_2022",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.003629350644434753,
+      "reference": 0.003629350644434753,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.7105834823020472,
+      "reference": 0.7105834823020472,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.16095078945686564,
+      "reference": 0.16095078945686564,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9319718598456389,
+      "reference": 0.9319718598456389,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.003410200492604192,
+      "reference": 0.003410200492604192,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 67,
+      "reference": 67,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 0.0022880950754729868,
+      "reference": 0.0022880950754729868,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 0.00030620155024526285,
+      "reference": 0.00030620155024526285,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "validation_2023",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.0015831800641927225,
+      "reference": 0.0015831800641927225,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auroc",
+      "observed": 0.6669734185222992,
+      "reference": 0.6669734185222992,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "auprc",
+      "observed": 0.1592473309854776,
+      "reference": 0.1592473309854776,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "accuracy",
+      "observed": 0.9192680966804723,
+      "reference": 0.9192680966804723,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "max_dphi",
+      "observed": 0.004586216225595551,
+      "reference": 0.004586216225595551,
+      "diff": 0.0,
+      "tolerance": 1e-06,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "predicted_positive_count",
+      "observed": 67,
+      "reference": 67,
+      "diff": 0,
+      "tolerance": 0.0,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "selection_rate",
+      "observed": 0.0020708413179205045,
+      "reference": 0.0020708413179205045,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "demographic_parity_gap",
+      "observed": 9.98355591424879e-05,
+      "reference": 9.98355591424879e-05,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    },
+    {
+      "arm_id": "D6_ARM_004",
+      "stage": "test_2024",
+      "condition": "canonical_fairbias",
+      "metric": "equal_opportunity_gap",
+      "observed": 0.003875870643610205,
+      "reference": 0.003875870643610205,
+      "diff": 0.0,
+      "tolerance": 0.0001,
+      "status": "PASS"
+    }
+  ],
+  "all_barriers_passed": true
+}

@@ -1,0 +1,114 @@
+{
+  "r4_config_sha256": "5dd77c584c1bfc4a6949aa5de5ed03666e818ee0ea2c981532d4052bb475c4d2",
+  "frozen_config": {
+    "gate": "NHIS-D8-R4",
+    "execution_mode": "SUBSTANTIVE_D6_GEOMETRY",
+    "algorithm_mode": "tang2024_paper_faithful",
+    "mds_fixed_components": null,
+    "random_seed": 0,
+    "classifier": {
+      "type": "LogisticRegression",
+      "solver": "lbfgs",
+      "max_iter": 1000,
+      "random_state": 0,
+      "probability_threshold": 0.5
+    },
+    "scaler": {
+      "type": "MinMaxScaler",
+      "feature_range": [
+        0,
+        1
+      ],
+      "fit_partition_strictly": "train_only"
+    },
+    "eval_norm": "min-max",
+    "temporal_splits": {
+      "train_year": 2022,
+      "validation_year": 2023,
+      "test_year": 2024
+    },
+    "arms": {
+      "D6_ARM_001": {
+        "protected_attribute": "SEX_A",
+        "outcome": "MEDDL12M_A",
+        "disability_arm": "full_feature",
+        "feature_set": "full",
+        "epsilon_threshold": 0.0005,
+        "epsilon_threshold_source": "FROZEN_D6_TRAIN_REFERENCE",
+        "frozen_reference_artifact": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_001/train_dphi_before_after.json",
+        "feature_count": 21
+      },
+      "D6_ARM_002": {
+        "protected_attribute": "HISPALLP_A",
+        "outcome": "MEDDL12M_A",
+        "disability_arm": "full_feature",
+        "feature_set": "full",
+        "epsilon_threshold": 0.002,
+        "epsilon_threshold_source": "FROZEN_D6_TRAIN_REFERENCE",
+        "frozen_reference_artifact": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_002/train_dphi_before_after.json",
+        "feature_count": 21
+      },
+      "D6_ARM_003": {
+        "protected_attribute": "DISAB3_A",
+        "outcome": "MEDDL12M_A",
+        "disability_arm": "full_feature",
+        "feature_set": "full",
+        "epsilon_threshold": 0.005,
+        "epsilon_threshold_source": "FROZEN_D6_TRAIN_REFERENCE",
+        "frozen_reference_artifact": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_003/train_dphi_before_after.json",
+        "feature_count": 21
+      },
+      "D6_ARM_004": {
+        "protected_attribute": "DISAB3_A",
+        "outcome": "MEDDL12M_A",
+        "disability_arm": "exclude_disability_components",
+        "feature_set": "exclude_disability",
+        "epsilon_threshold": 0.005,
+        "epsilon_threshold_source": "FROZEN_D6_TRAIN_REFERENCE",
+        "frozen_reference_artifact": "docs/releases/NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609/D6_ARM_004/train_dphi_before_after.json",
+        "feature_count": 15
+      }
+    },
+    "canonical_d6_changed_dicts": {
+      "D6_ARM_001_hash": "40511e6c0d55b0ff",
+      "D6_ARM_002_hash": "4c0bbba5d40022d6",
+      "D6_ARM_003_hash": "38fa54a06a9c6427",
+      "D6_ARM_004_hash": "ff0a2fb81596b598"
+    },
+    "enhancement_parameters": {
+      "candidate_transform_families": {
+        "categorical": [
+          "one_hot",
+          "drop"
+        ],
+        "numerical": [
+          "binning",
+          "polynomial",
+          "log",
+          "scaling",
+          "drop"
+        ]
+      },
+      "polynomial_exponent_grid": [
+        2,
+        3
+      ],
+      "binning_n_bins": 5,
+      "log_epsilon": 1e-06,
+      "minimum_utility_gain": 0.001,
+      "maximum_fairness_degradation": 0.0,
+      "candidate_ranking_method": "delta_utility_descending_then_fairness_degradation_ascending",
+      "cycle_detection": "changed_dict_hash_in_committed_states_set",
+      "search_budgets": {
+        "condition_3_max_steps": 10,
+        "condition_4_max_iterations": 10
+      },
+      "acceptance_semantics": "strict_monotonic_utility_gain_within_fairness_bound",
+      "probability_threshold": 0.5
+    },
+    "governance_incidents_recorded": [
+      "R3-GOV-01: historical broad unittest discovery occurred, 24 real-data reads blocked, 0 rows accessed",
+      "R3B-SCI-01: historical substantive execution used engineering fixed-MDS geometry and is exploratory sensitivity evidence only"
+    ]
+  }
+}

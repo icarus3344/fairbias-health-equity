@@ -1,0 +1,10 @@
+{
+  "protected_baseline_tag": "inherited-code-v0.3-baseline-20260828",
+  "root_14_files_diff_stat": "",
+  "root_14_files_clean": true,
+  "gitignore_diff_stat": ".gitignore | 5 +++++\n 1 file changed, 5 insertions(+)",
+  "gitignore_drift_status": "PRE_EXISTING_BASELINE_DRIFT_RECORDED_NOT_RESOLVED",
+  "r4_baseline_commit": "3bc3c40b7edabdbbd0cb443fd7bfca2d4d1e6909",
+  "core_fairbias_diff_stat": "",
+  "core_fairbias_clean": true
+}
