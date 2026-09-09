@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from nhis_fairbias.d8_enhancement_runner import D8EnhancementRunner
+from nhis_fairbias.d8_enhancement_runner import D8EnhancementRunner, D8ExecutionMode
 from nhis_fairbias.d6_temporal_runner import FROZEN_D6_ARMS
 
 
@@ -51,6 +51,14 @@ def parse_args() -> argparse.Namespace:
         help="Execute only baseline and canonical FairBias conditions without enhancement search.",
     )
     parser.add_argument(
+        "--execution-mode",
+        "--mode",
+        type=str,
+        default=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY.value,
+        choices=[m.value for m in D8ExecutionMode],
+        help="Explicit study execution mode (default: SUBSTANTIVE_D6_GEOMETRY).",
+    )
+    parser.add_argument(
         "--random-seed",
         type=int,
         default=0,
@@ -81,6 +89,9 @@ def build_comparison_dataframe(results: Dict[str, Any]) -> pd.DataFrame:
                 "test_max_dphi": round(test_res["max_dphi"], 5) if test_res and "max_dphi" in test_res else None,
                 "train_max_dphi": round(train_res["max_dphi"], 5) if train_res and "max_dphi" in train_res else None,
                 "epsilon_threshold": round(arm_data["epsilon_threshold"], 5),
+                "epsilon_threshold_source": arm_data.get("epsilon_threshold_source"),
+                "frozen_reference_artifact": arm_data.get("frozen_reference_artifact"),
+                "computed_initial_threshold_diagnostic": round(arm_data.get("computed_initial_threshold_diagnostic", 0.0), 5) if arm_data.get("computed_initial_threshold_diagnostic") is not None else None,
                 "fairness_feasible": cond_res.get("fairness_feasible", False),
                 "termination_reason": cond_res.get("termination_reason", "unknown"),
                 "test_dp_difference": round(test_res["demographic_parity_difference"], 4) if test_res and "demographic_parity_difference" in test_res else None,
@@ -92,9 +103,21 @@ def build_comparison_dataframe(results: Dict[str, Any]) -> pd.DataFrame:
 def main() -> None:
     args = parse_args()
 
-    if args.allow_real_data and not args.baseline_reproduction_only:
+    # Resolve execution mode
+    if args.baseline_reproduction_only:
+        mode = D8ExecutionMode.BASELINE_REPRODUCTION
+    else:
+        try:
+            mode = D8ExecutionMode(args.execution_mode)
+        except ValueError:
+            raise ValueError(
+                f"Unknown execution mode: '{args.execution_mode}'. Valid modes are: {[m.value for m in D8ExecutionMode]}"
+            )
+
+    if args.allow_real_data and mode != D8ExecutionMode.BASELINE_REPRODUCTION:
         raise ValueError(
-            "--allow-real-data is strictly prohibited without --baseline-reproduction-only at Gate D8-R2."
+            f"--allow-real-data is strictly prohibited without --baseline-reproduction-only "
+            f"(prohibited with mode '{mode.value}') at Gate D8-R3C/R3D."
         )
 
     # Collision-proof output directory resolution
@@ -122,9 +145,10 @@ def main() -> None:
     print(f"=== Starting D8 Accuracy Enhancement Study ===")
     print(f"Run ID: {run_id}")
     print(f"Target arms: {target_arms}")
+    print(f"Execution mode: {mode.value}")
     print(f"Smoke test mode: {args.smoke_test}")
     print(f"Allow real data: {args.allow_real_data}")
-    print(f"Baseline reproduction only: {args.baseline_reproduction_only}")
+    print(f"Baseline reproduction only: {mode == D8ExecutionMode.BASELINE_REPRODUCTION}")
     print(f"Random seed: {args.random_seed}")
     print(f"Output directory: {out_dir}")
 
@@ -135,9 +159,10 @@ def main() -> None:
         "run_id": run_id,
         "status": "RUNNING",
         "started_at_utc": started_at,
+        "execution_mode": mode.value,
         "smoke_test": args.smoke_test,
         "allow_real_data": args.allow_real_data,
-        "baseline_reproduction_only": args.baseline_reproduction_only,
+        "baseline_reproduction_only": mode == D8ExecutionMode.BASELINE_REPRODUCTION,
         "random_seed": args.random_seed,
         "target_arms": target_arms,
     }
@@ -146,10 +171,10 @@ def main() -> None:
 
     try:
         runner = D8EnhancementRunner(
+            mode=mode,
             smoke_test=args.smoke_test,
             run_id=run_id,
             allow_real_data=args.allow_real_data,
-            baseline_reproduction_only=args.baseline_reproduction_only,
             random_seed=args.random_seed,
         )
 
@@ -195,9 +220,10 @@ def main() -> None:
             "started_at_utc": started_at,
             "completed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "duration_seconds": total_time,
+            "execution_mode": mode.value,
             "smoke_test": args.smoke_test,
             "allow_real_data": args.allow_real_data,
-            "baseline_reproduction_only": args.baseline_reproduction_only,
+            "baseline_reproduction_only": mode == D8ExecutionMode.BASELINE_REPRODUCTION,
             "random_seed": args.random_seed,
             "target_arms": target_arms,
             "output_files": {
@@ -216,9 +242,10 @@ def main() -> None:
             "status": "FAILED",
             "started_at_utc": started_at,
             "failed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "execution_mode": mode.value,
             "smoke_test": args.smoke_test,
             "allow_real_data": args.allow_real_data,
-            "baseline_reproduction_only": args.baseline_reproduction_only,
+            "baseline_reproduction_only": mode == D8ExecutionMode.BASELINE_REPRODUCTION,
             "random_seed": args.random_seed,
             "target_arms": target_arms,
             "error": str(exc),

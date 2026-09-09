@@ -17,9 +17,11 @@ Adheres to D8-R1 repair contracts:
 from __future__ import annotations
 
 import copy
+import enum
 import json
+import math
 import pathlib
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -61,6 +63,123 @@ from nhis_fairbias.d6_temporal_runner import FROZEN_D6_ARMS
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 FEATURES_PARQUET_PATH = REPO_ROOT / "data" / "processed" / "nhis" / "nhis_2022_2024_features.parquet"
 D6_RELEASE_DIR = REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TEST_V1_b2fd84e7"
+D6_TRAIN_VAL_RELEASE_DIR = REPO_ROOT / "docs" / "releases" / "NHIS_D6_TEMPORAL_TRAIN_VAL_V1_fa8eb609"
+FROZEN_D6_TRAIN_VAL_RELEASE_DIR = D6_TRAIN_VAL_RELEASE_DIR
+FROZEN_D6_TRAIN_REFERENCE_SOURCE = "FROZEN_D6_TRAIN_REFERENCE"
+DYNAMIC_COMPUTED_THRESHOLD_SOURCE = "DYNAMIC_COMPUTED_THRESHOLD"
+
+
+def load_frozen_d6_threshold(
+    arm_id: str,
+    protected_attr: Optional[str] = None,
+    release_dir: Optional[Union[str, pathlib.Path]] = None,
+) -> float:
+    """Load authoritative frozen D6 paper-faithful training threshold from archived release artifacts.
+
+    Fails closed if:
+    - arm_id is unknown;
+    - reference file is missing;
+    - threshold is missing, non-finite, or non-positive;
+    - protected attribute does not match the frozen arm definition.
+    """
+    prov = get_frozen_d6_threshold_provenance(
+        arm_id=arm_id,
+        protected_attr=protected_attr,
+        release_dir=release_dir,
+    )
+    return float(prov["epsilon_threshold"])
+
+
+def get_frozen_d6_threshold_provenance(
+    arm_id: str,
+    protected_attr: Optional[str] = None,
+    release_dir: Optional[Union[str, pathlib.Path]] = None,
+) -> Dict[str, Any]:
+    """Retrieve full provenance for authoritative frozen D6 paper-faithful training threshold."""
+    if arm_id not in FROZEN_D6_ARMS:
+        raise ValueError(
+            f"Unknown arm_id '{arm_id}'. Authoritative frozen D6 arms are: {list(FROZEN_D6_ARMS.keys())}"
+        )
+
+    expected_protected = FROZEN_D6_ARMS[arm_id]["protected_attribute"]
+    if protected_attr is not None and protected_attr != expected_protected:
+        raise ValueError(
+            f"Protected attribute mismatch for arm '{arm_id}': "
+            f"requested '{protected_attr}', expected '{expected_protected}'."
+        )
+
+    base_dir = pathlib.Path(release_dir) if release_dir is not None else D6_TRAIN_VAL_RELEASE_DIR
+    ref_file = base_dir / arm_id / "train_dphi_before_after.json"
+
+    if not ref_file.is_file():
+        raise FileNotFoundError(
+            f"Authoritative frozen D6 reference file missing for arm '{arm_id}': {ref_file}"
+        )
+
+    try:
+        with open(ref_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as exc:
+        raise ValueError(f"Malformed JSON in frozen reference file {ref_file}: {exc}") from exc
+
+    if "epsilon_threshold" not in data or data["epsilon_threshold"] is None:
+        raise ValueError(f"Missing 'epsilon_threshold' in frozen reference file: {ref_file}")
+
+    try:
+        threshold = float(data["epsilon_threshold"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid non-numeric 'epsilon_threshold' in {ref_file}: {data['epsilon_threshold']}") from exc
+
+    if not math.isfinite(threshold):
+        raise ValueError(f"Non-finite 'epsilon_threshold' in {ref_file}: {threshold}")
+
+    if threshold <= 0.0:
+        raise ValueError(f"Non-positive 'epsilon_threshold' in {ref_file}: {threshold}")
+
+    ref_protected = data.get("protected_attribute")
+    if ref_protected is None:
+        raise ValueError(f"Missing 'protected_attribute' in frozen reference file: {ref_file}")
+    if ref_protected != expected_protected:
+        raise ValueError(
+            f"Protected attribute in {ref_file} ('{ref_protected}') does not match "
+            f"frozen arm definition ('{expected_protected}')."
+        )
+
+    if "arm_id" in data and data["arm_id"] != arm_id:
+        raise ValueError(f"Arm ID mismatch in {ref_file}: expected '{arm_id}', found '{data['arm_id']}'.")
+
+    try:
+        rel_artifact = str(ref_file.relative_to(REPO_ROOT))
+    except ValueError:
+        rel_artifact = str(ref_file)
+
+    return {
+        "arm_id": arm_id,
+        "protected_attribute": expected_protected,
+        "epsilon_threshold": threshold,
+        "epsilon_threshold_source": FROZEN_D6_TRAIN_REFERENCE_SOURCE,
+        "frozen_reference_artifact": rel_artifact,
+    }
+
+
+class FrozenD6ThresholdRegistry:
+    """Registry providing authoritative access to frozen D6 paper-faithful thresholds."""
+
+    @staticmethod
+    def load(
+        arm_id: str,
+        protected_attr: Optional[str] = None,
+        release_dir: Optional[Union[str, pathlib.Path]] = None,
+    ) -> float:
+        return load_frozen_d6_threshold(arm_id, protected_attr=protected_attr, release_dir=release_dir)
+
+    @staticmethod
+    def get_provenance(
+        arm_id: str,
+        protected_attr: Optional[str] = None,
+        release_dir: Optional[Union[str, pathlib.Path]] = None,
+    ) -> Dict[str, Any]:
+        return get_frozen_d6_threshold_provenance(arm_id, protected_attr=protected_attr, release_dir=release_dir)
 
 
 def compute_group_fairness_gaps(
@@ -287,33 +406,87 @@ def evaluate_representation(
     }
 
 
+class D8ExecutionMode(str, enum.Enum):
+    """Explicit validated execution modes for Gate D8."""
+    BASELINE_REPRODUCTION = "BASELINE_REPRODUCTION"
+    SUBSTANTIVE_D6_GEOMETRY = "SUBSTANTIVE_D6_GEOMETRY"
+    EXPLORATORY_ENGINEERING = "EXPLORATORY_ENGINEERING"
+
+
 class D8EnhancementRunner:
     """Orchestrates the Accuracy Enhancement evaluation across the 4 frozen NHIS arms."""
 
     def __init__(
         self,
+        mode: Union[D8ExecutionMode, str] = D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+        execution_mode: Optional[Union[D8ExecutionMode, str]] = None,
         adapter: Optional[Any] = None,
         canonical_provider: Optional[Callable[[str], Dict[str, Any]]] = None,
         smoke_test: bool = False,
         random_seed: int = 0,
         run_id: str = "d8_study",
         allow_real_data: bool = False,
-        baseline_reproduction_only: bool = False,
+        baseline_reproduction_only: Optional[bool] = None,
+        d6_release_dir: Optional[Union[str, pathlib.Path]] = None,
     ):
         self.smoke_test = smoke_test
         self.random_seed = random_seed
         self.run_id = run_id
         self.allow_real_data = allow_real_data
-        self.baseline_reproduction_only = baseline_reproduction_only
         self.canonical_provider = canonical_provider
+        self.d6_release_dir = d6_release_dir
         self._adapter = adapter
         self.audit_events: List[CandidateAuditEvent] = []
 
-        if self.allow_real_data and not self.baseline_reproduction_only:
+        # Resolve mode
+        raw_mode = execution_mode if execution_mode is not None else mode
+        if baseline_reproduction_only is True:
+            if execution_mode is not None and execution_mode != D8ExecutionMode.BASELINE_REPRODUCTION:
+                raise ValueError(
+                    f"Conflicting mode arguments: execution_mode='{execution_mode}' and baseline_reproduction_only=True"
+                )
+            raw_mode = D8ExecutionMode.BASELINE_REPRODUCTION
+
+        if isinstance(raw_mode, D8ExecutionMode):
+            self._execution_mode = raw_mode
+        elif isinstance(raw_mode, str):
+            try:
+                self._execution_mode = D8ExecutionMode(raw_mode)
+            except ValueError:
+                raise ValueError(
+                    f"Unknown execution mode: '{raw_mode}'. Valid modes are: {[m.value for m in D8ExecutionMode]}"
+                )
+        else:
+            raise ValueError(f"Invalid execution mode type: {type(raw_mode)}")
+
+        if self.allow_real_data and self._execution_mode != D8ExecutionMode.BASELINE_REPRODUCTION:
             raise RuntimeError(
-                "Access to real NHIS microdata is restricted to --baseline-reproduction-only mode during Gate D8-R2. "
-                "Full four-condition enhancement on real data is NOT authorized."
+                f"Access to real NHIS microdata is prohibited. Access is restricted to --baseline-reproduction-only mode "
+                f"(prohibited under mode '{self._execution_mode.value}'). "
+                "Gate D8-R3C/R3D is a synthetic-only verification gate; real NHIS execution is not authorized."
             )
+
+    @property
+    def execution_mode(self) -> D8ExecutionMode:
+        return self._execution_mode
+
+    @property
+    def baseline_reproduction_only(self) -> bool:
+        return self._execution_mode == D8ExecutionMode.BASELINE_REPRODUCTION
+
+    @baseline_reproduction_only.setter
+    def baseline_reproduction_only(self, value: Any) -> None:
+        raise AttributeError(
+            "Post-constructor mutation of baseline_reproduction_only is prohibited. "
+            "Execution mode is immutable after construction."
+        )
+
+    @execution_mode.setter
+    def execution_mode(self, value: Any) -> None:
+        raise AttributeError(
+            "Post-constructor mutation of execution_mode is prohibited. "
+            "Execution mode is immutable after construction."
+        )
 
     @property
     def adapter(self) -> Any:
@@ -410,7 +583,7 @@ class D8EnhancementRunner:
             "protected_attribute": str(protected_attr),
         }
 
-        if self.baseline_reproduction_only:
+        if self._execution_mode in (D8ExecutionMode.BASELINE_REPRODUCTION, D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY):
             fb_config = FairBiasConfig(
                 algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL,
                 random_seed=self.random_seed,
@@ -421,8 +594,9 @@ class D8EnhancementRunner:
                 use_bias_mitigation=True,
                 use_accuracy_enhancement=False,
                 failed_attribute_mode="stop",
+                mds_fixed_components=None,
             ).resolved()
-        else:
+        elif self._execution_mode == D8ExecutionMode.EXPLORATORY_ENGINEERING:
             fb_config = FairBiasConfig(
                 algorithm_mode=ALGORITHM_MODE_ENGINEERING,
                 random_seed=self.random_seed,
@@ -435,6 +609,8 @@ class D8EnhancementRunner:
                 failed_attribute_mode="stop",
                 mds_fixed_components=2,
             ).resolved()
+        else:
+            raise ValueError(f"Unsupported execution mode: {self._execution_mode}")
 
         evaluator = FairEvaluator(
             config=fb_config,
@@ -452,7 +628,22 @@ class D8EnhancementRunner:
         O_tr_df = pd.DataFrame({protected_attr: o_tr}, index=X_train.index)
         O_val_df = pd.DataFrame({protected_attr: o_v}, index=X_val.index)
         init_eps_dict = evaluator.calculate_epsilon(X_train, O_tr_df, cate_attrs=cate_attrs, num_attrs=num_attrs)
-        eps_thresh = float(evaluator.compute_threshold(init_eps_dict))
+        computed_initial_threshold_diagnostic = float(evaluator.compute_threshold(init_eps_dict))
+
+        if self._execution_mode == D8ExecutionMode.EXPLORATORY_ENGINEERING:
+            eps_thresh = computed_initial_threshold_diagnostic
+            eps_thresh_source = DYNAMIC_COMPUTED_THRESHOLD_SOURCE
+            frozen_ref_artifact = None
+        else:
+            # SUBSTANTIVE_D6_GEOMETRY and BASELINE_REPRODUCTION
+            prov = get_frozen_d6_threshold_provenance(
+                arm_id=arm_id,
+                protected_attr=protected_attr,
+                release_dir=self.d6_release_dir,
+            )
+            eps_thresh = float(prov["epsilon_threshold"])
+            eps_thresh_source = prov["epsilon_threshold_source"]
+            frozen_ref_artifact = prov["frozen_reference_artifact"]
 
         # Build evaluation partition for training / validation search
         partition = EvaluationPartition(
@@ -548,13 +739,19 @@ class D8EnhancementRunner:
                 "error": str(exc),
             }
 
-        if self.baseline_reproduction_only:
+        if self._execution_mode == D8ExecutionMode.BASELINE_REPRODUCTION:
             return {
                 "arm_id": arm_id,
+                "execution_mode": self._execution_mode.value,
+                "algorithm_mode": fb_config.algorithm_mode,
+                "mds_fixed_components": fb_config.mds_fixed_components,
                 "protected_attribute": protected_attr,
                 "disability_arm": disability_arm,
                 "feature_set": feature_set,
                 "epsilon_threshold": eps_thresh,
+                "epsilon_threshold_source": eps_thresh_source,
+                "frozen_reference_artifact": frozen_ref_artifact,
+                "computed_initial_threshold_diagnostic": computed_initial_threshold_diagnostic,
                 "initial_train_max_dphi": float(max([float(v) for gd in init_eps_dict.values() for v in gd.values()])) if init_eps_dict else 0.0,
                 "conditions": {
                     "baseline": res_baseline,
@@ -971,9 +1168,16 @@ class D8EnhancementRunner:
 
         return {
             "arm_id": arm_id,
+            "execution_mode": self._execution_mode.value,
+            "algorithm_mode": fb_config.algorithm_mode,
+            "mds_fixed_components": fb_config.mds_fixed_components,
             "protected_attribute": protected_attr,
             "outcome": outcome,
             "epsilon_threshold": eps_thresh,
+            "epsilon_threshold_source": eps_thresh_source,
+            "frozen_reference_artifact": frozen_ref_artifact,
+            "computed_initial_threshold_diagnostic": computed_initial_threshold_diagnostic,
+            "initial_train_max_dphi": float(max([float(v) for gd in init_eps_dict.values() for v in gd.values()])) if init_eps_dict else 0.0,
             "conditions": {
                 "baseline": res_baseline,
                 "canonical_fairbias": res_canonical,

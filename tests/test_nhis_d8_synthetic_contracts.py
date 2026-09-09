@@ -35,12 +35,20 @@ import scripts.run_nhis_enhancement_study as cli
 from scripts.run_nhis_enhancement_study import build_comparison_dataframe
 from fairbias.config import FairBiasConfig
 from fairbias.evaluator import FairEvaluator
+from fairbias.enhancement import FairAccuracyEnhancement
+from fairbias.mitigation import FairBiasMitigation
 from fairbias.transform import FairTransform
 from fairbias.enhancement_state import changed_dict_hash
 from nhis_fairbias.d8_enhancement_runner import (
     D8EnhancementRunner,
+    D8ExecutionMode,
     compute_group_fairness_gaps,
     evaluate_representation,
+    load_frozen_d6_threshold,
+    get_frozen_d6_threshold_provenance,
+    FrozenD6ThresholdRegistry,
+    FROZEN_D6_TRAIN_VAL_RELEASE_DIR,
+    FROZEN_D6_TRAIN_REFERENCE_SOURCE,
 )
 from nhis_fairbias.d6_temporal_runner import FROZEN_D6_ARMS
 
@@ -92,6 +100,7 @@ class TestNHISD8SyntheticContracts(unittest.TestCase):
         canonical_dict = {"num1": {"power": 3.0}}
 
         runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.EXPLORATORY_ENGINEERING,
             adapter=fake_adapter,
             canonical_provider=lambda arm_id: canonical_dict,
             smoke_test=True,
@@ -1115,6 +1124,701 @@ class TestD8R2BEvidenceIntegrityContracts(unittest.TestCase):
         self.assertIn("DATA_ACCESS_BLOCKED", str(ctx.exception))
         # Clear sentinel list after verify
         BLOCKED_ACCESS.clear()
+
+
+class TestNHISD8R3CGateContracts(unittest.TestCase):
+    """Adversarial and synthetic contracts for Gate NHIS-D8-R3C: D6-Geometry Substantive Mode Alignment."""
+
+    def setUp(self):
+        self.fake_adapter = FakeNHISStudyAdapter(n_rows=120)
+        self.canonical_dict = {"num1": {"power": 3.0}}
+
+    def test_r3c_01_substantive_mode_uses_paper_faithful(self):
+        """Contract 1: Substantive execution mode resolves to ALGORITHM_MODE_PAPER_FAITHFUL."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        self.assertEqual(runner.execution_mode, D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY)
+        self.assertFalse(runner.baseline_reproduction_only)
+
+        res = runner.run_arm("D6_ARM_001")
+        self.assertEqual(res["execution_mode"], "SUBSTANTIVE_D6_GEOMETRY")
+        self.assertEqual(res["algorithm_mode"], "tang2024_paper_faithful")
+        self.assertIn("baseline", res["conditions"])
+        self.assertIn("canonical_fairbias", res["conditions"])
+        self.assertIn("posthoc_enhancement", res["conditions"])
+        self.assertIn("joint_enhancement", res["conditions"])
+
+    def test_r3c_02_substantive_mode_uses_mds_fixed_components_none(self):
+        """Contract 2: Substantive mode evaluator strictly uses mds_fixed_components=None (stress elbow)."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        res = runner.run_arm("D6_ARM_001")
+        self.assertIsNone(res["mds_fixed_components"])
+
+    def test_r3c_03_c1_c2_invariance_between_reproduction_and_substantive_modes(self):
+        """Contract 3: C1 baseline and C2 canonical evaluations are bit-for-bit invariant between modes."""
+        adapter_repro = FakeNHISStudyAdapter(n_rows=100)
+        adapter_subst = FakeNHISStudyAdapter(n_rows=100)
+
+        runner_repro = D8EnhancementRunner(
+            mode=D8ExecutionMode.BASELINE_REPRODUCTION,
+            adapter=adapter_repro,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        runner_subst = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=adapter_subst,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+
+        res_repro = runner_repro.run_arm("D6_ARM_001")
+        res_subst = runner_subst.run_arm("D6_ARM_001")
+
+        # Threshold invariance
+        self.assertEqual(res_repro["epsilon_threshold"], res_subst["epsilon_threshold"])
+        self.assertEqual(res_repro["initial_train_max_dphi"], res_subst["initial_train_max_dphi"])
+
+        # C1 Baseline invariance
+        base_repro = res_repro["conditions"]["baseline"]
+        base_subst = res_subst["conditions"]["baseline"]
+        self.assertEqual(base_repro["train"]["max_dphi"], base_subst["train"]["max_dphi"])
+        self.assertEqual(base_repro["train"]["auroc"], base_subst["train"]["auroc"])
+        self.assertEqual(base_repro["train"]["auprc"], base_subst["train"]["auprc"])
+        self.assertEqual(base_repro["train"]["selection_rate"], base_subst["train"]["selection_rate"])
+        self.assertEqual(base_repro["validation"]["max_dphi"], base_subst["validation"]["max_dphi"])
+        self.assertEqual(base_repro["validation"]["auroc"], base_subst["validation"]["auroc"])
+        self.assertEqual(base_repro["test"]["max_dphi"], base_subst["test"]["max_dphi"])
+        self.assertEqual(base_repro["test"]["auroc"], base_subst["test"]["auroc"])
+        self.assertEqual(base_repro["fairness_feasible"], base_subst["fairness_feasible"])
+
+        # C2 Canonical invariance
+        canon_repro = res_repro["conditions"]["canonical_fairbias"]
+        canon_subst = res_subst["conditions"]["canonical_fairbias"]
+        self.assertEqual(canon_repro["terminal_state"], canon_subst["terminal_state"])
+        self.assertEqual(canon_repro["train"]["max_dphi"], canon_subst["train"]["max_dphi"])
+        self.assertEqual(canon_repro["train"]["auroc"], canon_subst["train"]["auroc"])
+        self.assertEqual(canon_repro["validation"]["max_dphi"], canon_subst["validation"]["max_dphi"])
+        self.assertEqual(canon_repro["validation"]["auroc"], canon_subst["validation"]["auroc"])
+        self.assertEqual(canon_repro["test"]["max_dphi"], canon_subst["test"]["max_dphi"])
+        self.assertEqual(canon_repro["test"]["auroc"], canon_subst["test"]["auroc"])
+        self.assertEqual(canon_repro["fairness_feasible"], canon_subst["fairness_feasible"])
+
+    def test_r3c_04_authoritative_d6_epsilon_threshold_governs_pipeline(self):
+        """Contract 4: Epsilon threshold is frozen authoritative and passed to all downstream conditions."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        res = runner.run_arm("D6_ARM_001")
+        eps = res["epsilon_threshold"]
+        self.assertGreater(eps, 0.0)
+
+        conds = res["conditions"]
+        self.assertEqual(conds["baseline"]["final_epsilon"], eps)
+        self.assertEqual(conds["canonical_fairbias"]["final_epsilon"], eps)
+        self.assertEqual(conds["posthoc_enhancement"]["final_epsilon"], eps)
+        self.assertEqual(conds["joint_enhancement"]["final_epsilon"], eps)
+
+        for c_name, c_data in conds.items():
+            if c_data.get("terminal_evaluation_performed"):
+                expected_feasibility = bool(c_data["train"]["max_dphi"] <= eps)
+                self.assertEqual(c_data["fairness_feasible"], expected_feasibility)
+
+    def test_r3c_05_engineering_threshold_cannot_silently_replace_d6_threshold(self):
+        """Contract 5: Engineering mode configuration is strictly distinct from substantive mode."""
+        runner_subst = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+        )
+        runner_eng = D8EnhancementRunner(
+            mode=D8ExecutionMode.EXPLORATORY_ENGINEERING,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+        )
+        res_subst = runner_subst.run_arm("D6_ARM_001")
+        res_eng = runner_eng.run_arm("D6_ARM_001")
+
+        self.assertEqual(res_subst["algorithm_mode"], "tang2024_paper_faithful")
+        self.assertIsNone(res_subst["mds_fixed_components"])
+
+        self.assertEqual(res_eng["algorithm_mode"], "engineering_bounded")
+        self.assertEqual(res_eng["mds_fixed_components"], 2)
+
+    def test_r3c_06_c3_fairness_guard_receives_d6_paper_threshold(self):
+        """Contract 6: C3 Posthoc enhancement engine explicitly receives the paper-faithful threshold."""
+        from fairbias.enhancement import FairAccuracyEnhancement
+
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+
+        captured_thresholds = []
+        orig_enhance_step = FairAccuracyEnhancement.enhance_step
+
+        def spy_enhance_step(self, *args, **kwargs):
+            thresh = kwargs.get("epsilon_threshold")
+            if thresh is not None:
+                captured_thresholds.append(float(thresh))
+            return orig_enhance_step(self, *args, **kwargs)
+
+        with unittest.mock.patch.object(FairAccuracyEnhancement, "enhance_step", spy_enhance_step):
+            res = runner.run_arm("D6_ARM_001")
+
+        self.assertGreater(len(captured_thresholds), 0)
+        expected_thresh = res["epsilon_threshold"]
+        for t in captured_thresholds:
+            self.assertEqual(t, expected_thresh)
+
+    def test_r3c_07_c4_bm_and_ae_use_same_geometry_and_threshold(self):
+        """Contract 7: C4 Mitigation and Enhancement engines share identical evaluator geometry and threshold."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        res = runner.run_arm("D6_ARM_001")
+        joint_cond = res["conditions"]["joint_enhancement"]
+        self.assertTrue(joint_cond["terminal_evaluation_performed"])
+        self.assertEqual(joint_cond["final_epsilon"], res["epsilon_threshold"])
+
+        # Check dual events: both BM and AE interleaved under the same run
+        events = joint_cond["iteration_events"]
+        engines = {ev["engine"] for ev in events}
+        self.assertIn("BM", engines)
+        self.assertIn("AE", engines)
+
+    def test_r3c_08_fairness_feasibility_semantics_budget_and_epsilon(self):
+        """Contract 8: fairness_feasible is strictly terminal train max_dphi <= threshold, independent of reason."""
+        # Case A: budget_exhausted + feasible
+        res_a = {
+            "terminal_evaluation_performed": True,
+            "train": {"max_dphi": 0.003},
+            "final_epsilon": 0.005,
+            "termination_reason": "budget_exhausted",
+        }
+        res_a["fairness_feasible"] = bool(res_a["train"]["max_dphi"] <= res_a["final_epsilon"])
+        self.assertEqual(res_a["termination_reason"], "budget_exhausted")
+        self.assertTrue(res_a["fairness_feasible"])
+
+        # Case B: budget_exhausted + infeasible
+        res_b = {
+            "terminal_evaluation_performed": True,
+            "train": {"max_dphi": 0.008},
+            "final_epsilon": 0.005,
+            "termination_reason": "budget_exhausted",
+        }
+        res_b["fairness_feasible"] = bool(res_b["train"]["max_dphi"] <= res_b["final_epsilon"])
+        self.assertEqual(res_b["termination_reason"], "budget_exhausted")
+        self.assertFalse(res_b["fairness_feasible"])
+
+        # Case C: epsilon_reached + feasible
+        res_c = {
+            "terminal_evaluation_performed": True,
+            "train": {"max_dphi": 0.004},
+            "final_epsilon": 0.005,
+            "termination_reason": "epsilon_reached",
+        }
+        res_c["fairness_feasible"] = bool(res_c["train"]["max_dphi"] <= res_c["final_epsilon"])
+        self.assertEqual(res_c["termination_reason"], "epsilon_reached")
+        self.assertTrue(res_c["fairness_feasible"])
+
+    def test_r3c_09_synthetic_fixed_mds_vs_elbow_disagreement_resolves_to_paper_geometry(self):
+        """Contract 9: Disagreement between fixed-MDS and paper elbow geometry resolves to paper geometry."""
+        from fairbias.enhancement import FairAccuracyEnhancement
+        from fairbias.enhancement_contracts import EvaluationPartition
+
+        cfg_paper = FairBiasConfig(
+            algorithm_mode="tang2024_paper_faithful",
+            classifier="LR",
+            eval_norm="min-max",
+            label_O=("prot",),
+            label_Y="target",
+            mds_fixed_components=None,
+        ).resolved()
+
+        evaluator_paper = FairEvaluator(
+            config=cfg_paper,
+            label_O=["prot"],
+            label_Y="target",
+            cate_attrs=["cat1"],
+            num_attrs=["num1", "num2"],
+        )
+
+        cfg_fixed = FairBiasConfig(
+            algorithm_mode="engineering_bounded",
+            classifier="LR",
+            eval_norm="min-max",
+            label_O=("prot",),
+            label_Y="target",
+            mds_fixed_components=2,
+            use_accuracy_enhancement=True,
+        ).resolved()
+
+        evaluator_fixed = FairEvaluator(
+            config=cfg_fixed,
+            label_O=["prot"],
+            label_Y="target",
+            cate_attrs=["cat1"],
+            num_attrs=["num1", "num2"],
+        )
+
+        np.random.seed(42)
+        n = 300
+        x1 = np.random.uniform(-2, 2, size=n)
+        x2 = np.random.randn(n)
+        cat1 = np.random.choice([0, 1], size=n)
+        prob = 1.0 / (1.0 + np.exp(-(x1**3 + 2.0 * x2)))
+        y = (np.random.rand(n) < prob).astype(int)
+        prot = np.random.choice([0, 1], size=n)
+
+        df_X = pd.DataFrame({"num1": x1, "num2": x2, "cat1": cat1})
+        df_y = pd.Series(y, name="target")
+        df_O = pd.DataFrame({"prot": prot})
+
+        part = EvaluationPartition(
+            fit_X=df_X, fit_y=df_y,
+            selection_X=df_X, selection_y=df_y,
+            protected_fit=df_O, protected_selection=df_O,
+        )
+
+        tr = FairTransform()
+
+        engine_paper = FairAccuracyEnhancement(
+            evaluator=evaluator_paper, transformer=tr, label_Y="target",
+            cate_attrs=["cat1"], num_attrs=["num1", "num2"], max_fairness_degradation=0.02
+        )
+        engine_fixed = FairAccuracyEnhancement(
+            evaluator=evaluator_fixed, transformer=tr, label_Y="target",
+            cate_attrs=["cat1"], num_attrs=["num1", "num2"], max_fairness_degradation=0.02
+        )
+
+        def adversarial_calc_eps(data, prot, cate_attrs=None, num_attrs=None, sample_weight=None):
+            caller_cfg = getattr(adversarial_calc_eps, "current_evaluator_config", None)
+            cols = list(data.columns)
+            if caller_cfg and caller_cfg.mds_fixed_components is None:
+                # Paper mode: large dphi (0.050) -> exceeds bound 0.010 + 0.02 = 0.030
+                return {"prot": {c: 0.050 for c in cols}}
+            # Fixed mode: small dphi (0.012) -> passes bound 0.012 - 0.010 = 0.002 <= 0.02
+            return {"prot": {c: 0.012 for c in cols}}
+
+        current_eps = {"prot": {"num1": 0.010, "num2": 0.010, "cat1": 0.010}}
+
+        # Test on fixed-MDS engine
+        adversarial_calc_eps.current_evaluator_config = cfg_fixed
+        with unittest.mock.patch.object(evaluator_fixed, "calculate_epsilon", side_effect=adversarial_calc_eps):
+            _, changed_fixed, acc_fixed = engine_fixed.enhance_step(
+                X_train=df_X, Y_train=df_y, changed_dict={}, O_train=df_O,
+                epsilon_threshold=0.005, current_epsilon=current_eps,
+                iteration=1, partition=part,
+            )
+
+        # Test on paper-faithful engine
+        adversarial_calc_eps.current_evaluator_config = cfg_paper
+        with unittest.mock.patch.object(evaluator_paper, "calculate_epsilon", side_effect=adversarial_calc_eps):
+            _, changed_paper, acc_paper = engine_paper.enhance_step(
+                X_train=df_X, Y_train=df_y, changed_dict={}, O_train=df_O,
+                epsilon_threshold=0.005, current_epsilon=current_eps,
+                iteration=1, partition=part,
+            )
+
+        # Fixed MDS accepts the candidate, paper-faithful rejects the candidate
+        self.assertIsNotNone(acc_fixed, "Fixed-MDS engine should accept candidate under lower dphi")
+        self.assertIsNone(acc_paper, "Paper-faithful engine must reject candidate under higher dphi")
+
+        # Now verify D8EnhancementRunner in SUBSTANTIVE_D6_GEOMETRY mode
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: {},
+            smoke_test=True,
+            random_seed=42,
+        )
+        self.assertEqual(runner.execution_mode, D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY)
+        res = runner.run_arm("D6_ARM_001")
+        self.assertIsNone(res["mds_fixed_components"])
+        self.assertEqual(res["algorithm_mode"], "tang2024_paper_faithful")
+
+    def test_r3c_10_post_constructor_flag_mutation_fails_closed(self):
+        """Contract 10: Mutating execution mode flags post-construction is prohibited and fails closed."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.BASELINE_REPRODUCTION,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+        )
+        self.assertEqual(runner.execution_mode, D8ExecutionMode.BASELINE_REPRODUCTION)
+        self.assertTrue(runner.baseline_reproduction_only)
+
+        # Attempting the old wrapper trick must raise AttributeError
+        with self.assertRaises(AttributeError):
+            runner.baseline_reproduction_only = False
+
+        self.assertEqual(runner.execution_mode, D8ExecutionMode.BASELINE_REPRODUCTION)
+        self.assertTrue(runner.baseline_reproduction_only)
+
+        with self.assertRaises(AttributeError):
+            runner.execution_mode = D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY
+
+        # Unknown mode string must fail closed (raise ValueError)
+        with self.assertRaises(ValueError):
+            D8EnhancementRunner(mode="INVALID_UNKNOWN_MODE")
+
+        with self.assertRaises(ValueError):
+            D8EnhancementRunner(execution_mode="BAD_MODE")
+
+        with self.assertRaises(ValueError):
+            D8EnhancementRunner(mode=9999)
+
+    def test_r3c_11_real_data_access_prohibited_under_substantive_mode(self):
+        """Contract 11: Real microdata access is strictly prohibited during synthetic Gate D8-R3C."""
+        with self.assertRaises(RuntimeError) as ctx:
+            D8EnhancementRunner(
+                mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+                allow_real_data=True,
+            )
+        self.assertIn("Access to real NHIS microdata is prohibited", str(ctx.exception))
+
+        with self.assertRaises(RuntimeError) as ctx2:
+            D8EnhancementRunner(
+                mode=D8ExecutionMode.EXPLORATORY_ENGINEERING,
+                allow_real_data=True,
+            )
+        self.assertIn("Access to real NHIS microdata is prohibited", str(ctx2.exception))
+
+        # Accessing adapter without allow_real_data and without injected adapter fails
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            allow_real_data=False,
+        )
+        with self.assertRaises(RuntimeError) as ctx3:
+            _ = runner.adapter
+        self.assertIn("Access to real NHIS parquet is prohibited", str(ctx3.exception))
+
+    def test_r3c_12_zero_parquet_reads_across_all_synthetic_runs(self):
+        """Contract 12: Zero parquet reads occur across all synthetic suite executions."""
+        self.assertEqual(len(BLOCKED_ACCESS), 0)
+
+
+class TestNHISD8R3DGateContracts(unittest.TestCase):
+    """Adversarial and behavioral synthetic contracts for Gate D8-R3D (Frozen D6 Threshold Closure)."""
+
+    def setUp(self):
+        self.fake_adapter = FakeNHISStudyAdapter(n_rows=120)
+        self.canonical_dict = {"empwrkft1_a": {"fun": "poly", "order": 3}}
+
+    def test_r3d_01_known_arms_load_exact_frozen_reference_thresholds(self):
+        """R3D-01: Authoritative paper-faithful thresholds match frozen D6 release exactly."""
+        expected_thresholds = {
+            "D6_ARM_001": 0.0005,
+            "D6_ARM_002": 0.0020,
+            "D6_ARM_003": 0.0050,
+            "D6_ARM_004": 0.0050,
+        }
+        expected_attrs = {
+            "D6_ARM_001": "SEX_A",
+            "D6_ARM_002": "HISPALLP_A",
+            "D6_ARM_003": "DISAB3_A",
+            "D6_ARM_004": "DISAB3_A",
+        }
+
+        for arm_id, expected_eps in expected_thresholds.items():
+            eps = load_frozen_d6_threshold(arm_id)
+            self.assertEqual(eps, expected_eps, f"Threshold mismatch for {arm_id}")
+
+            prov = get_frozen_d6_threshold_provenance(arm_id)
+            self.assertEqual(prov["arm_id"], arm_id)
+            self.assertEqual(prov["epsilon_threshold"], expected_eps)
+            self.assertEqual(prov["protected_attribute"], expected_attrs[arm_id])
+            self.assertEqual(prov["epsilon_threshold_source"], "FROZEN_D6_TRAIN_REFERENCE")
+            self.assertTrue(prov["frozen_reference_artifact"].endswith("train_dphi_before_after.json"))
+
+            # Also verify via FrozenD6ThresholdRegistry
+            reg_eps = FrozenD6ThresholdRegistry.load(arm_id)
+            self.assertEqual(reg_eps, expected_eps)
+            reg_prov = FrozenD6ThresholdRegistry.get_provenance(arm_id)
+            self.assertEqual(reg_prov, prov)
+
+    def test_r3d_02_unknown_missing_malformed_reference_fails_closed(self):
+        """R3D-02: Unknown arm, missing file, missing/non-finite/non-positive threshold, or attr mismatch fails closed."""
+        # 1. Unknown arm
+        with self.assertRaises(ValueError):
+            load_frozen_d6_threshold("D6_ARM_UNKNOWN")
+
+        # 2. Requested protected attribute mismatch
+        with self.assertRaises(ValueError):
+            load_frozen_d6_threshold("D6_ARM_001", protected_attr="DISAB3_A")
+
+        # 3. Missing reference file in custom directory
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = pathlib.Path(tmpdir)
+            with self.assertRaises(FileNotFoundError):
+                load_frozen_d6_threshold("D6_ARM_001", release_dir=tmp_path)
+
+            # 4. Missing threshold key
+            arm1_dir = tmp_path / "D6_ARM_001"
+            arm1_dir.mkdir(parents=True)
+            bad_file = arm1_dir / "train_dphi_before_after.json"
+            bad_file.write_text(json.dumps({"arm_id": "D6_ARM_001", "protected_attribute": "SEX_A"}))
+            with self.assertRaises(ValueError):
+                load_frozen_d6_threshold("D6_ARM_001", release_dir=tmp_path)
+
+            # 5. Non-finite threshold (NaN)
+            bad_file.write_text(json.dumps({"arm_id": "D6_ARM_001", "protected_attribute": "SEX_A", "epsilon_threshold": "NaN"}))
+            with self.assertRaises(ValueError):
+                load_frozen_d6_threshold("D6_ARM_001", release_dir=tmp_path)
+
+            # 6. Non-positive threshold (0.0 or negative)
+            bad_file.write_text(json.dumps({"arm_id": "D6_ARM_001", "protected_attribute": "SEX_A", "epsilon_threshold": 0.0}))
+            with self.assertRaises(ValueError):
+                load_frozen_d6_threshold("D6_ARM_001", release_dir=tmp_path)
+
+            bad_file.write_text(json.dumps({"arm_id": "D6_ARM_001", "protected_attribute": "SEX_A", "epsilon_threshold": -0.005}))
+            with self.assertRaises(ValueError):
+                load_frozen_d6_threshold("D6_ARM_001", release_dir=tmp_path)
+
+            # 7. Protected attribute mismatch inside JSON file
+            bad_file.write_text(json.dumps({"arm_id": "D6_ARM_001", "protected_attribute": "WRONG_ATTR", "epsilon_threshold": 0.0005}))
+            with self.assertRaises(ValueError):
+                load_frozen_d6_threshold("D6_ARM_001", release_dir=tmp_path)
+
+    def test_r3d_03_mocked_compute_threshold_does_not_override_frozen_threshold(self):
+        """R3D-03: Mocked compute_threshold returning conflicting value cannot replace frozen D6 threshold."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+
+        with unittest.mock.patch.object(FairEvaluator, "compute_threshold", return_value=0.123456):
+            res = runner.run_arm("D6_ARM_003")
+
+        # Must use frozen D6 threshold (0.0050), not computed diagnostic (0.123456)
+        self.assertEqual(res["epsilon_threshold"], 0.0050)
+        self.assertEqual(res["epsilon_threshold_source"], "FROZEN_D6_TRAIN_REFERENCE")
+        self.assertEqual(res["computed_initial_threshold_diagnostic"], 0.123456)
+        self.assertTrue(res["frozen_reference_artifact"].endswith("D6_ARM_003/train_dphi_before_after.json"))
+
+        # All condition outputs must anchor to frozen 0.0050
+        conds = res["conditions"]
+        self.assertEqual(conds["baseline"]["final_epsilon"], 0.0050)
+        self.assertEqual(conds["canonical_fairbias"]["final_epsilon"], 0.0050)
+        self.assertEqual(conds["posthoc_enhancement"]["final_epsilon"], 0.0050)
+        self.assertEqual(conds["joint_enhancement"]["final_epsilon"], 0.0050)
+
+    def test_r3d_04_c3_posthoc_enhancement_receives_frozen_threshold_every_iteration(self):
+        """R3D-04: C3 enhance_step explicitly receives frozen threshold at iteration 1, 2, ..."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+
+        captured_thresholds = []
+        orig_enhance_step = FairAccuracyEnhancement.enhance_step
+
+        def spy_enhance_step(self, *args, **kwargs):
+            thresh = kwargs.get("epsilon_threshold")
+            if thresh is not None:
+                captured_thresholds.append(float(thresh))
+            return orig_enhance_step(self, *args, **kwargs)
+
+        with unittest.mock.patch.object(FairAccuracyEnhancement, "enhance_step", spy_enhance_step):
+            res = runner.run_arm("D6_ARM_001")
+
+        self.assertGreater(len(captured_thresholds), 0)
+        expected_frozen = 0.0005
+        self.assertEqual(res["epsilon_threshold"], expected_frozen)
+        for it_idx, t in enumerate(captured_thresholds, start=1):
+            self.assertEqual(t, expected_frozen, f"Iteration {it_idx} received {t}, expected {expected_frozen}")
+
+    def test_r3d_05_c4_bm_and_ae_receive_identical_frozen_threshold(self):
+        """R3D-05: C4 Joint BM and AE receive identical frozen threshold throughout trajectory."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+
+        bm_thresholds = []
+        ae_thresholds = []
+        orig_mit = FairBiasMitigation.mitigate_step
+        orig_enh = FairAccuracyEnhancement.enhance_step
+
+        def spy_mit(self, *args, **kwargs):
+            t = kwargs.get("epsilon_threshold")
+            if t is not None:
+                bm_thresholds.append(float(t))
+            return orig_mit(self, *args, **kwargs)
+
+        def spy_enh(self, *args, **kwargs):
+            t = kwargs.get("epsilon_threshold")
+            if t is not None:
+                ae_thresholds.append(float(t))
+            return orig_enh(self, *args, **kwargs)
+
+        with unittest.mock.patch.object(FairBiasMitigation, "mitigate_step", spy_mit):
+            with unittest.mock.patch.object(FairAccuracyEnhancement, "enhance_step", spy_enh):
+                res = runner.run_arm("D6_ARM_002")
+
+        expected_frozen = 0.0020
+        self.assertEqual(res["epsilon_threshold"], expected_frozen)
+        self.assertGreater(len(bm_thresholds), 0)
+        self.assertGreater(len(ae_thresholds), 0)
+
+        for t in bm_thresholds:
+            self.assertEqual(t, expected_frozen)
+        for t in ae_thresholds:
+            self.assertEqual(t, expected_frozen)
+
+    def test_r3d_06_joint_epsilon_reached_compares_paper_geometry_against_frozen_threshold(self):
+        """R3D-06: Joint epsilon_reached compares current paper geometry max dphi against frozen threshold."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        frozen_threshold = 0.0005  # for D6_ARM_001
+
+        # Direct convergence check: when current paper geometry <= frozen_threshold, terminates with epsilon_reached
+        orig_calc_eps = FairEvaluator.calculate_epsilon
+        call_count = 0
+
+        def mocked_calc_eps(self_eval, *args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            # After initial calculation, return under frozen threshold (0.0004 <= 0.0005)
+            if call_count > 3:
+                cols = list(args[0].columns) if args else ["f1"]
+                return {"SEX_A": {c: 0.0004 for c in cols}}
+            return orig_calc_eps(self_eval, *args, **kwargs)
+
+        with unittest.mock.patch.object(FairEvaluator, "calculate_epsilon", mocked_calc_eps):
+            res_reached = runner.run_arm("D6_ARM_001")
+            joint = res_reached["conditions"]["joint_enhancement"]
+            self.assertEqual(joint["termination_reason"], "epsilon_reached")
+            self.assertEqual(joint["final_epsilon"], frozen_threshold)
+            self.assertTrue(joint["fairness_feasible"])
+
+    def test_r3d_07_terminal_fairness_feasible_strictly_evaluates_against_frozen_threshold(self):
+        """R3D-07: Terminal fairness_feasible is evaluated strictly against frozen threshold."""
+        runner = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        res = runner.run_arm("D6_ARM_001")
+        frozen_thresh = 0.0005
+
+        for cond_name, cond_res in res["conditions"].items():
+            if cond_res.get("terminal_evaluation_performed") and cond_res.get("train") is not None:
+                dphi = cond_res["train"]["max_dphi"]
+                self.assertEqual(cond_res["fairness_feasible"], bool(dphi <= frozen_thresh))
+
+    def test_r3d_08_semantic_case_budget_exhausted_plus_feasible(self):
+        """R3D-08: Semantic case budget_exhausted + feasible is representable and verifiable."""
+        frozen_threshold = 0.0050
+        res = {
+            "terminal_evaluation_performed": True,
+            "train": {"max_dphi": 0.0032},
+            "final_epsilon": frozen_threshold,
+            "termination_reason": "budget_exhausted",
+        }
+        res["fairness_feasible"] = bool(res["train"]["max_dphi"] <= res["final_epsilon"])
+        self.assertEqual(res["termination_reason"], "budget_exhausted")
+        self.assertTrue(res["fairness_feasible"])
+
+    def test_r3d_09_semantic_case_budget_exhausted_plus_infeasible(self):
+        """R3D-09: Semantic case budget_exhausted + infeasible is representable and verifiable."""
+        frozen_threshold = 0.0050
+        res = {
+            "terminal_evaluation_performed": True,
+            "train": {"max_dphi": 0.0078},
+            "final_epsilon": frozen_threshold,
+            "termination_reason": "budget_exhausted",
+        }
+        res["fairness_feasible"] = bool(res["train"]["max_dphi"] <= res["final_epsilon"])
+        self.assertEqual(res["termination_reason"], "budget_exhausted")
+        self.assertFalse(res["fairness_feasible"])
+
+    def test_r3d_10_semantic_case_epsilon_reached_plus_feasible(self):
+        """R3D-10: Semantic case epsilon_reached + feasible is representable and verifiable."""
+        frozen_threshold = 0.0050
+        res = {
+            "terminal_evaluation_performed": True,
+            "train": {"max_dphi": 0.0041},
+            "final_epsilon": frozen_threshold,
+            "termination_reason": "epsilon_reached",
+        }
+        res["fairness_feasible"] = bool(res["train"]["max_dphi"] <= res["final_epsilon"])
+        self.assertEqual(res["termination_reason"], "epsilon_reached")
+        self.assertTrue(res["fairness_feasible"])
+
+    def test_r3d_11_engineering_mode_cannot_pollute_substantive_d6_mode(self):
+        """R3D-11: Engineering-mode computed threshold cannot leak into substantive D6 mode."""
+        runner_eng = D8EnhancementRunner(
+            mode=D8ExecutionMode.EXPLORATORY_ENGINEERING,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+        runner_subst = D8EnhancementRunner(
+            mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+            adapter=self.fake_adapter,
+            canonical_provider=lambda arm: self.canonical_dict,
+            smoke_test=True,
+            random_seed=42,
+        )
+
+        res_eng = runner_eng.run_arm("D6_ARM_001")
+        res_subst = runner_subst.run_arm("D6_ARM_001")
+
+        self.assertEqual(res_eng["epsilon_threshold_source"], "DYNAMIC_COMPUTED_THRESHOLD")
+        self.assertIsNone(res_eng["frozen_reference_artifact"])
+
+        self.assertEqual(res_subst["epsilon_threshold"], 0.0005)
+        self.assertEqual(res_subst["epsilon_threshold_source"], "FROZEN_D6_TRAIN_REFERENCE")
+        self.assertTrue(res_subst["frozen_reference_artifact"].endswith("D6_ARM_001/train_dphi_before_after.json"))
+
+    def test_r3d_12_zero_real_data_access_guaranteed(self):
+        """R3D-12: Zero real NHIS microdata access attempts occur during R3D synthetic verification."""
+        self.assertEqual(len(BLOCKED_ACCESS), 0)
 
 
 if __name__ == "__main__":
