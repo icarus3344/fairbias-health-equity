@@ -38,6 +38,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT))
 
+from fairbias.enhancement import DEFAULT_POLY_GRID
 from fairbias.enhancement_state import changed_dict_hash
 from nhis_fairbias.d8_enhancement_runner import (
     D8EnhancementRunner,
@@ -164,21 +165,19 @@ R4_FROZEN_CONFIG: Dict[str, Any] = {
     },
     "enhancement_parameters": {
         "candidate_transform_families": {
-            "categorical": ["one_hot", "drop"],
-            "numerical": ["binning", "polynomial", "log", "scaling", "drop"],
+            "categorical": ["adjacent_category_merge"],
+            "numerical": ["polynomial_powers"],
         },
-        "polynomial_exponent_grid": [2, 3],
-        "binning_n_bins": 5,
-        "log_epsilon": 1e-6,
-        "minimum_utility_gain": 0.001,
-        "maximum_fairness_degradation": 0.0,
-        "candidate_ranking_method": "delta_utility_descending_then_fairness_degradation_ascending",
+        "polynomial_exponent_grid": list(DEFAULT_POLY_GRID),
+        "minimum_utility_gain": 0.0,
+        "maximum_fairness_degradation": 0.02,
+        "candidate_ranking_method": "strictly_highest_utility_gain_ties_retain_first_grid_occurrence",
         "cycle_detection": "changed_dict_hash_in_committed_states_set",
         "search_budgets": {
-            "condition_3_max_steps": 10,
+            "condition_3_max_steps": 5,
             "condition_4_max_iterations": 10,
         },
-        "acceptance_semantics": "strict_monotonic_utility_gain_within_fairness_bound",
+        "acceptance_semantics": "strictly_highest_utility_gain_within_relaxed_fairness_bound",
         "probability_threshold": 0.5,
     },
     "governance_incidents_recorded": [
@@ -302,13 +301,41 @@ def main() -> None:
     with open(run_dir / "pre_run_git_diff.patch", "w") as f:
         f.write(git_diff_out)
 
+    # Initialize runner to dynamically verify active parameters
+    runner = D8EnhancementRunner(
+        mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
+        smoke_test=False,
+        random_seed=args.random_seed,
+        run_id=run_id,
+        allow_real_data=True,
+        r4_primary_authorized=True,
+    )
+
     # Step 3: Pre-run R4 scientific config manifest & R4_CONFIG_SHA256
     print("\n--- Step 3: Exporting R4 Scientific Configuration Manifest ---")
-    canonical_config_str = json.dumps(R4_FROZEN_CONFIG, sort_keys=True)
+    active_runner_params = runner.get_active_parameters()
+    for k, v in active_runner_params["enhancement_parameters"].items():
+        if k in R4_FROZEN_CONFIG["enhancement_parameters"]:
+            if R4_FROZEN_CONFIG["enhancement_parameters"][k] != v:
+                raise ValueError(
+                    f"R4_FROZEN_CONFIG['enhancement_parameters']['{k}'] ({R4_FROZEN_CONFIG['enhancement_parameters'][k]}) "
+                    f"does not match runner.get_active_parameters() ({v})"
+                )
+
+    r4_active_config = copy.deepcopy(R4_FROZEN_CONFIG)
+    r4_active_config["random_seed"] = runner.random_seed
+    r4_active_config["smoke_test"] = runner.smoke_test
+    if "classifier" in r4_active_config and isinstance(r4_active_config["classifier"], dict):
+        r4_active_config["classifier"]["random_state"] = runner.random_seed
+    r4_active_config["enhancement_parameters"] = active_runner_params["enhancement_parameters"]
+    r4_active_config["runner_execution_mode"] = active_runner_params["execution_mode"]
+
+    canonical_config_str = json.dumps(r4_active_config, sort_keys=True)
     r4_config_sha256 = hashlib.sha256(canonical_config_str.encode("utf-8")).hexdigest()
     r4_config_manifest = {
         "r4_config_sha256": r4_config_sha256,
-        "frozen_config": R4_FROZEN_CONFIG,
+        "frozen_config": r4_active_config,
+        "active_parameters": active_runner_params,
     }
     with open(run_dir / "r4_config_manifest.json", "w") as f:
         json.dump(r4_config_manifest, f, indent=2)
@@ -348,15 +375,6 @@ def main() -> None:
 
     # Step 6: Single Authorized Real-Data Execution (Conditions 1 - 4 across all 4 arms)
     print("\n--- Step 6: Executing Single Authorized Primary Substantive Run (Conditions 1 - 4) ---")
-    runner = D8EnhancementRunner(
-        mode=D8ExecutionMode.SUBSTANTIVE_D6_GEOMETRY,
-        smoke_test=False,
-        random_seed=args.random_seed,
-        run_id=run_id,
-        allow_real_data=True,
-        r4_primary_authorized=True,
-    )
-
     study_results: Dict[str, Any] = {}
     target_arms = sorted(list(FROZEN_D6_ARMS.keys()))
     for arm_id in target_arms:
@@ -559,6 +577,12 @@ def main() -> None:
     with open(run_dir / "enhancement_audit_summary.md", "w") as f:
         f.write("\n".join(md_table_c) + "\n")
 
+    # Step 9b: Export Complete Candidate Audit Trail (candidate_audit_events.json)
+    print("\n--- Step 9b: Exporting Full Candidate Audit Events ---")
+    candidate_audit_list = [evt.to_dict() for evt in runner.audit_events]
+    with open(run_dir / "candidate_audit_events.json", "w") as f:
+        json.dump(candidate_audit_list, f, indent=2)
+
     # Step 10: Joint Trajectory Events (joint_trajectory_events.json)
     print("\n--- Step 10: Compiling Joint Trajectory Event Log ---")
     all_joint_events: Dict[str, Any] = {}
@@ -629,14 +653,21 @@ def main() -> None:
     # Verify state barrier (canonical changed_dict hash)
     for arm_id in target_arms:
         c2_state = study_results[arm_id]["conditions"]["canonical_fairbias"]["terminal_state"]
-        c2_hash = changed_dict_hash(c2_state)
-        ref_hash = r2b_state[arm_id]["canonical_hash"]
-        match_hash = (c2_hash == ref_hash)
+        c2_hash_legacy = changed_dict_hash(c2_state, version="v1_legacy_8dec")
+        c2_hash_lossless = changed_dict_hash(c2_state, version="v2_lossless")
+        arm_ref = r2b_state.get(arm_id, {})
+        ref_hash = arm_ref.get("canonical_hash") or arm_ref.get("d6_hash") or arm_ref.get("d8_hash")
+        match_hash_legacy = (c2_hash_legacy == ref_hash)
+        match_hash_lossless = (c2_hash_lossless == ref_hash)
+        match_hash = match_hash_legacy or match_hash_lossless
         if not match_hash:
             anchor_results["all_barriers_passed"] = False
         anchor_results["state_barrier"][arm_id] = {
-            "observed_hash": c2_hash,
+            "observed_hash_legacy_v1": c2_hash_legacy,
+            "observed_hash_lossless_v2": c2_hash_lossless,
             "reference_hash": ref_hash,
+            "match_legacy_v1": match_hash_legacy,
+            "match_lossless_v2": match_hash_lossless,
             "match": match_hash,
             "status": "PASS" if match_hash else "FAIL",
         }

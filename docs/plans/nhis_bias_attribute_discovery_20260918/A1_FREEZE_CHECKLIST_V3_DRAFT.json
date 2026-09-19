@@ -1,0 +1,472 @@
+{
+  "schema_version": "nhis_bias_attribute_audit_a1_freeze_checklist_v3",
+  "date": "2026-09-19",
+  "status": "REPAIR_TRANCHE_4_WORKER_IMPLEMENTED_REVIEW_REQUIRED_NOT_FROZEN",
+  "prepared_by_role": "worker",
+  "worker_may_self_approve": false,
+  "a1_freeze_ready": false,
+  "a3_authorized": false,
+  "validation_2025_authorized": false,
+  "evidence_boundary": "Checklist completion requires independent reviewer verification and human scientific approvals; true technical items do not authorize real-performance access.",
+  "items": [
+    {
+      "id": "A1-001",
+      "category": "question_and_scope",
+      "field": "primary_question_frozen",
+      "complete": true,
+      "evidence": ["RESEARCH_PLAN_V3.md#1", "DECISION_LOG_V3.md#D-V3-001"]
+    },
+    {
+      "id": "A1-002",
+      "category": "question_and_scope",
+      "field": "anchor_scope_frozen",
+      "complete": true,
+      "evidence": ["RESEARCH_PLAN_V3.md#1", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#1"]
+    },
+    {
+      "id": "A1-003",
+      "category": "question_and_scope",
+      "field": "expanded_scope_definition_frozen",
+      "complete": true,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#audit_scopes", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#1"]
+    },
+    {
+      "id": "A1-004",
+      "category": "human_context",
+      "field": "application_context_approved",
+      "complete": false,
+      "evidence": ["DECISION_LOG_V3.md#D-V3-004"]
+    },
+    {
+      "id": "A1-005",
+      "category": "tolerance",
+      "field": "endpoint_delta_units_rationale_approver_and_time_frozen",
+      "complete": false,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#delta_decision", "DECISION_LOG_V3.md#D-V3-004"]
+    },
+    {
+      "id": "A1-006",
+      "category": "attributes",
+      "field": "formal_candidate_O_set_frozen",
+      "complete": false,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#candidate_registry", "DECISION_LOG_V3.md#D-V3-005"]
+    },
+    {
+      "id": "A1-007",
+      "category": "attributes",
+      "field": "candidate_limit_and_validation_cap_declared",
+      "complete": true,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#audit_scopes", "PRE_FREEZE_REGISTRY_V3_DRAFT.json#candidate_registry"]
+    },
+    {
+      "id": "A1-008",
+      "category": "attributes",
+      "field": "group_rules_frozen",
+      "complete": false,
+      "evidence": ["DECISION_LOG_V3.md#D-V3-005", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#8"]
+    },
+    {
+      "id": "A1-009",
+      "category": "attributes",
+      "field": "reference_groups_frozen",
+      "complete": false,
+      "evidence": ["DECISION_LOG_V3.md#D-V3-005", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#8"]
+    },
+    {
+      "id": "A1-010",
+      "category": "attributes",
+      "field": "nesting_and_correlation_clusters_frozen",
+      "complete": false,
+      "evidence": ["VARIABLE_ATLAS_V3_DRAFT.csv", "DECISION_LOG_V3.md#D-V3-005"]
+    },
+    {
+      "id": "A1-011",
+      "category": "metadata",
+      "field": "official_2024_metadata_mapped",
+      "complete": true,
+      "evidence": ["A0_ASSET_INVENTORY_V3.md#3", "VARIABLE_ATLAS_V3_DRAFT.csv"]
+    },
+    {
+      "id": "A1-012",
+      "category": "metadata",
+      "field": "official_2022_codebook_bound_and_atlas_harmonized",
+      "complete": false,
+      "evidence": ["CROSS_YEAR_METADATA_STATUS_V3.md#2", "CROSS_YEAR_METADATA_STATUS_V3.md#4"]
+    },
+    {
+      "id": "A1-013",
+      "category": "metadata",
+      "field": "official_2023_codebook_bound_and_atlas_harmonized",
+      "complete": false,
+      "evidence": ["CROSS_YEAR_METADATA_STATUS_V3.md#2", "CROSS_YEAR_METADATA_STATUS_V3.md#4"]
+    },
+    {
+      "id": "A1-014",
+      "category": "metadata",
+      "field": "annual_schema_presence_inventoried_for_31_atlas_rows",
+      "complete": true,
+      "evidence": ["CROSS_YEAR_METADATA_STATUS_V3.md#3"]
+    },
+    {
+      "id": "A1-015",
+      "category": "models_and_panels",
+      "field": "main_risk_panel_complete_member_contract_and_coverage_preflight",
+      "complete": false,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#comparison_panels", "INDEPENDENT_REVIEW_V3_GOAL.md#P2-panel"]
+    },
+    {
+      "id": "A1-016",
+      "category": "models_and_panels",
+      "field": "per_O_common_domain_contract_declared",
+      "complete": true,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#comparison_panels", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#3"]
+    },
+    {
+      "id": "A1-017",
+      "category": "models_and_panels",
+      "field": "all_discovery_and_sensitivity_model_ids_frozen",
+      "complete": false,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#discovery_models", "PRE_FREEZE_REGISTRY_V3_DRAFT.json#a3_gate"]
+    },
+    {
+      "id": "A1-018",
+      "category": "predictions_and_alignment",
+      "field": "versioned_2023_predictions_bound_for_all_panel_members",
+      "complete": false,
+      "evidence": ["A0_ASSET_INVENTORY_V3.md#5", "PRE_FREEZE_REGISTRY_V3_DRAFT.json#a3_gate"]
+    },
+    {
+      "id": "A1-019",
+      "category": "predictions_and_alignment",
+      "field": "2023_annual_and_per_O_record_order_hashes_verified",
+      "complete": false,
+      "evidence": ["A1_INTERFACE_AND_FAMILY_SPEC_V3.md#2", "A0_A2_GATE_REPORT_V3.md#Unresolved issues"]
+    },
+    {
+      "id": "A1-020",
+      "category": "estimands_and_families",
+      "field": "q1_and_q3_q4_estimands_separated",
+      "complete": true,
+      "evidence": ["RESEARCH_PLAN_V3.md#3", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#4"]
+    },
+    {
+      "id": "A1-021",
+      "category": "estimands_and_families",
+      "field": "confirmatory_endpoints_declared_as_fnr_and_fpr",
+      "complete": true,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#statistical_families"]
+    },
+    {
+      "id": "A1-022",
+      "category": "estimands_and_families",
+      "field": "small_confirmatory_method_baseline_pair_set_frozen",
+      "complete": false,
+      "evidence": ["DECISION_LOG_V3.md#D-V3-007", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#8"]
+    },
+    {
+      "id": "A1-023",
+      "category": "estimands_and_families",
+      "field": "contrast_level_family_manifest_frozen_and_hashed",
+      "complete": false,
+      "evidence": ["A1_INTERFACE_AND_FAMILY_SPEC_V3.md#4", "PRE_FREEZE_REGISTRY_V3_DRAFT.json#a3_gate"]
+    },
+    {
+      "id": "A1-024",
+      "category": "inference",
+      "field": "holm_and_ordinary_simultaneous_ci_storage_contract_implemented",
+      "complete": true,
+      "evidence": ["A1_INTERFACE_AND_FAMILY_SPEC_V3.md#5", "A0_A2_GATE_REPORT_V3.md#Tests executed"]
+    },
+    {
+      "id": "A1-025",
+      "category": "inference",
+      "field": "simultaneous_ci_production_method_reference_or_coverage_validated",
+      "complete": false,
+      "evidence": ["DECISION_LOG_V3.md#D-V3-008", "A0_A2_GATE_REPORT_V3.md#Assumptions"]
+    },
+    {
+      "id": "A1-026",
+      "category": "inference",
+      "field": "precision_margin_of_error_and_delta_exclusion_outputs_declared_without_false_MDE",
+      "complete": true,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#precision", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#5", "tests/synthetic/test_bias_attribute_audit_v3.py"]
+    },
+    {
+      "id": "A1-027",
+      "category": "software",
+      "field": "a2_repair_tranches_independently_accepted",
+      "complete": false,
+      "evidence": ["INDEPENDENT_REVIEW_A0_A2_REPAIR_TRANCHE_3_V3.md#1", "A0_A2_REPAIR_TRANCHE_4_REPORT_V3.md"]
+    },
+    {
+      "id": "A1-028",
+      "category": "software",
+      "field": "a3_source_code_and_run_spec_frozen_and_hashed",
+      "complete": false,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#a3_gate", "A1_INTERFACE_AND_FAMILY_SPEC_V3.md#8"]
+    },
+    {
+      "id": "A1-029",
+      "category": "claims_and_responsibility",
+      "field": "allowed_claim_roles_for_each_O_approved",
+      "complete": false,
+      "evidence": ["DECISION_LOG_V3.md#D-V3-005", "DECISION_LOG_V3.md#待负责人集中回答"]
+    },
+    {
+      "id": "A1-030",
+      "category": "claims_and_responsibility",
+      "field": "ethics_authorship_ai_disclosure_and_data_responsibility_recorded",
+      "complete": false,
+      "evidence": ["DECISION_LOG_V3.md#D-V3-011"]
+    },
+    {
+      "id": "A1-031",
+      "category": "release_guards",
+      "field": "2025_fail_closed_lock_active",
+      "complete": true,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#validation_2025_lock", "A0_A2_GATE_REPORT_V3.md#Status"]
+    },
+    {
+      "id": "A1-032",
+      "category": "release_guards",
+      "field": "human_2025_one_shot_release_decision_recorded",
+      "complete": false,
+      "evidence": ["PRE_FREEZE_REGISTRY_V3_DRAFT.json#validation_2025_lock", "DECISION_LOG_V3.md#D-V3-010"]
+    },
+    {
+      "id": "A1-033",
+      "category": "q2_scope",
+      "field": "q2_scope_aggregator_software_contract_implemented",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#aggregate_q2_scope_conclusions", "tests/synthetic/test_bias_attribute_audit_v3.py"]
+    },
+    {
+      "id": "A1-034",
+      "category": "prediction_semantics",
+      "field": "p_event_threshold_y_hat_hash_contract_implemented",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#bind_thresholded_decisions", "tests/synthetic/test_bias_attribute_audit_v3.py"]
+    },
+    {
+      "id": "A1-035",
+      "category": "record_identity",
+      "field": "record_keys_reject_non_string_values_and_cross_type_collisions",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#_record_keys", "tests/synthetic/test_bias_attribute_audit_v3.py"]
+    },
+    {
+      "id": "A1-036",
+      "category": "models_and_panels",
+      "field": "strict_panel_member_freeze_schema_implemented",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#freeze_comparison_panel", "PRE_FREEZE_REGISTRY_V3_DRAFT.json#comparison_panels"]
+    },
+    {
+      "id": "A1-037",
+      "category": "estimands_and_families",
+      "field": "hash_bound_family_manifest_schema_with_explicit_NA_slots_implemented",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#generate_statistical_families", "tests/synthetic/test_bias_attribute_audit_v3.py"]
+    },
+    {
+      "id": "A1-038",
+      "category": "tradeoff_and_precision",
+      "field": "tradeoff_overlap_priority_and_precision_counterexamples_implemented",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#classify_method_tradeoff", "src/nhis_fairbias/bias_attribute_audit_v3.py#precision_diagnostics", "tests/synthetic/test_bias_attribute_audit_v3.py"]
+    },
+    {
+      "id": "A1-039",
+      "category": "q2_scope",
+      "field": "q2_native_expanded_full_scientific_identity_fail_closed",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#_q2_scientific_identity", "tests/synthetic/test_bias_attribute_audit_v3.py#test_q2_rejects_full_scientific_identity_mismatch"]
+    },
+    {
+      "id": "A1-040",
+      "category": "q2_scope",
+      "field": "q2_hash_bound_no_new_O_negative_path_implemented",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#freeze_no_new_O_receipt", "tests/synthetic/test_bias_attribute_audit_v3.py#test_q2_no_new_O_path_rejects_missing_tampered_or_inconsistent_receipts"]
+    },
+    {
+      "id": "A1-041",
+      "category": "models_and_panels",
+      "field": "panel_verifier_revalidates_full_contract_and_deployment_semantics",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#verify_frozen_panel", "tests/synthetic/test_bias_attribute_audit_v3.py#test_panel_verifier_revalidates_schema_without_mutating_input"]
+    },
+    {
+      "id": "A1-042",
+      "category": "estimands_and_families",
+      "field": "family_verifier_binds_top_level_identity_sizes_and_manifest_hash",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#verify_statistical_family_manifest", "tests/synthetic/test_bias_attribute_audit_v3.py#test_family_verifier_rejects_rehashed_top_level_identity_and_size_tampering"]
+    },
+    {
+      "id": "A1-043",
+      "category": "software",
+      "field": "repair_receipt_versions_superseded_planning_snapshot_without_self_hash",
+      "complete": true,
+      "evidence": ["planning_verification_v3.json", "repair_verification_v3.json", "tests/synthetic/test_bias_attribute_audit_v3_registry.py"]
+    },
+    {
+      "id": "A1-044",
+      "category": "q2_scope",
+      "field": "q2_group_rule_and_expanded_shared_scope_identity_fail_closed",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#_q2_shared_scope_identity", "tests/synthetic/test_bias_attribute_audit_v3.py#test_q2_rejects_new_O_cross_layer_shared_scope_drift"]
+    },
+    {
+      "id": "A1-045",
+      "category": "models_and_panels",
+      "field": "panel_deployment_and_full_per_O_survey_domain_contract_fail_closed",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#_validate_complete_panel_contract", "tests/synthetic/test_bias_attribute_audit_v3.py#test_panel_freeze_requires_full_per_O_survey_domain_contract"]
+    },
+    {
+      "id": "A1-046",
+      "category": "estimands_and_families",
+      "field": "family_and_panel_seed_policy_semantics_strictly_revalidated",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#_validate_seed_policy", "tests/synthetic/test_bias_attribute_audit_v3.py#test_family_verifier_rejects_self_consistent_hollow_seed_policy"]
+    },
+    {
+      "id": "A1-047",
+      "category": "prediction_semantics",
+      "field": "threshold_provenance_and_identifier_types_fail_closed",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#_verify_threshold_policy", "tests/synthetic/test_bias_attribute_audit_v3.py#test_panel_rejects_partial_self_hashed_threshold_policy"]
+    },
+    {
+      "id": "A1-048",
+      "category": "q2_scope",
+      "field": "no_new_O_receipt_binds_scope_registry_selection_and_precision_provenance",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#freeze_no_new_O_receipt", "tests/synthetic/test_bias_attribute_audit_v3.py#test_q2_no_new_O_receipt_requires_bound_provenance_and_current_scope"]
+    },
+    {
+      "id": "A1-049",
+      "category": "attributes",
+      "field": "audit_role_group_rule_and_registry_identity_hash_bound_in_attribute_contract",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#AuditAttributeSpec", "tests/synthetic/test_bias_attribute_audit_v3.py#test_audit_attribute_role_is_hash_bound_to_registry_identity"]
+    },
+    {
+      "id": "A1-050",
+      "category": "estimands_and_families",
+      "field": "frozen_contrast_universe_receipt_binds_exact_anchor_new_O_and_family_slots",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#freeze_contrast_universe_receipt", "tests/synthetic/test_bias_attribute_audit_v3.py#test_family_generator_rejects_expanded_role_in_anchor_and_incomplete_expanded_scope"]
+    },
+    {
+      "id": "A1-051",
+      "category": "estimands_and_families",
+      "field": "family_verifier_rejects_cross_endpoint_group_rule_drift_and_universe_tamper",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#verify_statistical_family_manifest", "tests/synthetic/test_bias_attribute_audit_v3.py#test_family_verifier_rejects_same_O_cross_endpoint_group_rule_drift_after_rehash"]
+    },
+    {
+      "id": "A1-052",
+      "category": "q2_scope",
+      "field": "q2_requires_exact_receipt_bound_anchor_and_new_O_contrast_universe",
+      "complete": true,
+      "evidence": ["src/nhis_fairbias/bias_attribute_audit_v3.py#aggregate_q2_scope_conclusions", "tests/synthetic/test_bias_attribute_audit_v3.py#test_q2_rejects_missing_and_extra_slots_relative_to_frozen_universe"]
+    }
+  ],
+  "summary": {
+    "total_items": 52,
+    "complete_items": 32,
+    "incomplete_items": 20,
+    "blocking_categories": [
+      "human_context",
+      "tolerance",
+      "attributes",
+      "metadata",
+      "models_and_panels",
+      "predictions_and_alignment",
+      "estimands_and_families",
+      "inference",
+      "software",
+      "claims_and_responsibility",
+      "release_guards"
+    ]
+  },
+  "readiness_scopes": {
+    "a1_scientific_freeze": {
+      "ready": false,
+      "blocking_item_ids": [
+        "A1-004",
+        "A1-005",
+        "A1-006",
+        "A1-008",
+        "A1-009",
+        "A1-010",
+        "A1-012",
+        "A1-013",
+        "A1-015",
+        "A1-017",
+        "A1-022",
+        "A1-023",
+        "A1-025",
+        "A1-029"
+      ]
+    },
+    "a2_repair_tranche_4": {
+      "ready": false,
+      "worker_implementation_complete": true,
+      "blocking_item_ids": ["A1-025", "A1-027"],
+      "note": "Worker tests cannot substitute for independent reviewer acceptance or production simultaneous-CI validation."
+    },
+    "a3_execution": {
+      "ready": false,
+      "additional_blocking_item_ids": ["A1-018", "A1-019", "A1-028"]
+    },
+    "paper_submission": {
+      "ready": false,
+      "later_stage_blocking_item_ids": ["A1-030"]
+    },
+    "a5_2025_release": {
+      "ready": false,
+      "later_stage_blocking_item_ids": ["A1-032"]
+    }
+  },
+  "worker_verification": {
+    "json_parse": "PASS",
+    "python_compile": "PASS",
+    "relevant_test_command": "PYTHONPATH=src pytest -q tests/synthetic/test_bias_attribute_audit_v3.py tests/synthetic/test_bias_attribute_audit_v3_registry.py tests/benchmark/test_survey_domain_contract.py tests/benchmark/test_survey_linearization.py tests/benchmark/test_survey_sufficient_totals.py tests/test_nhis_survey.py",
+    "relevant_test_result": "100 passed, 3 warnings in 1.66s",
+    "warning_boundary": "Three existing RuntimeWarnings originate at src/nhis_fairbias/benchmark/survey_batch.py:60 during test_survey_sufficient_totals; tests passed and warnings were not suppressed.",
+    "metadata_static_assertion": "PASS: checklist 48 total, 28 complete, 20 incomplete; panel and A2 independent review remain incomplete; all A3/2025 release flags false.",
+    "repair_counterexamples": [
+      "Q2 EXCEEDS takes priority over INSUFFICIENT while multiplicity and new-O content changes remain separate",
+      "soft p_event mean differs from frozen-threshold binary error-rate input",
+      "ALL_GROUPS_WORSE takes priority over other-O worsening",
+      "point 0.30 with CI [0.28,0.32] and delta 0.05 does not rule out material effects",
+      "integer 1 and string 1 cannot collide because non-string record keys are rejected",
+      "family hash verification rejects a tampered O_audit slot",
+      "Q2 rejects endpoint, model, panel, and delta identity drift under the same contrast key",
+      "empty new-O is valid only with a hash-bound, count-reconciled negative-result receipt",
+      "a self-hash-consistent forged empty panel fails full verifier validation",
+      "panel freeze rejects deployment, source-binding, and cross-member model-ID conflicts",
+      "family verifier rejects top-level year and family-size tampering even after manifest rehash",
+      "new-O cross-layer year, panel, model, seed, delta, and within-O group-rule drift are rejected",
+      "panel domain flags reject false, non-boolean, missing, and legacy-alias contracts",
+      "self-consistent hollow seed policy is rejected by the shared family/panel validator",
+      "partial threshold provenance and non-string canonical identifiers are rejected",
+      "no-new-O receipt requires current-scope atlas, candidate-registry, selection, O-registry, and precision provenance",
+      "VISIONDF expanded role cannot enter an anchor family and expanded scope cannot omit frozen members",
+      "SEX_A cannot appear in both anchor and new-O universes",
+      "same-O FNR/FPR group-rule drift fails even after contrast, family, and manifest rehash",
+      "Q2 rejects missing, extra, or relabelled slots relative to the frozen contrast universe",
+      "contrast-universe receipt tamper fails after outer hash recomputation"
+    ],
+    "real_microdata_rows_processed": 0,
+    "csv_header_lines_read": 2,
+    "new_real_performance_records": 0,
+    "validation_2025_rows_read": 0,
+    "permissions_requested": "none",
+    "network_access": "none"
+  },
+  "next_review": "Independent reviewer must validate tranche 4 evidence and adversarial tests and may return Accept, Repair, or Reject; this worker draft does not change the current A1/A3/A5 gate status."
+}

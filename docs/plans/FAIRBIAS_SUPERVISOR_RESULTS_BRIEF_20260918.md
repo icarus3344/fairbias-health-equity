@@ -1,0 +1,7 @@
+# Supervisor results briefing gate — 2026-09-18
+
+User requests a WeChat update to their supervisor plus a detailed results-first outline with complete result details. Authorize an additive reporting-only package under `docs/paper/supervisor_results_brief_20260918/` and a generator under `scripts/`.
+
+Use verified existing aggregate exports only: accepted completion96/168 tables, original-budget138+334/300 exports, cohort68 rows, missingness336 rows, transformation summaries and cost reports. Verify published local hash manifests before extraction. Preserve NA reasons, method/budget/backbone boundaries, retrospective known-T identity and all adverse results. Do not create new inference, claims of superiority, selection, raw-data reads, predictions, model loading, training, source edits, server access or public delivery. Writing a WeChat draft is authorized; sending it is not. No Git stage/commit.
+
+Deliver a copyable short Chinese message, a results-focused detailed outline, complete readable aggregate appendices and unchanged-source CSV copies, provenance and a local shareable archive. Clearly distinguish original and adaptive-completion studies and explain metric directions/CI families. Full numerical tables and existing uncertainty must be preserved; unsupported risk-metric intervals remain unavailable. Validate generated table coverage and document that no novel scientific analysis was performed.

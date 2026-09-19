@@ -30,12 +30,14 @@ class FairEvaluator:
         label_Y: Optional[str] = None,
         cate_attrs: Optional[List[str]] = None,
         num_attrs: Optional[List[str]] = None,
+        expected_groups: Optional[Union[Sequence[Any], Dict[str, Sequence[Any]]]] = None,
     ):
         self.config = config or FairBiasConfig.compas_default()
         self.label_O = label_O or list(self.config.label_O)
         self.label_Y = label_Y or self.config.label_Y
         self.cate_attrs = cate_attrs or []
         self.num_attrs = num_attrs or []
+        self.expected_groups = expected_groups
         self.model: BaseEstimator = get_classifier(
             self.config.classifier, random_state=self.config.random_seed
         )
@@ -72,11 +74,10 @@ class FairEvaluator:
 
         # Predict on test fold
         y_pred = self.model.predict(X_te_scaled)
-        if hasattr(self.model, "predict_proba"):
-            proba = self.model.predict_proba(X_te_scaled)
-            y_prob = proba[:, 1] if proba.ndim == 2 and proba.shape[1] >= 2 else proba.ravel()
-        else:
-            y_prob = y_pred.astype(float)
+        from fairbias.prediction_contracts import validate_and_extract_positive_probabilities
+        y_prob = validate_and_extract_positive_probabilities(
+            self.model, X_te_scaled, expected_classes=(0, 1), pos_label=1
+        )
 
         return y_pred, y_prob
 
@@ -125,8 +126,10 @@ class FairEvaluator:
         score-based and use the predicted probability ``y_prob`` when
         available.
         """
-        y_t = np.asarray(y_true, dtype=int).ravel()
-        y_p = np.asarray(y_pred, dtype=int).ravel()
+        from fairbias.application_metrics import _validate_binary_hard_labels, compute_application_group_fairness
+
+        y_t = _validate_binary_hard_labels(y_true, "y_true")
+        y_p = _validate_binary_hard_labels(y_pred, "y_pred")
         y_s = np.asarray(y_prob, dtype=float).ravel() if y_prob is not None else y_p.astype(float)
 
         acc = float(accuracy_score(y_t, y_p))
@@ -146,13 +149,34 @@ class FairEvaluator:
 
         # Calculate subgroup fairness disparities for each protected attribute
         for p_col in O_df.columns:
-            prot_series = O_df[p_col].reset_index(drop=True)
-            prot_vals = prot_series.values
-            groups = sorted(prot_series.unique())
+            prot_series = O_df[p_col]
+            prot_vals = np.asarray(prot_series).ravel()
+            groups = list(dict.fromkeys(prot_vals.tolist()))
+
+            # Resolve expected groups for this protected attribute
+            exp_grp = None
+            if hasattr(self, "expected_groups") and self.expected_groups is not None:
+                if isinstance(self.expected_groups, dict):
+                    exp_grp = self.expected_groups.get(p_col)
+                elif isinstance(self.expected_groups, (list, tuple, np.ndarray, pd.Series, set)):
+                    exp_grp = list(self.expected_groups)
+
+            app_fairness = compute_application_group_fairness(y_t, y_p, prot_vals, expected_groups=exp_grp)
+            metrics.setdefault("application_demographic_parity", {})[p_col] = app_fairness["demographic_parity_difference"]
+            metrics.setdefault("application_equal_opportunity", {})[p_col] = app_fairness["equal_opportunity_difference"]
+            metrics.setdefault("application_equalized_odds", {})[p_col] = app_fairness["equalized_odds_gap"]
+            metrics.setdefault("dp_status", {})[p_col] = app_fairness["dp_status"]
+            metrics.setdefault("eo_status", {})[p_col] = app_fairness["eo_status"]
+            metrics.setdefault("equalized_odds_status", {})[p_col] = app_fairness["equalized_odds_status"]
+            metrics.setdefault("fairness_status", {})[p_col] = app_fairness["dp_status"]
+            metrics.setdefault("dp_estimable", {})[p_col] = app_fairness["dp_estimable"]
+            metrics.setdefault("eo_estimable", {})[p_col] = app_fairness["eo_estimable"]
+            metrics.setdefault("equalized_odds_estimable", {})[p_col] = app_fairness["equalized_odds_estimable"]
+            metrics.setdefault("is_primary_estimand", {})[p_col] = app_fairness["is_primary_estimand"]
 
             if len(groups) < 2:
                 for name in metric_names:
-                    metrics[name][p_col] = 0.0
+                    metrics[name][p_col] = None
                 continue
 
             group_masks = {g: (prot_vals == g) for g in groups}
@@ -304,6 +328,7 @@ class FairEvaluator:
             cat_method=cfg.eval_divergence_cat,
             mds_fixed_components=cfg.mds_fixed_components,
             sample_weight=sample_weight,
+            multigroup_aggregation=getattr(cfg, "multigroup_aggregation", "mean_pair"),
         )
 
     def compute_threshold(

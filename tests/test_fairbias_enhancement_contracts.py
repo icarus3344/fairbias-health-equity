@@ -80,9 +80,10 @@ class TestFairBiasEnhancementContracts(unittest.TestCase):
         self.y_tr = pd.Series(y_tr, name="target")
         self.o_tr = pd.DataFrame({"protected": o_tr})
 
-        self.df_sel = pd.DataFrame({"num1": x1_sel, "cat1": x2_sel, "num2": x3_sel})
-        self.y_sel = pd.Series(y_sel, name="target")
-        self.o_sel = pd.DataFrame({"protected": o_sel})
+        sel_idx = pd.RangeIndex(self.n_tr, self.n_tr + self.n_sel)
+        self.df_sel = pd.DataFrame({"num1": x1_sel, "cat1": x2_sel, "num2": x3_sel}, index=sel_idx)
+        self.y_sel = pd.Series(y_sel, name="target", index=sel_idx)
+        self.o_sel = pd.DataFrame({"protected": o_sel}, index=sel_idx)
 
         self.partition = EvaluationPartition(
             fit_X=self.df_tr,
@@ -109,7 +110,7 @@ class TestFairBiasEnhancementContracts(unittest.TestCase):
     def test_partition_contract_identical_transforms_and_scaler_isolation(self):
         # Add extreme outlier in selection partition to verify it doesn't contaminate scaler fit stats
         outlier_sel_X = self.df_sel.copy()
-        outlier_sel_X.loc[0, "num1"] = 99999.0
+        outlier_sel_X.loc[self.df_sel.index[0], "num1"] = 99999.0
         outlier_partition = EvaluationPartition(
             fit_X=self.df_tr,
             fit_y=self.y_tr,
@@ -214,7 +215,7 @@ class TestFairBiasEnhancementContracts(unittest.TestCase):
 
     def test_explicit_error_on_non_finite_output(self):
         nan_df = self.df_sel.copy()
-        nan_df.loc[0, "num1"] = np.nan
+        nan_df.loc[self.df_sel.index[0], "num1"] = np.nan
         p_nan = EvaluationPartition(
             fit_X=self.df_tr, fit_y=self.y_tr,
             selection_X=nan_df, selection_y=self.y_sel,

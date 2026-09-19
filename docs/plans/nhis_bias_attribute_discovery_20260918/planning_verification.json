@@ -1,0 +1,67 @@
+{
+  "status": "PLAN_REVISION_VERIFIED_NOT_ANALYSIS_ACCEPTANCE",
+  "date": "2026-09-18",
+  "checks": {
+    "draft_json_parses": true,
+    "seed_candidate_names_match_local_registry": true,
+    "24_unique_seed_candidates": true,
+    "forbidden_outcomes_absent_from_seeds": true,
+    "old_plan_files_preserved_hashes_match": true,
+    "stage_ids_consistent": true
+  },
+  "plan_files": [
+    {
+      "path": "docs/plans/nhis_bias_attribute_discovery_20260918/RESEARCH_PLAN_V2.md",
+      "bytes": 20615,
+      "sha256": "1a90183fe1b3248be86bdbce3b4461443c77c6f13815282033e5de66e9f31152"
+    },
+    {
+      "path": "docs/plans/nhis_bias_attribute_discovery_20260918/IMPLEMENTATION_HANDOFF_V2.md",
+      "bytes": 4358,
+      "sha256": "bb6aeac0d81419fdf58a5be716589959de5a9d95b1a8cd00f4c6446239ae3600"
+    },
+    {
+      "path": "docs/plans/nhis_bias_attribute_discovery_20260918/CANDIDATE_O_DRAFT.json",
+      "bytes": 13197,
+      "sha256": "7a57832bf7944511190699b1ee54e4fc425d955c0e5b909ebe2f5ab4d8779007"
+    }
+  ],
+  "reference_files": [
+    {
+      "path": "docs/AI_EXECUTION_PROTOCOL.md",
+      "bytes": 8886,
+      "sha256": "1a3d38929d65493f8352d6b46d32f65fa836502d08a3c2d2704dd713e5c3beac"
+    },
+    {
+      "path": "configs/nhis/variables.json",
+      "bytes": 3533,
+      "sha256": "fee56be0266b99988fa46010b6ecb7083029fe4d953bd18ddf36cfbf5a297a1e"
+    },
+    {
+      "path": "configs/nhis/features.json",
+      "bytes": 37715,
+      "sha256": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018"
+    },
+    {
+      "path": "docs/reports/FAIRBIAS_COMPLETION_FORMAL_EVALUATION_ACCEPTANCE_20260918.md",
+      "bytes": 6229,
+      "sha256": "369e0e717d06ff5c75deec1df9fb3b8a22f973fe8f482a93559d4bf8286c29dd"
+    },
+    {
+      "path": "docs/paper/manuscript_readiness_20260918/READINESS_REPORT.md",
+      "bytes": 9314,
+      "sha256": "3d2a6aaf66c74c8a971a6a9f05fc0c989c25e66f952fc18f3c01ab4906743714"
+    },
+    {
+      "path": "docs/reports/intersection_feasibility_20260918/REVIEW.md",
+      "bytes": 11925,
+      "sha256": "5adc0dc1a2d8fb40fbb4ee9887782ae5562c46b58aaf33f01b58bd31c3510663"
+    }
+  ],
+  "scope": "No microdata read, new analysis, training, server connection or empirical bias discovery. Candidate admission requires official metadata review.",
+  "web_evidence": {
+    "primary_method_source": "https://arxiv.org/abs/1901.10002",
+    "cdc2024_nofreq_codebook_fetch": "TIMEOUT_NOT_VERIFIED",
+    "new_attribute_codes": "NOT_INVENTED_PENDING_REVIEW"
+  }
+}

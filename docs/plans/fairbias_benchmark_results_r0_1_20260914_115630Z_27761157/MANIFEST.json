@@ -1,0 +1,38 @@
+{
+  "manifest_id": "RESULTS_R0_1_FINAL_MANIFEST",
+  "timestamp_utc": "2026-09-14T11:56:30Z",
+  "gate": "RESULTS-R0.1",
+  "deliverables_count": 6,
+  "deliverables": {
+    "CONDITION_REGISTRY.json": {
+      "sha256": "5934c96e4faffebaa47d77ce4c77c0de9a66ff4dd2657e108b343f1da67059a4",
+      "bytes": 43086,
+      "lines": 1390
+    },
+    "CORRECTIONS.md": {
+      "sha256": "0130e727791dc64d941cce478dad23aa1b660ed333ebfb44fcde70f1db8f4b91",
+      "bytes": 12218,
+      "lines": 147
+    },
+    "FACTS.json": {
+      "sha256": "8cf08a65c08c88e8101cd4d977fde31a70de52d54e4ff879e4b8b47f105db87f",
+      "bytes": 44551,
+      "lines": 1111
+    },
+    "R1_EXECUTION_SPEC.md": {
+      "sha256": "3077d251a8412966730bac91331e33a959e90072e6da8e52f3d3c86d11a5e080",
+      "bytes": 20427,
+      "lines": 212
+    },
+    "WORKER_REPORT.md": {
+      "sha256": "9bf583242a6034777c5abc27401e1553d370f44bec74a7ac596b0f2b89f6370b",
+      "bytes": 7223,
+      "lines": 65
+    },
+    "generate_static_repair.py": {
+      "sha256": "e65ee9b27728a8277968f7b853a1da1d9ddf7f809f4a89d506f122abf415df94",
+      "bytes": 12866,
+      "lines": 271
+    }
+  }
+}

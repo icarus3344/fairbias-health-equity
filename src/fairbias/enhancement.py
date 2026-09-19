@@ -110,8 +110,17 @@ class FairAccuracyEnhancement:
     def configuration_fingerprint(self) -> str:
         """Deterministic fingerprint of all configuration settings materially affecting search/evaluation."""
         label_O = getattr(self.evaluator, "label_O", [])
+        model = getattr(self.evaluator, "model", None)
+        scaler = None
+        if hasattr(self.evaluator, "scaler") and self.evaluator.scaler is not None:
+            scaler = self.evaluator.scaler
+        elif hasattr(self.evaluator, "_get_scaler"):
+            scaler = self.evaluator._get_scaler()
         return compute_configuration_fingerprint(
             config=self.evaluator.config,
+            evaluator=self.evaluator,
+            model=model,
+            scaler=scaler,
             max_fairness_degradation=self.max_fairness_degradation,
             min_utility_gain=self.min_utility_gain,
             poly_exponents=self.poly_exponents,
@@ -172,6 +181,33 @@ class FairAccuracyEnhancement:
                 continue
             return col
         return None
+
+    def get_active_parameters(self) -> Dict[str, Any]:
+        """Return the substantive active hyperparameters of this enhancement engine."""
+        return {
+            "polynomial_exponent_grid": list(self.poly_exponents),
+            "minimum_utility_gain": float(self.min_utility_gain),
+            "maximum_fairness_degradation": float(self.max_fairness_degradation),
+            "candidate_ranking_method": "strictly_highest_utility_gain_ties_retain_first_grid_occurrence",
+            "cycle_detection": "changed_dict_hash_in_committed_states_set",
+            "search_relaxation_budget": float(self.max_fairness_degradation),
+        }
+
+    def _build_candidate_cache_context_fingerprint(
+        self,
+        partition: EvaluationPartition,
+        epsilon_threshold: Optional[float],
+        curr_max_eps: Optional[float],
+    ) -> str:
+        """Construct a deterministic context fingerprint binding partition content, config, and effective epsilon."""
+        eff_eps = epsilon_threshold if epsilon_threshold is not None else curr_max_eps
+        return (
+            f"fit={partition.fit_fingerprint()};"
+            f"sel={partition.selection_fingerprint()};"
+            f"cfg={self.configuration_fingerprint()};"
+            f"eps={eff_eps};"
+            f"slack={self.max_fairness_degradation}"
+        )
 
     def _is_fairness_acceptable(
         self,
@@ -304,6 +340,17 @@ class FairAccuracyEnhancement:
             )
 
         cand_max_eps = float(max(cand_all_eps))
+        if np.isnan(cand_max_eps) or np.isinf(cand_max_eps):
+            return FairnessEvaluationResult(
+                is_acceptable=False,
+                candidate_max_dphi=cand_max_eps,
+                cap_applied=None,
+                rejection_reason="NON_FINITE_FAIRNESS_ESTIMATE",
+                geometry_eval_count=1,
+                evaluation_status="EVALUATED",
+                strictly_feasible=False,
+                relaxed_feasible=False,
+            )
 
         reference_eps = epsilon_threshold if epsilon_threshold is not None else current_max_epsilon
         if reference_eps is None or np.isnan(reference_eps) or np.isinf(reference_eps) or reference_eps < 0:
@@ -314,6 +361,8 @@ class FairAccuracyEnhancement:
                 rejection_reason="INVALID_REFERENCE_EPSILON",
                 geometry_eval_count=1,
                 evaluation_status="EVALUATED",
+                strictly_feasible=False,
+                relaxed_feasible=False,
             )
 
         upper_bound = float(reference_eps + self.max_fairness_degradation)
@@ -325,8 +374,11 @@ class FairAccuracyEnhancement:
                 rejection_reason="INVALID_FAIRNESS_CAP",
                 geometry_eval_count=1,
                 evaluation_status="EVALUATED",
+                strictly_feasible=False,
+                relaxed_feasible=False,
             )
 
+        strictly_ok = bool(cand_max_eps <= reference_eps)
         is_ok = bool(cand_max_eps <= upper_bound)
         reason = None if is_ok else f"EXCEEDS_FAIRNESS_CAP: {cand_max_eps:.5f} > {upper_bound:.5f}"
 
@@ -337,6 +389,8 @@ class FairAccuracyEnhancement:
             rejection_reason=reason,
             geometry_eval_count=1,
             evaluation_status="EVALUATED",
+            strictly_feasible=strictly_ok,
+            relaxed_feasible=is_ok,
         )
 
     def _evaluate_utility(
@@ -429,9 +483,6 @@ class FairAccuracyEnhancement:
                     if v is not None and (np.isnan(v) or np.isinf(v) or v < 0):
                         raise ValueError(f"Invalid current_epsilon value: {v}")
 
-        parent_state_hash = hash_transform_state(changed_dict)
-        self.tracker.record_state_visit(parent_state_hash)
-
         # 2. Build or bind authoritative EvaluationPartition
         if partition is not None:
             partition.verify_not_mutated()
@@ -476,16 +527,36 @@ class FairAccuracyEnhancement:
             all_eps = [float(v) for gd in current_epsilon.values() for v in gd.values()]
             curr_max_eps = float(max(all_eps)) if all_eps else None
 
-        base_res = evaluate_candidate_utility(
-            partition=partition,
-            changed_dict=changed_dict,
-            num_attrs=self.num_attrs,
-            cate_attrs=self.cate_attrs,
-            transformer=self.transformer,
-            evaluator=self.evaluator,
-        )
+        ctx_fp = self._build_candidate_cache_context_fingerprint(partition, epsilon_threshold, curr_max_eps)
+        if getattr(self, "_active_context_fingerprint", None) != ctx_fp:
+            self._active_context_fingerprint = ctx_fp
+            self._tried_exponents = collections.defaultdict(set)
+            self._tried_rebins = collections.defaultdict(set)
+            self._current_skip_attrs = set()
+            self._baseline_utility_cache = {}
 
-        self.total_model_fits += base_res.model_fit_count
+        parent_state_hash = hash_transform_state(changed_dict)
+        self.tracker.record_state_visit(parent_state_hash, context_fingerprint=ctx_fp)
+
+        if not hasattr(self, "_baseline_utility_cache"):
+            self._baseline_utility_cache = {}
+
+        base_cache_key = (parent_state_hash, ctx_fp)
+        if base_cache_key in self._baseline_utility_cache:
+            base_res = self._baseline_utility_cache[base_cache_key]
+        else:
+            base_res = evaluate_candidate_utility(
+                partition=partition,
+                changed_dict=changed_dict,
+                num_attrs=self.num_attrs,
+                cate_attrs=self.cate_attrs,
+                transformer=self.transformer,
+                evaluator=self.evaluator,
+            )
+            self.total_model_fits += base_res.model_fit_count
+            if base_res.is_valid:
+                self._baseline_utility_cache[base_cache_key] = base_res
+
         if not base_res.is_valid:
             raise RuntimeError(
                 f"Baseline utility evaluation failed ({base_res.validity_status}): {base_res.error_message}"
@@ -570,19 +641,20 @@ class FairAccuracyEnhancement:
 
         evaluated_candidates: List[Dict[str, Any]] = []
 
+        ctx_fp = self._build_candidate_cache_context_fingerprint(partition, epsilon_threshold, curr_max_eps)
         for power in self.poly_exponents:
             self._tried_exponents[target_attr].add(power)
-            cand_sig = f"{target_attr}:power={power:.4f}"
-            if self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig):
+            cand_sig = f"{target_attr}:power={power!r}"
+            if self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig, context_fingerprint=ctx_fp):
                 continue
-            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig)
+            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig, context_fingerprint=ctx_fp)
 
             cand_change = copy.deepcopy(changed_dict)
             cand_change[target_attr] = {"power": power}
             cand_state_hash = hash_transform_state(cand_change)
 
             # Cycle detection
-            if self.tracker.is_cycle(cand_state_hash):
+            if self.tracker.is_cycle(cand_state_hash, context_fingerprint=ctx_fp):
                 self._record_audit_event(
                     iteration=iteration,
                     parent_state_hash=parent_state_hash,
@@ -667,6 +739,8 @@ class FairAccuracyEnhancement:
                     validity_status=EnhancementStatus.FAIRNESS_CAP_EXCEEDED,
                     model_fit_count=0,
                     geometry_eval_count=fairness_res.geometry_eval_count,
+                    strictly_feasible=fairness_res.strictly_feasible,
+                    relaxed_feasible=fairness_res.relaxed_feasible,
                 )
                 continue
 
@@ -702,6 +776,8 @@ class FairAccuracyEnhancement:
                     validity_status=eval_res.validity_status,
                     model_fit_count=eval_res.model_fit_count,
                     geometry_eval_count=fairness_res.geometry_eval_count,
+                    strictly_feasible=fairness_res.strictly_feasible,
+                    relaxed_feasible=fairness_res.relaxed_feasible,
                 )
                 continue
 
@@ -709,7 +785,6 @@ class FairAccuracyEnhancement:
             gain = cand_utility - current_utility
 
             evaluated_candidates.append({
-                "cand_X": cand_X,
                 "cand_change": cand_change,
                 "cand_state_hash": cand_state_hash,
                 "proposed_transform": {"power": power},
@@ -736,7 +811,11 @@ class FairAccuracyEnhancement:
             if idx == best_idx:
                 is_accepted = True
                 rejection_reason = None
-                best_cand = (item["cand_X"], item["cand_change"])
+                winning_change = item["cand_change"]
+                cand_X_reconstructed = self.transformer.transform_data(
+                    X_train, winning_change, self.num_attrs, self.cate_attrs
+                )
+                best_cand = (cand_X_reconstructed, winning_change)
             elif item["gain"] > self.min_utility_gain:
                 is_accepted = False
                 rejection_reason = "ELIGIBLE_NOT_COMMITTED"
@@ -764,6 +843,8 @@ class FairAccuracyEnhancement:
                 validity_status=EnhancementStatus.VALID,
                 model_fit_count=item["eval_res"].model_fit_count,
                 geometry_eval_count=item["fairness_res"].geometry_eval_count,
+                strictly_feasible=item["fairness_res"].strictly_feasible,
+                relaxed_feasible=item["fairness_res"].relaxed_feasible,
             )
 
         return best_cand
@@ -806,7 +887,8 @@ class FairAccuracyEnhancement:
             cand_sig = f"{target_attr}:merge({pair[1]}->{pair[0]})"
             norm_pair = (min(str(pair[0]), str(pair[1])), max(str(pair[0]), str(pair[1])))
             self._tried_rebins[target_attr].add(norm_pair)
-            if not self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig):
+            ctx_fp = self._build_candidate_cache_context_fingerprint(partition, epsilon_threshold, curr_max_eps)
+            if not self.tracker.is_candidate_evaluated(parent_state_hash, cand_sig, context_fingerprint=ctx_fp):
                 diff = abs(sorted_cats[i][1] - sorted_cats[i + 1][1])
                 candidate_pairs.append((pair, cand_sig, diff))
 
@@ -815,7 +897,7 @@ class FairAccuracyEnhancement:
         evaluated_candidates: List[Dict[str, Any]] = []
 
         for pair, cand_sig, _ in candidate_pairs:
-            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig)
+            self.tracker.mark_candidate_evaluated(parent_state_hash, cand_sig, context_fingerprint=ctx_fp)
             rebin = {pair[1]: pair[0]}
 
             cand_change = copy.deepcopy(changed_dict)
@@ -857,7 +939,7 @@ class FairAccuracyEnhancement:
             cand_state_hash = hash_transform_state(cand_change)
 
             # Cycle detection
-            if self.tracker.is_cycle(cand_state_hash):
+            if self.tracker.is_cycle(cand_state_hash, context_fingerprint=ctx_fp):
                 self._record_audit_event(
                     iteration=iteration,
                     parent_state_hash=parent_state_hash,
@@ -941,6 +1023,8 @@ class FairAccuracyEnhancement:
                     validity_status=EnhancementStatus.FAIRNESS_CAP_EXCEEDED,
                     model_fit_count=0,
                     geometry_eval_count=fairness_res.geometry_eval_count,
+                    strictly_feasible=fairness_res.strictly_feasible,
+                    relaxed_feasible=fairness_res.relaxed_feasible,
                 )
                 continue
 
@@ -975,6 +1059,8 @@ class FairAccuracyEnhancement:
                     validity_status=eval_res.validity_status,
                     model_fit_count=eval_res.model_fit_count,
                     geometry_eval_count=fairness_res.geometry_eval_count,
+                    strictly_feasible=fairness_res.strictly_feasible,
+                    relaxed_feasible=fairness_res.relaxed_feasible,
                 )
                 continue
 
@@ -982,7 +1068,6 @@ class FairAccuracyEnhancement:
             gain = cand_utility - current_utility
 
             evaluated_candidates.append({
-                "cand_X": cand_X,
                 "cand_change": cand_change,
                 "cand_state_hash": cand_state_hash,
                 "proposed_transform": rebin,
@@ -1008,7 +1093,11 @@ class FairAccuracyEnhancement:
             if idx == best_idx:
                 is_accepted = True
                 rejection_reason = None
-                best_cand = (item["cand_X"], item["cand_change"])
+                winning_change = item["cand_change"]
+                cand_X_reconstructed = self.transformer.transform_data(
+                    X_train, winning_change, self.num_attrs, self.cate_attrs
+                )
+                best_cand = (cand_X_reconstructed, winning_change)
             elif item["gain"] > self.min_utility_gain:
                 is_accepted = False
                 rejection_reason = "ELIGIBLE_NOT_COMMITTED"
@@ -1036,6 +1125,8 @@ class FairAccuracyEnhancement:
                 validity_status=EnhancementStatus.VALID,
                 model_fit_count=item["eval_res"].model_fit_count,
                 geometry_eval_count=item["fairness_res"].geometry_eval_count,
+                strictly_feasible=item["fairness_res"].strictly_feasible,
+                relaxed_feasible=item["fairness_res"].relaxed_feasible,
             )
 
         return best_cand
@@ -1061,6 +1152,8 @@ class FairAccuracyEnhancement:
         validity_status: str,
         model_fit_count: int,
         geometry_eval_count: int,
+        strictly_feasible: Optional[bool] = None,
+        relaxed_feasible: Optional[bool] = None,
     ) -> None:
         """Create and store an immutable audit event."""
         config_hash = self.configuration_fingerprint()
@@ -1092,5 +1185,7 @@ class FairAccuracyEnhancement:
             model_fit_count=model_fit_count,
             geometry_eval_count=geometry_eval_count,
             config_hash=config_hash,
+            strictly_feasible=strictly_feasible,
+            relaxed_feasible=relaxed_feasible,
         )
         self.audit_trail.append(event)

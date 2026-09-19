@@ -1,0 +1,68 @@
+{
+  "schema_version": "nhis_bias_attribute_audit_planning_verification_v3",
+  "date": "2026-09-19",
+  "lifecycle_status": "SUPERSEDED_BY_REPAIR_VERIFICATION_V3",
+  "superseded_by": "repair_verification_v3.json",
+  "historical_snapshot_only": true,
+  "supersession_note": "This file preserves the original A0-A2 planning snapshot. Its A2 acceptance and output hashes are historical and were invalidated by independent repair review; current status is recorded only in repair_verification_v3.json.",
+  "gate": "A0-A2_NHIS_BIAS_ATTRIBUTE_AUDIT_V3",
+  "status": {
+    "a0": "PASS_WITH_LIMITS",
+    "a1": "STRUCTURE_ACCEPTED_SCIENTIFIC_CONTENT_NOT_FROZEN",
+    "a2": "ACCEPTED_FOR_SYNTHETIC_CONTRACTS",
+    "a3": "BLOCKED_NOT_AUTHORIZED",
+    "validation_2025": "LOCKED_NOT_READ"
+  },
+  "git": {
+    "branch": "research/nhis-fairbias",
+    "head_at_verification": "67e6659fa65249a8842e34af5d8969629efe4bca",
+    "dirty_tree_preexisted": true,
+    "reset_clean_commit_or_upload_performed": false
+  },
+  "input_sha256": {
+    "docs/AI_EXECUTION_PROTOCOL.md": "1a3d38929d65493f8352d6b46d32f65fa836502d08a3c2d2704dd713e5c3beac",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/RESEARCH_PLAN_V2.md": "1a90183fe1b3248be86bdbce3b4461443c77c6f13815282033e5de66e9f31152",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/IMPLEMENTATION_HANDOFF_V2.md": "bb6aeac0d81419fdf58a5be716589959de5a9d95b1a8cd00f4c6446239ae3600",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/CANDIDATE_O_DRAFT.json": "7a57832bf7944511190699b1ee54e4fc425d955c0e5b909ebe2f5ab4d8779007",
+    "configs/nhis/variables.json": "fee56be0266b99988fa46010b6ecb7083029fe4d953bd18ddf36cfbf5a297a1e",
+    "configs/nhis/features.json": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018",
+    "configs/nhis/study.json": "d0fa6b12b8fae5d77ddbb75aef91de9294c1c5d4b93fb5fbf3990c560dbbd964",
+    "docs/paper/manuscript_readiness_20260918/transformations/primary_sources/adult-codebook-2024.pdf": "04ef4aa4b86c1b341cfdbae4389d9d7726584c92e579e4acac98b7c240fda3c9",
+    "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628",
+    "artifacts/nhis/completion_evaluation_20260918/control/study_v1.json": "3c4572ec327d8d97a2f108fe3c82a8619370a78981c8fe1abdb496677b2933fb"
+  },
+  "output_sha256": {
+    "docs/plans/nhis_bias_attribute_discovery_20260918/RESEARCH_PLAN_V3.md": "7a82d43d8ad607f312f456069d5b57b3c162b720c6a73bbd416cefdeb0f080e3",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/IMPLEMENTATION_HANDOFF_V3.md": "086fb3880a1a0eadb368e44c977742a0220884ad3e5af1a6886315986fafbd7f",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/A0_ASSET_INVENTORY_V3.md": "8e6112e21952b0e9026cdd4a2ef7b212c2712007920b773b574a349b027969ce",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/VARIABLE_ATLAS_V3_DRAFT.csv": "ba05ea7bc39c3fe0928f3143e9808fc459a9e89d5b8da32e570bb323c9e3b3dd",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/PRE_FREEZE_REGISTRY_V3_DRAFT.json": "fa7c9d34089058972f49e857b49135af605be8925f3ed32fce47bb9bfb1b012e",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/DECISION_LOG_V3.md": "cc013e58a61720ca9437a39d4b3e08e4a6ac1fa5ad704a05852c5559759d4c60",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/A1_INTERFACE_AND_FAMILY_SPEC_V3.md": "b97ae7ffaccbf9f51d99d83021b81c7dff2f971a2b2bb1b8691c1d852185c249",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/A0_A2_GATE_REPORT_V3.md": "76753d3a6eaa08c7eb2224a76b631923fe757233b15dd85a0e56abdaa635bfe9",
+    "src/nhis_fairbias/bias_attribute_audit_v3.py": "80772b23ee2de7ee123b74ea3f5821e12da3a2726a349a53f80cee11121230bf",
+    "tests/synthetic/test_bias_attribute_audit_v3.py": "bc0ce66c61c64495040f6ccfa9ac7bfbf61308b9b94b3fa7b6dd63943909a0ca",
+    "tests/synthetic/test_bias_attribute_audit_v3_registry.py": "b6ccaafcf63aab378cb723b1cee7eda82747eb1196236ba7e7cc51d88eae7b6b"
+  },
+  "output_hash_note": "This verification file deliberately does not hash itself to avoid self-reference.",
+  "main_panel_sha256": "19ae854b2dc986aa42dca555814a5aae4ff8fb063a18ab9f65bae66876773c7f",
+  "counts": {
+    "real_microdata_rows_processed": 0,
+    "new_real_performance_records": 0,
+    "validation_2025_rows_read": 0,
+    "atlas_rows": 31,
+    "formal_candidate_seeds": 24,
+    "atlas_only_extensions": 7,
+    "main_panel_members": 5,
+    "models_per_main_panel_member": 5
+  },
+  "tests": {
+    "accepted_command": "PYTHONPATH=src pytest -q tests/synthetic/test_bias_attribute_audit_v3.py tests/synthetic/test_bias_attribute_audit_v3_registry.py tests/benchmark/test_survey_domain_contract.py tests/benchmark/test_survey_linearization.py tests/benchmark/test_survey_sufficient_totals.py tests/test_nhis_survey.py",
+    "result": "40 passed, 3 warnings in 1.70s",
+    "python_compile": "PASS",
+    "registry_json_parse": "PASS",
+    "optional_catalog_probe": "COLLECTION_FAILED_MISSING_AIF360_NOT_COUNTED_AS_PASS"
+  },
+  "real_performance_scan_authorized": false,
+  "2025_micro_outcome_or_performance_read": false
+}

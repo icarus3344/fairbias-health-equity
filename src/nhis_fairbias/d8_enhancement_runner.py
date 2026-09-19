@@ -21,7 +21,7 @@ import enum
 import json
 import math
 import pathlib
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -186,30 +186,76 @@ def compute_group_fairness_gaps(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     protected_vals: np.ndarray,
-) -> Dict[str, float]:
-    """Compute demographic parity difference and equal opportunity difference."""
-    unique_groups = np.unique(protected_vals)
-    if len(unique_groups) < 2:
-        return {"demographic_parity_difference": 0.0, "equal_opportunity_difference": 0.0}
+    expected_groups: Optional[Sequence[Any]] = None,
+    expected_groups_source: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Compute demographic parity difference, equal opportunity difference, and equalized odds gap."""
+    from fairbias.application_metrics import compute_application_group_fairness
+    res = compute_application_group_fairness(
+        y_true=y_true,
+        y_pred=y_pred,
+        protected_vals=protected_vals,
+        expected_groups=expected_groups,
+        expected_groups_source=expected_groups_source,
+    )
+    dp_unestimable = None
+    if not res["dp_estimable"]:
+        dp_unestimable = "INSUFFICIENT_GROUPS" if res["dp_status"] in ("SINGLE_GROUP", "INSUFFICIENT_GROUPS") else res["dp_status"]
 
-    selection_rates = []
-    tprs = []
+    eo_unestimable = None
+    if not res["eo_estimable"]:
+        if res["eo_status"] in ("SINGLE_GROUP", "INSUFFICIENT_GROUPS"):
+            eo_unestimable = "INSUFFICIENT_GROUPS"
+        elif "MISSING_POSITIVE" in str(res["eo_status"]):
+            eo_unestimable = "MISSING_POSITIVE_SAMPLES"
+        else:
+            eo_unestimable = res["eo_status"]
 
-    for g in unique_groups:
-        mask_g = (protected_vals == g)
-        if np.sum(mask_g) > 0:
-            selection_rates.append(float(np.mean(y_pred[mask_g])))
-        pos_mask = mask_g & (y_true == 1)
-        if np.sum(pos_mask) > 0:
-            tprs.append(float(np.mean(y_pred[pos_mask])))
-
-    dp_diff = float(max(selection_rates) - min(selection_rates)) if selection_rates else 0.0
-    eo_diff = float(max(tprs) - min(tprs)) if len(tprs) >= 2 else 0.0
+    eq_unestimable = None
+    if not res["equalized_odds_estimable"]:
+        if res["equalized_odds_status"] in ("SINGLE_GROUP", "INSUFFICIENT_GROUPS"):
+            eq_unestimable = "INSUFFICIENT_GROUPS"
+        else:
+            eq_unestimable = res["equalized_odds_status"]
 
     return {
-        "demographic_parity_difference": dp_diff,
-        "equal_opportunity_difference": eo_diff,
+        "demographic_parity_difference": res["demographic_parity_difference"],
+        "equal_opportunity_difference": res["equal_opportunity_difference"],
+        "equalized_odds_gap": res["equalized_odds_gap"],
+        "dp_status": res["dp_status"],
+        "eo_status": res["eo_status"],
+        "equalized_odds_status": res["equalized_odds_status"],
+        "dp_unestimable_reason": dp_unestimable,
+        "eo_unestimable_reason": eo_unestimable,
+        "equalized_odds_unestimable_reason": eq_unestimable,
+        "dp_estimable": res["dp_estimable"],
+        "eo_estimable": res["eo_estimable"],
+        "equalized_odds_estimable": res["equalized_odds_estimable"],
+        "is_primary_estimand": res["is_primary_estimand"],
+        "expected_groups": res["expected_groups"],
+        "expected_groups_source": res["expected_groups_source"],
+        "primary_result_eligible": res.get("primary_result_eligible", False),
+        "primary_estimand_declared": res.get("primary_estimand_declared", False),
+        "primary_eligibility_reason": res.get("primary_eligibility_reason"),
+        "legacy_demographic_parity_mean_pair": res["legacy_demographic_parity_mean_pair"],
+        "legacy_equal_opportunity_mean_pair": res["legacy_equal_opportunity_mean_pair"],
     }
+
+
+def check_fairness_feasibility(max_dphi: Optional[float], epsilon_threshold: float) -> bool:
+    """Evaluate whether representation achieves terminal fairness feasibility (R7-03).
+
+    A state is fairness feasible if max_dphi is finite and max_dphi <= epsilon_threshold.
+    """
+    if max_dphi is None:
+        return False
+    try:
+        val = float(max_dphi)
+    except (TypeError, ValueError):
+        return False
+    if not np.isfinite(val):
+        return False
+    return bool(val <= float(epsilon_threshold))
 
 
 def evaluate_representation(
@@ -230,6 +276,8 @@ def evaluate_representation(
     cate_attrs: List[str],
     num_attrs: List[str],
     protected_attr: str,
+    expected_groups: Optional[Sequence[Any]] = None,
+    expected_groups_source: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Transform features, fit model on train, and evaluate utility + fairness across train/val/test."""
     # Transform partitions identically
@@ -291,19 +339,10 @@ def evaluate_representation(
     model_inst.fit(X_tr_s, y_train)
 
     # Predictions
-    proba_tr = model_inst.predict_proba(X_tr_s)
-    proba_val = model_inst.predict_proba(X_val_s)
-    proba_te = model_inst.predict_proba(X_te_s)
-
-    if proba_tr.shape[1] < 2 or proba_val.shape[1] < 2 or proba_te.shape[1] < 2:
-        raise ValueError("Model predicted fewer than 2 probability classes")
-
-    p_tr = proba_tr[:, 1]
-    p_val = proba_val[:, 1]
-    p_te = proba_te[:, 1]
-
-    if np.isnan(p_tr).any() or np.isnan(p_val).any() or np.isnan(p_te).any():
-        raise ValueError("NaN probabilities encountered during prediction")
+    from fairbias.prediction_contracts import validate_and_extract_positive_probabilities
+    p_tr = validate_and_extract_positive_probabilities(model_inst, X_tr_s, expected_classes=(0, 1), pos_label=1)
+    p_val = validate_and_extract_positive_probabilities(model_inst, X_val_s, expected_classes=(0, 1), pos_label=1)
+    p_te = validate_and_extract_positive_probabilities(model_inst, X_te_s, expected_classes=(0, 1), pos_label=1)
 
     pred_tr = (p_tr >= 0.5).astype(int)
     pred_val = (p_val >= 0.5).astype(int)
@@ -331,8 +370,12 @@ def evaluate_representation(
         return float(max(vals)) if vals else 0.0
 
     # Group fairness gaps on validation and test
-    val_gaps = compute_group_fairness_gaps(y_val, pred_val, o_val)
-    test_gaps = compute_group_fairness_gaps(y_test, pred_te, o_test)
+    val_gaps = compute_group_fairness_gaps(
+        y_val, pred_val, o_val, expected_groups=expected_groups, expected_groups_source=expected_groups_source
+    )
+    test_gaps = compute_group_fairness_gaps(
+        y_test, pred_te, o_test, expected_groups=expected_groups, expected_groups_source=expected_groups_source
+    )
 
     return {
         "terminal_evaluation_performed": True,
@@ -379,6 +422,22 @@ def evaluate_representation(
             "demographic_parity_gap": val_gaps["demographic_parity_difference"],
             "equal_opportunity_difference": val_gaps["equal_opportunity_difference"],
             "equal_opportunity_gap": val_gaps["equal_opportunity_difference"],
+            "equalized_odds_gap": val_gaps["equalized_odds_gap"],
+            "dp_status": val_gaps["dp_status"],
+            "eo_status": val_gaps["eo_status"],
+            "equalized_odds_status": val_gaps["equalized_odds_status"],
+            "dp_estimable": val_gaps["dp_estimable"],
+            "eo_estimable": val_gaps["eo_estimable"],
+            "equalized_odds_estimable": val_gaps["equalized_odds_estimable"],
+            "dp_unestimable_reason": val_gaps["dp_unestimable_reason"],
+            "eo_unestimable_reason": val_gaps["eo_unestimable_reason"],
+            "equalized_odds_unestimable_reason": val_gaps["equalized_odds_unestimable_reason"],
+            "is_primary_estimand": val_gaps["is_primary_estimand"],
+            "expected_groups": val_gaps["expected_groups"],
+            "expected_groups_source": val_gaps["expected_groups_source"],
+            "primary_result_eligible": val_gaps["primary_result_eligible"],
+            "primary_estimand_declared": val_gaps["primary_estimand_declared"],
+            "primary_eligibility_reason": val_gaps.get("primary_eligibility_reason"),
         },
         "test": {
             "N": int(len(X_test_raw)),
@@ -402,6 +461,22 @@ def evaluate_representation(
             "demographic_parity_gap": test_gaps["demographic_parity_difference"],
             "equal_opportunity_difference": test_gaps["equal_opportunity_difference"],
             "equal_opportunity_gap": test_gaps["equal_opportunity_difference"],
+            "equalized_odds_gap": test_gaps["equalized_odds_gap"],
+            "dp_status": test_gaps["dp_status"],
+            "eo_status": test_gaps["eo_status"],
+            "equalized_odds_status": test_gaps["equalized_odds_status"],
+            "dp_estimable": test_gaps["dp_estimable"],
+            "eo_estimable": test_gaps["eo_estimable"],
+            "equalized_odds_estimable": test_gaps["equalized_odds_estimable"],
+            "dp_unestimable_reason": test_gaps["dp_unestimable_reason"],
+            "eo_unestimable_reason": test_gaps["eo_unestimable_reason"],
+            "equalized_odds_unestimable_reason": test_gaps["equalized_odds_unestimable_reason"],
+            "is_primary_estimand": test_gaps["is_primary_estimand"],
+            "expected_groups": test_gaps["expected_groups"],
+            "expected_groups_source": test_gaps["expected_groups_source"],
+            "primary_result_eligible": test_gaps["primary_result_eligible"],
+            "primary_estimand_declared": test_gaps["primary_estimand_declared"],
+            "primary_eligibility_reason": test_gaps.get("primary_eligibility_reason"),
         },
     }
 
@@ -433,7 +508,7 @@ class D8EnhancementRunner:
         self.smoke_test = smoke_test
         self.random_seed = random_seed
         self.run_id = run_id
-        self.allow_real_data = allow_real_data
+        self._allow_real_data = bool(allow_real_data)
         self._r4_primary_authorized = bool(r4_primary_authorized)
         self.canonical_provider = canonical_provider
         self.d6_release_dir = d6_release_dir
@@ -523,6 +598,63 @@ class D8EnhancementRunner:
         )
 
     @property
+    def allow_real_data(self) -> bool:
+        return self._allow_real_data
+
+    @allow_real_data.setter
+    def allow_real_data(self, value: Any) -> None:
+        raise AttributeError(
+            "Post-constructor mutation of allow_real_data is prohibited. "
+            "Data access authorization must be set at instantiation time."
+        )
+
+    def get_active_parameters(self) -> Dict[str, Any]:
+        """Return substantive active hyperparameters of this D8 runner."""
+        dummy_cfg = FairBiasConfig(
+            algorithm_mode=ALGORITHM_MODE_PAPER_FAITHFUL,
+            classifier="LR",
+            eval_norm="min-max",
+            label_O=("SEX_A",),
+            label_Y="MEDDL12M_A",
+            random_seed=self.random_seed,
+        )
+        dummy_ev = FairEvaluator(config=dummy_cfg, label_O=["SEX_A"], label_Y="MEDDL12M_A", cate_attrs=[], num_attrs=[])
+        dummy_ae = FairAccuracyEnhancement(
+            evaluator=dummy_ev,
+            transformer=FairTransform(),
+            label_Y="MEDDL12M_A",
+            cate_attrs=[],
+            num_attrs=[],
+            max_fairness_degradation=0.02,
+        )
+        ae_params = dummy_ae.get_active_parameters()
+        c3_budget = 2 if self.smoke_test else 5
+        c4_budget = 3 if self.smoke_test else 10
+        return {
+            "execution_mode": self._execution_mode.value,
+            "random_seed": self.random_seed,
+            "smoke_test": self.smoke_test,
+            "allow_real_data": self.allow_real_data,
+            "enhancement_parameters": {
+                "candidate_transform_families": {
+                    "categorical": ["adjacent_category_merge"],
+                    "numerical": ["polynomial_powers"],
+                },
+                "polynomial_exponent_grid": ae_params["polynomial_exponent_grid"],
+                "minimum_utility_gain": ae_params["minimum_utility_gain"],
+                "maximum_fairness_degradation": ae_params["maximum_fairness_degradation"],
+                "candidate_ranking_method": ae_params["candidate_ranking_method"],
+                "cycle_detection": ae_params["cycle_detection"],
+                "search_budgets": {
+                    "condition_3_max_steps": c3_budget,
+                    "condition_4_max_iterations": c4_budget,
+                },
+                "acceptance_semantics": "strictly_highest_utility_gain_within_relaxed_fairness_bound",
+                "probability_threshold": 0.5,
+            },
+        }
+
+    @property
     def adapter(self) -> Any:
         if self._adapter is not None:
             return self._adapter
@@ -555,6 +687,7 @@ class D8EnhancementRunner:
         protected_attr = arm_meta["protected_attribute"]
         disability_arm = arm_meta["disability_arm"]
         feature_set = arm_meta["feature_set"].lower()
+        expected_groups = arm_meta.get("expected_groups")
 
         # 1. Load cohorts via adapter (must be injected in synthetic tests)
         X_train, y_train_s, o_train_s, _, _ = self.adapter.get_cohort(
@@ -687,6 +820,8 @@ class D8EnhancementRunner:
             selection_y=y_val_s,
             protected_fit=O_tr_df,
             protected_selection=O_val_df,
+            fit_source="2022_train",
+            selection_source="2023_val",
         )
 
         # Model & scaler prototypes
@@ -713,12 +848,16 @@ class D8EnhancementRunner:
                 cate_attrs=cate_attrs,
                 num_attrs=num_attrs,
                 protected_attr=protected_attr,
+                expected_groups=expected_groups,
+                expected_groups_source="frozen_arm_definition",
             )
             res_baseline["terminal_state"] = {}
             res_baseline["terminal_train_max_dphi"] = res_baseline["train"]["max_dphi"]
             res_baseline["final_epsilon"] = eps_thresh
-            res_baseline["fairness_feasible"] = bool(res_baseline["train"]["max_dphi"] <= eps_thresh)
+            res_baseline["fairness_feasible"] = check_fairness_feasibility(res_baseline["train"]["max_dphi"], eps_thresh)
             res_baseline["termination_reason"] = "baseline_untransformed"
+            res_baseline["expected_groups"] = list(expected_groups) if expected_groups else None
+            res_baseline["expected_groups_source"] = "frozen_arm_definition"
         except Exception as exc:
             res_baseline = {
                 "terminal_evaluation_performed": False,
@@ -732,6 +871,8 @@ class D8EnhancementRunner:
                 "fairness_feasible": False,
                 "termination_reason": "evaluation_failed",
                 "error": str(exc),
+                "expected_groups": list(expected_groups) if expected_groups else None,
+                "expected_groups_source": "frozen_arm_definition",
             }
 
         # -------------------------------------------------------------
@@ -752,12 +893,16 @@ class D8EnhancementRunner:
                 cate_attrs=cate_attrs,
                 num_attrs=num_attrs,
                 protected_attr=protected_attr,
+                expected_groups=expected_groups,
+                expected_groups_source="frozen_arm_definition",
             )
             res_canonical["terminal_state"] = copy.deepcopy(d6_changed)
             res_canonical["terminal_train_max_dphi"] = res_canonical["train"]["max_dphi"]
             res_canonical["final_epsilon"] = eps_thresh
-            res_canonical["fairness_feasible"] = bool(res_canonical["train"]["max_dphi"] <= eps_thresh)
+            res_canonical["fairness_feasible"] = check_fairness_feasibility(res_canonical["train"]["max_dphi"], eps_thresh)
             res_canonical["termination_reason"] = "d6_canonical_frozen"
+            res_canonical["expected_groups"] = list(expected_groups) if expected_groups else None
+            res_canonical["expected_groups_source"] = "frozen_arm_definition"
         except Exception as exc:
             res_canonical = {
                 "terminal_evaluation_performed": False,
@@ -771,6 +916,8 @@ class D8EnhancementRunner:
                 "fairness_feasible": False,
                 "termination_reason": "evaluation_failed",
                 "error": str(exc),
+                "expected_groups": list(expected_groups) if expected_groups else None,
+                "expected_groups_source": "frozen_arm_definition",
             }
 
         if self._execution_mode == D8ExecutionMode.BASELINE_REPRODUCTION:
@@ -892,12 +1039,16 @@ class D8EnhancementRunner:
                     cate_attrs=cate_attrs,
                     num_attrs=num_attrs,
                     protected_attr=protected_attr,
+                    expected_groups=expected_groups,
+                    expected_groups_source="frozen_arm_definition",
                 )
                 res_posthoc_ae["terminal_state"] = copy.deepcopy(post_changed)
                 res_posthoc_ae["terminal_train_max_dphi"] = res_posthoc_ae["train"]["max_dphi"]
                 res_posthoc_ae["final_epsilon"] = eps_thresh
-                res_posthoc_ae["fairness_feasible"] = bool(res_posthoc_ae["train"]["max_dphi"] <= eps_thresh)
+                res_posthoc_ae["fairness_feasible"] = check_fairness_feasibility(res_posthoc_ae["train"]["max_dphi"], eps_thresh)
                 res_posthoc_ae["termination_reason"] = post_term_reason
+                res_posthoc_ae["expected_groups"] = list(expected_groups) if expected_groups else None
+                res_posthoc_ae["expected_groups_source"] = "frozen_arm_definition"
                 res_posthoc_ae["ae_steps_accepted"] = ae_steps_accepted
                 res_posthoc_ae["model_fit_count"] = ae_engine_post.total_model_fits
                 res_posthoc_ae["geometry_eval_count"] = ae_engine_post.total_geometry_evals
@@ -921,6 +1072,8 @@ class D8EnhancementRunner:
                     "fairness_feasible": False,
                     "termination_reason": "evaluation_failed",
                     "error": str(exc),
+                    "expected_groups": list(expected_groups) if expected_groups else None,
+                    "expected_groups_source": "frozen_arm_definition",
                     "ae_steps_accepted": ae_steps_accepted,
                     "model_fit_count": ae_engine_post.total_model_fits,
                     "geometry_eval_count": ae_engine_post.total_geometry_evals,
@@ -1155,12 +1308,16 @@ class D8EnhancementRunner:
                     cate_attrs=cate_attrs,
                     num_attrs=num_attrs,
                     protected_attr=protected_attr,
+                    expected_groups=expected_groups,
+                    expected_groups_source="frozen_arm_definition",
                 )
                 res_joint_ae["terminal_state"] = copy.deepcopy(joint_changed)
                 res_joint_ae["terminal_train_max_dphi"] = res_joint_ae["train"]["max_dphi"]
                 res_joint_ae["final_epsilon"] = eps_thresh
-                res_joint_ae["fairness_feasible"] = bool(res_joint_ae["train"]["max_dphi"] <= eps_thresh)
+                res_joint_ae["fairness_feasible"] = check_fairness_feasibility(res_joint_ae["train"]["max_dphi"], eps_thresh)
                 res_joint_ae["termination_reason"] = joint_term_reason
+                res_joint_ae["expected_groups"] = list(expected_groups) if expected_groups else None
+                res_joint_ae["expected_groups_source"] = "frozen_arm_definition"
                 res_joint_ae["bm_steps_accepted"] = bm_steps_accepted
                 res_joint_ae["ae_steps_accepted"] = ae_joint_steps_accepted
                 res_joint_ae["iteration_events"] = joint_events
@@ -1186,6 +1343,8 @@ class D8EnhancementRunner:
                     "fairness_feasible": False,
                     "termination_reason": "evaluation_failed",
                     "error": str(exc),
+                    "expected_groups": list(expected_groups) if expected_groups else None,
+                    "expected_groups_source": "frozen_arm_definition",
                     "bm_steps_accepted": bm_steps_accepted,
                     "ae_steps_accepted": ae_joint_steps_accepted,
                     "iteration_events": joint_events,

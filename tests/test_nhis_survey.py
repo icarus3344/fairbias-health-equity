@@ -54,3 +54,19 @@ class TestNHISSurvey(unittest.TestCase):
             weighted_category_proportion(raw, weights, code=None, valid_codes=(1, 2, 3, 4, 5, 6, 7)) or 0.0,
             1 / 2,
         )
+
+    def test_zero_event_count_on_valid_denominator_returns_zero(self) -> None:
+        """P2-02 regression test: valid denominator with 0 occurrences must return 0.0, not NaN/None."""
+        raw = pd.Series([2, 2], dtype="Int64")
+        weights = pd.Series([1.0, 1.0])
+        self.assertEqual(weighted_binary_proportion(raw, weights, code=1), 0.0)
+        self.assertEqual(weighted_category_proportion(raw, weights, code=1, valid_codes=(1, 2)), 0.0)
+
+    def test_positive_weight_mask_rejects_infinite_and_nonpositive_weights(self) -> None:
+        """P2-02 regression test: +inf, nan, <=0 must not be treated as eligible positive weights."""
+        from nhis_fairbias.survey import positive_weight_mask
+        import numpy as np
+
+        weights = pd.Series([float("inf"), float("-inf"), float("nan"), 0.0, -5.0, 10.0])
+        mask = positive_weight_mask(weights)
+        self.assertListEqual(mask.tolist(), [False, False, False, False, False, True])

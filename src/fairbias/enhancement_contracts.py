@@ -21,6 +21,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import auc, precision_recall_curve, roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
 
+from fairbias.enhancement_state import canonical_json_dump
 from fairbias.evaluator import FairEvaluator
 from fairbias.transform import FairTransform
 
@@ -61,6 +62,9 @@ class EvaluationPartition:
     selection_y: pd.Series
     protected_fit: Optional[pd.DataFrame] = None
     protected_selection: Optional[pd.DataFrame] = None
+    allow_identical_index: bool = False
+    fit_source: Optional[str] = None
+    selection_source: Optional[str] = None
 
     def __post_init__(self) -> None:
         # Defensive snapshot copies prevent external mutation from polluting partition state
@@ -111,9 +115,174 @@ class EvaluationPartition:
             if not self.protected_selection.index.equals(self.selection_X.index):
                 raise ValueError("protected_selection index does not match selection_X index")
 
+        # Partition independence check: prevent identical records and shared record leakage
+        same_source = (self.fit_source == self.selection_source)
+        if same_source and self.fit_X.equals(self.selection_X) and self.fit_y.equals(self.selection_y):
+            if not self.allow_identical_index:
+                raise ValueError(
+                    "Data leakage detected: fit and selection partitions contain identical records from the same source. "
+                    "Partitions must be independent and disjoint."
+                )
+
+        # Check raw year+id overlap when either source is missing or unspecified
+        is_unspecified_source = (
+            self.fit_source is None
+            or self.selection_source is None
+            or str(self.fit_source).strip() in ("", "unspecified")
+            or str(self.selection_source).strip() in ("", "unspecified")
+        )
+        if is_unspecified_source and not self.allow_identical_index:
+            fit_raw = self._extract_raw_year_ids(self.fit_X)
+            sel_raw = self._extract_raw_year_ids(self.selection_X)
+            raw_overlap = fit_raw.intersection(sel_raw)
+            if raw_overlap:
+                raise ValueError(
+                    f"Data leakage detected: fit and selection partitions share {len(raw_overlap)} record IDs "
+                    f"under unknown/unspecified source. Unknown sources cannot be assumed independent."
+                )
+
+        # Namespaced record independence and duplicate check
+        fit_ids = self._extract_record_ids(self.fit_X, self.fit_source)
+        sel_ids = self._extract_record_ids(self.selection_X, self.selection_source)
+
+        if len(fit_ids) != len(set(fit_ids)):
+            raise ValueError(
+                "Data leakage / integrity error: duplicate record IDs detected within fit partition."
+            )
+        if len(sel_ids) != len(set(sel_ids)):
+            raise ValueError(
+                "Data leakage / integrity error: duplicate record IDs detected within selection partition."
+            )
+
+        overlap = set(fit_ids).intersection(set(sel_ids))
+        if overlap and not self.allow_identical_index:
+            raise ValueError(
+                f"Data leakage detected: fit and selection partitions share {len(overlap)} record IDs. "
+                "Partitions must have disjoint record IDs."
+            )
+
+    @staticmethod
+    def _normalize_year(yr: Any) -> str:
+        if yr is None or pd.isna(yr):
+            raise ValueError("Year cannot be None, NaN, or missing")
+        if isinstance(yr, (bool, np.bool_)):
+            raise TypeError(f"Boolean value {yr!r} rejected as year")
+        if isinstance(yr, (float, np.floating)):
+            if np.isnan(yr) or np.isinf(yr):
+                raise ValueError(f"Non-finite year {yr} rejected")
+            if not float(yr).is_integer():
+                raise ValueError(f"Non-integer year {yr} rejected")
+            return str(int(yr))
+        if isinstance(yr, (int, np.integer)):
+            return str(int(yr))
+        s = str(yr).strip()
+        if not s:
+            raise ValueError("Empty year string rejected")
+        try:
+            f = float(s)
+            if np.isnan(f) or np.isinf(f) or not f.is_integer():
+                raise ValueError(f"Non-integer year string {yr!r} rejected")
+            return str(int(f))
+        except (ValueError, OverflowError):
+            raise ValueError(f"Invalid year value {yr!r} rejected")
+
+    @staticmethod
+    def _normalize_id(idx: Any) -> str:
+        if idx is None or pd.isna(idx):
+            raise ValueError("Record ID cannot be None, NaN, or missing")
+        if isinstance(idx, (bool, np.bool_)):
+            raise TypeError(f"Boolean value {idx!r} rejected as record ID")
+        if isinstance(idx, str):
+            s = idx.strip()
+            if not s:
+                raise ValueError("Empty string rejected as record ID")
+            return idx
+        if isinstance(idx, (bytes, bytearray)):
+            s = idx.decode("utf-8", errors="replace").strip()
+            if not s:
+                raise ValueError("Empty string rejected as record ID")
+            return s
+        if isinstance(idx, (int, np.integer)):
+            return str(int(idx))
+        if isinstance(idx, (float, np.floating)):
+            if np.isnan(idx) or np.isinf(idx):
+                raise ValueError(f"Non-finite record ID {idx} rejected")
+            if float(idx).is_integer():
+                return str(int(idx))
+            return str(float(idx))
+        raise TypeError(f"Unsupported record ID type: {type(idx).__name__}")
+
+    @classmethod
+    def _extract_raw_year_ids(cls, df: pd.DataFrame) -> Set[Tuple[Optional[str], str]]:
+        """Extract set of (norm_yr, norm_id) tuples from dataframe."""
+        year_cols = [col for col in ("survey_year", "year", "source_year") if col in df.columns]
+        if len(year_cols) > 1:
+            base_norm = [cls._normalize_year(v) for v in df[year_cols[0]]]
+            for col in year_cols[1:]:
+                other_norm = [cls._normalize_year(v) for v in df[col]]
+                if base_norm != other_norm:
+                    raise ValueError(f"Conflicting year columns in dataframe: {year_cols[0]} != {col}")
+        year_col = year_cols[0] if year_cols else None
+        res = set()
+        if year_col is not None:
+            for yr, idx in zip(df[year_col], df.index):
+                norm_yr = cls._normalize_year(yr)
+                norm_id = cls._normalize_id(idx)
+                res.add((norm_yr, norm_id))
+        else:
+            for idx in df.index:
+                norm_id = cls._normalize_id(idx)
+                res.add((None, norm_id))
+        return res
+
+    @classmethod
+    def _extract_record_ids(cls, df: pd.DataFrame, source_override: Optional[str]) -> List[str]:
+        """Build structured, length-framed record identity strings per row."""
+        if source_override is None:
+            src = "unspecified"
+        elif isinstance(source_override, (bool, np.bool_)):
+            raise TypeError(f"Boolean value {source_override!r} rejected as source identifier")
+        elif isinstance(source_override, (float, np.floating)) and (np.isnan(source_override) or np.isinf(source_override)):
+            raise ValueError(f"Non-finite source identifier {source_override!r} rejected")
+        elif pd.isna(source_override):
+            raise ValueError("Invalid missing source identifier rejected")
+        elif isinstance(source_override, (float, np.floating)):
+            raise TypeError(f"Float value {source_override!r} rejected as source identifier")
+        elif isinstance(source_override, str):
+            s = source_override.strip()
+            if not s:
+                raise ValueError("Source identifier cannot be empty string")
+            src = s
+        else:
+            s = str(source_override).strip()
+            if not s:
+                raise ValueError("Source identifier cannot be empty string")
+            src = s
+
+        year_cols = [col for col in ("survey_year", "year", "source_year") if col in df.columns]
+        if len(year_cols) > 1:
+            base_norm = [cls._normalize_year(v) for v in df[year_cols[0]]]
+            for col in year_cols[1:]:
+                other_norm = [cls._normalize_year(v) for v in df[col]]
+                if base_norm != other_norm:
+                    raise ValueError(f"Conflicting year columns in dataframe: {year_cols[0]} != {col}")
+        year_col = year_cols[0] if year_cols else None
+
+        records = []
+        if year_col is not None:
+            for yr, idx in zip(df[year_col], df.index):
+                norm_yr = cls._normalize_year(yr)
+                norm_id = cls._normalize_id(idx)
+                records.append(f"src={len(src)}:{src}|yr={len(norm_yr)}:{norm_yr}|id={len(norm_id)}:{norm_id}")
+        else:
+            for idx in df.index:
+                norm_id = cls._normalize_id(idx)
+                records.append(f"src={len(src)}:{src}|yr=0:|id={len(norm_id)}:{norm_id}")
+        return records
+
     def _calc_fit_fingerprint(self) -> str:
         h = hashlib.sha256()
-        h.update(f"shape={self.fit_X.shape}_cols={list(self.fit_X.columns)}".encode("utf-8"))
+        h.update(f"source={self.fit_source}_shape={self.fit_X.shape}_cols={list(self.fit_X.columns)}".encode("utf-8"))
         h.update(pd.util.hash_pandas_object(self.fit_X, index=True).values.tobytes())
         h.update(pd.util.hash_pandas_object(self.fit_y, index=True).values.tobytes())
         if self.protected_fit is not None:
@@ -122,7 +291,7 @@ class EvaluationPartition:
 
     def _calc_selection_fingerprint(self) -> str:
         h = hashlib.sha256()
-        h.update(f"shape={self.selection_X.shape}_cols={list(self.selection_X.columns)}".encode("utf-8"))
+        h.update(f"source={self.selection_source}_shape={self.selection_X.shape}_cols={list(self.selection_X.columns)}".encode("utf-8"))
         h.update(pd.util.hash_pandas_object(self.selection_X, index=True).values.tobytes())
         h.update(pd.util.hash_pandas_object(self.selection_y, index=True).values.tobytes())
         if self.protected_selection is not None:
@@ -159,15 +328,66 @@ class EvaluationPartition:
                 )
 
 
+def _serialize_typed_param(val: Any) -> Any:
+    """Recursively convert parameter value to a lossless, typed data structure."""
+    if isinstance(val, (bool, np.bool_)):
+        return {"__type__": "bool", "value": bool(val)}
+    if isinstance(val, (int, np.integer)):
+        return {"__type__": "int", "value": int(val)}
+    if isinstance(val, (float, np.floating)):
+        if not np.isfinite(val):
+            raise ValueError(f"Non-finite float value {val!r} in configuration parameter")
+        return {"__type__": "float", "value": float(val)}
+    if isinstance(val, str):
+        return {"__type__": "str", "value": str(val)}
+    if val is None:
+        return {"__type__": "NoneType", "value": None}
+    if isinstance(val, (list, tuple)):
+        return {"__type__": type(val).__name__, "value": [_serialize_typed_param(v) for v in val]}
+    if isinstance(val, dict):
+        items = []
+        for k, v in val.items():
+            items.append({
+                "key": _serialize_typed_param(k),
+                "val": _serialize_typed_param(v),
+            })
+        items.sort(key=lambda item: canonical_json_dump(item))
+        return {
+            "__type__": "dict",
+            "value": items,
+        }
+    if isinstance(val, np.ndarray):
+        if not np.all(np.isfinite(val)):
+            raise ValueError("Non-finite value in ndarray configuration parameter")
+        return {
+            "__type__": "ndarray",
+            "dtype": str(val.dtype),
+            "shape": list(val.shape),
+            "sha256": hashlib.sha256(val.tobytes()).hexdigest(),
+        }
+    if hasattr(val, "get_params"):
+        qualname = f"{type(val).__module__}.{type(val).__qualname__}"
+        params = val.get_params(deep=True)
+        return {
+            "__type__": "estimator",
+            "class": qualname,
+            "params": {str(k): _serialize_typed_param(v) for k, v in sorted(params.items())},
+        }
+    raise TypeError(f"Unsupported parameter type {type(val).__name__} in configuration fingerprint: {val!r}")
+
+
 def compute_configuration_fingerprint(
     config: Optional[Any] = None,
-    max_fairness_degradation: float = 0.02,
-    min_utility_gain: float = 0.0,
-    poly_exponents: Sequence[float] = (),
-    label_Y: str = "target",
-    label_O: Sequence[str] = (),
-    cate_attrs: Sequence[str] = (),
-    num_attrs: Sequence[str] = (),
+    evaluator: Optional[Any] = None,
+    model: Optional[Any] = None,
+    scaler: Optional[Any] = None,
+    max_fairness_degradation: Optional[float] = None,
+    min_utility_gain: Optional[float] = None,
+    poly_exponents: Optional[Sequence[float]] = None,
+    label_Y: Optional[str] = None,
+    label_O: Optional[Sequence[str]] = None,
+    cate_attrs: Optional[Sequence[str]] = None,
+    num_attrs: Optional[Sequence[str]] = None,
     transformer: Optional[Any] = None,
     algorithm_mode: Optional[str] = None,
     random_seed: Optional[int] = None,
@@ -176,39 +396,133 @@ def compute_configuration_fingerprint(
     transform_n_bins: Optional[int] = None,
     transform_log_epsilon: Optional[float] = None,
     transform_x_max: Optional[float] = None,
+    epsilon_threshold: Optional[float] = None,
+    evaluation_partition: Optional[Any] = None,
+    partition: Optional[Any] = None,
 ) -> str:
-    """Canonical JSON configuration fingerprint covering all settings materially affecting candidate evaluation."""
-    from fairbias.enhancement_state import canonical_json_dump
+    """Compute a deterministic SHA-256 fingerprint representing all configuration parameters.
 
-    alg_mode = algorithm_mode if algorithm_mode is not None else getattr(config, "algorithm_mode", "unknown")
-    seed = random_seed if random_seed is not None else getattr(config, "random_seed", 42)
-    cls_name = classifier if classifier is not None else getattr(config, "classifier", "LR")
-    norm_name = eval_norm if eval_norm is not None else getattr(config, "eval_norm", "min-max")
+    Lossless and typed:
+    - Estimator and scaler parameters preserve Python types (distinguishing int 1 from str '1')
+    - Numpy ndarrays are serialized by shape, dtype, and exact sha256 of buffer bytes
+    - Scaler parameters correspond to the actual candidate evaluation factory (_get_scaler)
+    - Non-finite parameter values or faulty get_params implementations raise errors.
+    """
+    cfg = config or (evaluator.config if evaluator is not None else None)
+
+    alg_mode = (
+        algorithm_mode
+        if algorithm_mode is not None
+        else getattr(cfg, "algorithm_mode", "unknown")
+    )
+    seed = (
+        random_seed
+        if random_seed is not None
+        else getattr(cfg, "random_seed", 42)
+    )
+    cls_name = (
+        classifier
+        if classifier is not None
+        else getattr(cfg, "classifier", "LR")
+    )
+    norm_name = (
+        eval_norm
+        if eval_norm is not None
+        else getattr(cfg, "eval_norm", "min-max")
+    )
+
+    if poly_exponents is None:
+        poly_exponents = getattr(
+            cfg, "transform_poly_exponents", (1 / 7, 1 / 5, 1 / 3, 3.0, 5.0, 7.0)
+        )
+    if partition is None and evaluation_partition is not None:
+        partition = evaluation_partition
+    min_utility_gain = (
+        min_utility_gain
+        if min_utility_gain is not None
+        else getattr(cfg, "min_utility_gain", 0.001)
+    )
+    max_fairness_degradation = (
+        max_fairness_degradation
+        if max_fairness_degradation is not None
+        else getattr(cfg, "max_fairness_degradation", 0.05)
+    )
+
+    label_Y = label_Y or getattr(cfg, "label_Y", "target")
+    label_O = list(label_O) if label_O is not None else list(getattr(cfg, "label_O", []))
+    cate_attrs = list(cate_attrs) if cate_attrs is not None else list(getattr(cfg, "cate_attrs", []))
+    num_attrs = list(num_attrs) if num_attrs is not None else list(getattr(cfg, "num_attrs", []))
 
     t_n_bins = (
         transform_n_bins
         if transform_n_bins is not None
-        else getattr(transformer, "n_bins", getattr(config, "transform_n_bins", 10))
+        else getattr(transformer, "n_bins", getattr(cfg, "transform_n_bins", 10))
     )
     t_log_eps = (
         transform_log_epsilon
         if transform_log_epsilon is not None
-        else getattr(transformer, "log_epsilon", getattr(config, "transform_log_epsilon", 1e-6))
+        else getattr(transformer, "log_epsilon", getattr(cfg, "transform_log_epsilon", 1e-4))
     )
     t_x_max = (
         transform_x_max
         if transform_x_max is not None
-        else getattr(transformer, "x_max", getattr(config, "transform_x_max", None))
+        else getattr(transformer, "x_max", getattr(cfg, "transform_x_max", None))
     )
+
+    h_order = getattr(cfg, "h_order", 1)
+    mds_fixed_components = getattr(cfg, "mds_fixed_components", None)
+    mds_max_components = getattr(cfg, "mds_max_components", 15)
+    mds_slope_threshold = getattr(cfg, "mds_slope_threshold", 0.01)
+    eval_divergence_num = getattr(cfg, "eval_divergence_num", "num-a")
+    eval_divergence_cat = getattr(cfg, "eval_divergence_cat", getattr(cfg, "eval_divergence_cate", "cate-a"))
+    multigroup_aggregation = getattr(cfg, "multigroup_aggregation", "mean_pair")
+
+    if model is None and evaluator is not None and hasattr(evaluator, "model"):
+        model = evaluator.model
+    if scaler is None and evaluator is not None:
+        if hasattr(evaluator, "scaler") and evaluator.scaler is not None:
+            scaler = evaluator.scaler
+        elif hasattr(evaluator, "_get_scaler"):
+            scaler = evaluator._get_scaler()
+
+    model_type = f"{type(model).__module__}.{type(model).__qualname__}" if model is not None else None
+    model_params = None
+    if model is not None:
+        if hasattr(model, "get_params"):
+            raw_params = model.get_params(deep=True)
+            model_params = {str(k): _serialize_typed_param(v) for k, v in sorted(raw_params.items())}
+        else:
+            raise TypeError(f"Model {type(model).__name__} does not implement get_params()")
+
+    scaler_type = f"{type(scaler).__module__}.{type(scaler).__qualname__}" if scaler is not None else None
+    scaler_params = None
+    if scaler is not None:
+        if hasattr(scaler, "get_params"):
+            raw_sparams = scaler.get_params(deep=True)
+            scaler_params = {str(k): _serialize_typed_param(v) for k, v in sorted(raw_sparams.items())}
+        else:
+            raise TypeError(f"Scaler {type(scaler).__name__} does not implement get_params()")
+
+    fit_fp = None
+    sel_fp = None
+    if partition is not None:
+        if hasattr(partition, "fit_fingerprint"):
+            fit_fp = partition.fit_fingerprint()
+        if hasattr(partition, "selection_fingerprint"):
+            sel_fp = partition.selection_fingerprint()
 
     payload = {
         "algorithm_mode": str(alg_mode),
         "random_seed": int(seed),
         "classifier": str(cls_name),
+        "classifier_type": model_type,
+        "classifier_params": model_params,
         "eval_norm": str(norm_name),
-        "poly_exponents": [round(float(p), 6) for p in poly_exponents],
-        "min_utility_gain": round(float(min_utility_gain), 6),
-        "max_fairness_degradation": round(float(max_fairness_degradation), 6),
+        "scaler_type": scaler_type,
+        "scaler_params": scaler_params,
+        "poly_exponents": [float(p) for p in poly_exponents],
+        "min_utility_gain": float(min_utility_gain),
+        "max_fairness_degradation": float(max_fairness_degradation),
         "label_Y": str(label_Y),
         "label_O": sorted([str(o) for o in label_O]),
         "cate_attrs": sorted([str(c) for c in cate_attrs]),
@@ -216,6 +530,16 @@ def compute_configuration_fingerprint(
         "transform_n_bins": int(t_n_bins),
         "transform_log_epsilon": float(t_log_eps),
         "transform_x_max": float(t_x_max) if t_x_max is not None else None,
+        "h_order": int(h_order) if h_order is not None else None,
+        "mds_fixed_components": int(mds_fixed_components) if mds_fixed_components is not None else None,
+        "mds_max_components": int(mds_max_components) if mds_max_components is not None else None,
+        "mds_slope_threshold": float(mds_slope_threshold) if mds_slope_threshold is not None else None,
+        "eval_divergence_num": str(eval_divergence_num),
+        "eval_divergence_cat": str(eval_divergence_cat),
+        "multigroup_aggregation": str(multigroup_aggregation),
+        "epsilon_threshold": float(epsilon_threshold) if epsilon_threshold is not None else None,
+        "fit_fingerprint": fit_fp,
+        "selection_fingerprint": sel_fp,
     }
     canon = canonical_json_dump(payload)
     return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
@@ -246,6 +570,8 @@ class FairnessEvaluationResult:
     rejection_reason: Optional[str] = None
     geometry_eval_count: int = 0
     evaluation_status: str = "EVALUATED"
+    strictly_feasible: bool = False
+    relaxed_feasible: bool = False
 
 
 @dataclasses.dataclass
@@ -278,12 +604,16 @@ class CandidateAuditEvent:
     model_fit_count: int
     geometry_eval_count: int
     config_hash: str
+    strictly_feasible: Optional[bool] = None
+    relaxed_feasible: Optional[bool] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to a JSON-serializable dictionary with zero microdata content."""
         def _clean_val(v: Any) -> Any:
             if v is None:
                 return None
+            if isinstance(v, (bool, np.bool_)):
+                return bool(v)
             if isinstance(v, (np.floating, float)):
                 if np.isnan(v) or np.isinf(v):
                     return None
@@ -410,6 +740,9 @@ def evaluate_candidate_utility(
     # Scaling fit strictly on fit partition
     if scaler_factory is not None:
         scaler = scaler_factory()
+    elif hasattr(evaluator, "scaler") and evaluator.scaler is not None:
+        from sklearn.base import clone
+        scaler = clone(evaluator.scaler)
     elif hasattr(evaluator, "_get_scaler"):
         scaler = evaluator._get_scaler()
     else:
@@ -450,35 +783,38 @@ def evaluate_candidate_utility(
             model_fit_count=1,
         )
 
-    # Require probabilistic predictor
-    if not hasattr(model, "predict_proba"):
+    from fairbias.prediction_contracts import (
+        validate_and_extract_positive_probabilities,
+        ProbabilityValidationError,
+    )
+
+    try:
+        probs = validate_and_extract_positive_probabilities(
+            model=model,
+            X=scaled_sel,
+            expected_classes=(0, 1),
+            pos_label=1,
+            row_sum_tol=1e-4,
+        )
+    except ProbabilityValidationError as pve:
+        err_msg = str(pve)
+        if "does not provide predict_proba" in err_msg:
+            status = EnhancementStatus.MISSING_PROBABILITIES
+        elif "NaN" in err_msg or "Inf" in err_msg or "non-finite" in err_msg:
+            status = EnhancementStatus.NON_FINITE_OUTPUT
+        else:
+            status = EnhancementStatus.CANDIDATE_INVALID
         return CandidateEvaluationResult(
-            validity_status=EnhancementStatus.MISSING_PROBABILITIES,
+            validity_status=status,
             utility_score=None,
-            error_message=f"{EnhancementStatus.MISSING_PROBABILITIES}: Model {type(model).__name__} does not provide predict_proba; probabilistic predictor required",
+            error_message=err_msg,
             model_fit_count=1,
         )
-
-    # Predict probabilities on selection partition
-    try:
-        proba = model.predict_proba(scaled_sel)
-        if proba.ndim == 2 and proba.shape[1] >= 2:
-            probs = proba[:, 1]
-        else:
-            probs = proba.ravel()
     except Exception as exc:
         return CandidateEvaluationResult(
             validity_status=EnhancementStatus.MODEL_FIT_FAILED,
             utility_score=None,
             error_message=f"Model prediction failed: {type(exc).__name__}: {exc}",
-            model_fit_count=1,
-        )
-
-    if probs is None or np.any(np.isnan(probs)) or np.any(np.isinf(probs)):
-        return CandidateEvaluationResult(
-            validity_status=EnhancementStatus.NON_FINITE_OUTPUT,
-            utility_score=None,
-            error_message="Predicted probabilities contain NaN or Inf",
             model_fit_count=1,
         )
 

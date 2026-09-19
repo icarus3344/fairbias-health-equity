@@ -1,0 +1,161 @@
+{
+  "timestamp_utc": "2026-09-14T07:55:50Z",
+  "gate": "FAIRBIAS-BENCHMARK-B0-R1",
+  "head": "67e6659fa65249a8842e34af5d8969629efe4bca",
+  "branch": "research/nhis-fairbias",
+  "python_inspected": [
+    "/opt/homebrew/opt/python@3.13/bin/python3.13",
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "/Users/lkc/Downloads/code_v_0_3/.venv/bin/python",
+    "/Users/lkc/Downloads/code_v_0_3/.venv311/bin/python"
+  ],
+  "candidate_files": {
+    "docs/reports/NHIS_D8_R4B_SUPERVISOR_ERRATUM.md": {
+      "sha256": "61c59c662a1a455cc3b6e356a3ca6e99785831eda7e51bb1641347b40c7ab412",
+      "bytes": 9633,
+      "status": "unchanged"
+    },
+    "scripts/run_nhis_d8_r4_substantive.py": {
+      "sha256": "2fe3d0fbd25d1dbad0620145fb4f1ec30e389b7209f061fdfbd1880c110721d5",
+      "bytes": 42047,
+      "status": "unchanged"
+    },
+    "src/fairbias/bias_metric.py": {
+      "sha256": "498f849fd390aa3d7cc152a9c0ef177f11593aa5b7a6e4cb1c489dcad1147644",
+      "bytes": 25533,
+      "status": "unchanged"
+    },
+    "src/fairbias/enhancement.py": {
+      "sha256": "60ac98971803893f2f747ee37f0f7582f5fb06b8ad3a899ee5f03181ac0dd700",
+      "bytes": 49561,
+      "status": "unchanged"
+    },
+    "src/fairbias/enhancement_contracts.py": {
+      "sha256": "60565855fb6a6dfc3df2d9435f00288c3c124737e1b3b285948fdf0893dcb851",
+      "bytes": 24920,
+      "status": "unchanged"
+    },
+    "src/fairbias/enhancement_state.py": {
+      "sha256": "287f2fe08fc0879c90d3633b76a4b4ff0b0c177b8f07d03d171bd1499d67c469",
+      "bytes": 10938,
+      "status": "unchanged"
+    },
+    "src/nhis_fairbias/adapter.py": {
+      "sha256": "10dbc9213651bcb44c63e40dcd06b3617058d0c84632be41cf57b4078ab2d21b",
+      "bytes": 12721,
+      "status": "unchanged"
+    },
+    "src/nhis_fairbias/d8_enhancement_runner.py": {
+      "sha256": "1b1677258fffe83f57de1657aef248a9417091c6650b6902df9397a356f1952c",
+      "bytes": 58377,
+      "status": "unchanged"
+    },
+    "src/nhis_fairbias/preprocessing.py": {
+      "sha256": "e96dd44a82ae4f17cc7821d134ed85cd1e4d4beb2e2d8ab4e9c040d7ddca66d5",
+      "bytes": 22289,
+      "status": "unchanged"
+    },
+    "src/nhis_fairbias/survey.py": {
+      "sha256": "6984311469ab5f7de978627371ab23d5a0b86841f525087791dd2ff8712a2dbb",
+      "bytes": 8648,
+      "status": "unchanged"
+    },
+    "tests/test_audit_remediation_probes.py": {
+      "sha256": "553b2eea728c35e3cc3b833fabdec536b4869f1d95514494be8a97f185c285cc",
+      "bytes": 28942,
+      "status": "unchanged"
+    },
+    "tests/test_fairbias_enhancement_contracts.py": {
+      "sha256": "af3a496504e684ecc6004993bbcd3df38cb6a46c7cc1b5e8cf0fa7184cbe290d",
+      "bytes": 38689,
+      "status": "unchanged"
+    },
+    "tests/test_nhis_d6_temporal.py": {
+      "sha256": "6e8fe1f061b66741a41498d0326a2172ab659392ec002760c5a38f56afaa68d2",
+      "bytes": 64137,
+      "status": "unchanged"
+    },
+    "tests/test_nhis_d8_synthetic_contracts.py": {
+      "sha256": "37a3a1e55b23798246bf4841ba9e310e67b0f198cff804ba2f6317da78a53e8a",
+      "bytes": 98468,
+      "status": "unchanged"
+    },
+    "tests/test_nhis_survey.py": {
+      "sha256": "cff76d823df2981915b557802c30ba4dae1c697d5d1a89dc4ba3730c758303d2",
+      "bytes": 3020,
+      "status": "unchanged"
+    }
+  },
+  "original_b0_submissions": {
+    "docs/plans/fairbias_benchmark_b0_20260914/B0_PREFLIGHT.md": {
+      "sha256": "ee6f36b2f6779b7718d538ab6f27754348b1942234950d3a84211dee2a5de903",
+      "status": "preserved_unchanged"
+    },
+    "docs/plans/fairbias_benchmark_b0_20260914/ISSUE_CLOSURE_MATRIX.md": {
+      "sha256": "bb589c65f724c3861c6a094e9a6c22b1aab4188f6e35c94a455f82502c649888",
+      "status": "preserved_unchanged"
+    },
+    "docs/plans/fairbias_benchmark_b0_20260914/DATA_AND_METHOD_CONTRACTS.md": {
+      "sha256": "2501dad368990eb240cc02e068e174713573607079e0a67114cb559a2caff919",
+      "status": "preserved_unchanged"
+    },
+    "docs/plans/fairbias_benchmark_b0_20260914/EXPERIMENT_REGISTRY_DRAFT.md": {
+      "sha256": "f32a4dc9d765ba13960f9bc6e54a5e8bea879efb9c9218ae2dbe2d968dca9d2e",
+      "status": "preserved_unchanged"
+    },
+    "docs/plans/fairbias_benchmark_b0_20260914/GATE_SPECS_B1_B7.md": {
+      "sha256": "5a8d744be37bb4036d0f377cfb0d098a5adbc082c396136724ae4e2b8ef37164",
+      "status": "preserved_unchanged"
+    },
+    "docs/plans/fairbias_benchmark_b0_20260914/B0_WORKER_REPORT.md": {
+      "sha256": "270bc9640129bcd98ff33033b572d91633284da9e88f22057675a4f8e3225281",
+      "status": "preserved_unchanged"
+    }
+  },
+  "b0_r1_revised_documents": {
+    "docs/plans/fairbias_benchmark_b0_r1_20260914/B0_PREFLIGHT.md": {
+      "sha256": "18479b44c314f95622ac4f03307618aa5d2c36c85e24553a27d5db55d58b1e29",
+      "bytes": 10996,
+      "lines": 158
+    },
+    "docs/plans/fairbias_benchmark_b0_r1_20260914/ISSUE_CLOSURE_MATRIX.md": {
+      "sha256": "fa4dab63f924b1047a9266aece7e74500b5dc834d33d4be05f6cd95dc8a25859",
+      "bytes": 22442,
+      "lines": 60
+    },
+    "docs/plans/fairbias_benchmark_b0_r1_20260914/DATA_AND_METHOD_CONTRACTS.md": {
+      "sha256": "0b7c2accc2acf753284f7b36a3f2f1f269e233f5170af20249a64a819179feda",
+      "bytes": 21898,
+      "lines": 219
+    },
+    "docs/plans/fairbias_benchmark_b0_r1_20260914/EXPERIMENT_REGISTRY_DRAFT.md": {
+      "sha256": "db20484dd072f42ab9f23809394d84d0ca0716dc55aef26ae9cfa3a43fec07af",
+      "bytes": 19688,
+      "lines": 222
+    },
+    "docs/plans/fairbias_benchmark_b0_r1_20260914/GATE_SPECS_B1_B7.md": {
+      "sha256": "a5d03260f81dc24a3e5965aba7033c0b0aea57852bb1772484541375136bb625",
+      "bytes": 25779,
+      "lines": 296
+    },
+    "docs/plans/fairbias_benchmark_b0_r1_20260914/REPAIR_RESPONSE.md": {
+      "sha256": "246c54155e28884b4594afc8a3523677765fe2976d827dfcca9e4ca232d8070b",
+      "bytes": 17826,
+      "lines": 217
+    },
+    "docs/plans/fairbias_benchmark_b0_r1_20260914/B0_WORKER_REPORT.md": {
+      "sha256": "29c66ef66692c2700cf18bc201af28b5803cbaf51700e7fc12dda1645c440e35",
+      "bytes": 8346,
+      "lines": 98
+    }
+  },
+  "summary": {
+    "candidate_files_verified": 15,
+    "original_b0_files_verified": 6,
+    "b0_r1_files_created": 8,
+    "r01_r12_remediated": 12,
+    "tests_run": false,
+    "microdata_accessed": false,
+    "network_accessed": false
+  }
+}

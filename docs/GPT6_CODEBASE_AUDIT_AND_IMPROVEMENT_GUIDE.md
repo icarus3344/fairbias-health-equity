@@ -1,5 +1,7 @@
 # GPT-6 Codebase Audit & Improvement Guide: FairBias Healthcare Equity Benchmark
 
+> **2026-09-16 status correction.** The overview and roadmap below are historical planning text, not evidence that a current experiment has passed validation. Use [the registered application study](plans/FAIRBIAS_PRIMARY_BENCHMARK_MASTER_PLAN_20260913.md), [its explicit extensions](plans/FAIRBIAS_BENCHMARK_REGISTERED_EXTENSIONS_20260916.md), and [the Codex integration review](reports/FAIRBIAS_CODEX_INTEGRATION_REVIEW_20260916.md) for current definitions and acceptance scope. NHIS is repeated cross-sectional, not longitudinal. HISPALLP_A has seven study groups. Arm 004 uses the same disability comparison population as Arm 003 and removes six feature components; it is not a disabled-only domain. The historical D8 path is not the new survey-aware benchmark. New code is in `src/nhis_fairbias/benchmark/`, and no predictive/fairness superiority or unobserved lockbox claim follows from a successful software test.
+
 ## Executive Overview
 
 This document serves as a structured audit framework and strategic guide for **GPT-6** (and senior academic/algorithmic reviewers) to evaluate the codebase in the `research/nhis-fairbias` branch of [`fairbias-health-equity`](https://github.com/icarus3344/fairbias-health-equity/tree/research/nhis-fairbias).

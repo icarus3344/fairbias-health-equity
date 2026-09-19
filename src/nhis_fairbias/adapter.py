@@ -119,6 +119,101 @@ class NHISStudyAdapter:
             # Fit strictly on 2022 development_train partition
             df_2022 = self.get_raw_partition(2022)
             self.preprocessor.fit(df_2022)
+        else:
+            self._validate_preprocessor(self.preprocessor)
+
+    def _validate_preprocessor(self, preprocessor: Any) -> None:
+        """Validate pre-fitted preprocessor provenance, registry schema, feature lists, and ordering."""
+        rec = getattr(preprocessor, "fitted_record", None)
+        if rec is None or str(rec.fit_year) != "2022" or rec.fit_study_role != "development_train":
+            raise ValueError(
+                f"Production NHISStudyAdapter rejected pre-fitted preprocessor with invalid provenance: "
+                f"fit_year={getattr(rec, 'fit_year', None)}, fit_study_role={getattr(rec, 'fit_study_role', None)}. "
+                "Pre-fitted preprocessor must be fitted on 2022 development_train data."
+            )
+        if not getattr(preprocessor, "is_fitted", False):
+            raise ValueError("Pre-fitted preprocessor must be fitted prior to adapter initialization")
+        if getattr(preprocessor, "is_legacy_unverified", False):
+            raise ValueError(
+                "Production NHISStudyAdapter rejected unverified legacy preprocessor fit artifact; "
+                "primary study requires verified rule identity."
+            )
+        manifest_regime = rec.rules_manifest.get("regime") if hasattr(rec, "rules_manifest") and isinstance(rec.rules_manifest, dict) else None
+        if manifest_regime != "temporal":
+            raise ValueError(
+                f"Production NHISStudyAdapter rejected non-temporal preprocessor: regime={manifest_regime!r}; "
+                "temporal adapter requires temporal regime preprocessor fitted on 2022 development_train."
+            )
+
+        # Validate feature registry compatibility
+        prep_reg = getattr(preprocessor, "registry", None)
+        if prep_reg is None:
+            prep_reg = getattr(preprocessor, "feature_registry", None)
+        if prep_reg is None or self.feature_registry is None:
+            raise ValueError("Pre-fitted preprocessor is missing valid .registry attribute")
+
+        # Validate feature_lists explicitly (both primary_core_features and expanded_utilization_features)
+        # ensuring exact content and ordering match
+        a_fl = self.feature_registry.get("feature_lists", {})
+        p_fl = prep_reg.get("feature_lists", {})
+        for fl_key in ("primary_core_features", "expanded_utilization_features"):
+            a_list = list(a_fl.get(fl_key, []))
+            p_list = list(p_fl.get(fl_key, []))
+            if a_list != p_list:
+                raise ValueError(
+                    f"Pre-fitted preprocessor feature_lists '{fl_key}' mismatch: "
+                    f"preprocessor has {p_list}, adapter expects {a_list}."
+                )
+
+        # Validate family structure and ordering
+        for fam in ("primary_core", "expanded_utilization"):
+            a_fam = list(self.feature_registry.get(fam, {}).keys())
+            p_fam = list(prep_reg.get(fam, {}).keys())
+            if a_fam != p_fam:
+                raise ValueError(
+                    f"Pre-fitted preprocessor family '{fam}' feature keys or ordering mismatch: "
+                    f"preprocessor has {p_fam}, adapter expects {a_fam}."
+                )
+
+        adapter_specs = {}
+        for fam in ("primary_core", "expanded_utilization"):
+            for k, v in self.feature_registry.get(fam, {}).items():
+                hname = v.get("harmonized_name", k.lower())
+                adapter_specs[hname] = v
+
+        prep_specs = {}
+        for fam in ("primary_core", "expanded_utilization"):
+            for k, v in prep_reg.get(fam, {}).items():
+                hname = v.get("harmonized_name", k.lower())
+                prep_specs[hname] = v
+
+        if list(prep_specs.keys()) != list(adapter_specs.keys()):
+            raise ValueError(
+                f"Pre-fitted preprocessor feature set or ordering mismatch: "
+                f"preprocessor has {list(prep_specs.keys())}, adapter expects {list(adapter_specs.keys())}."
+            )
+
+        critical_fields = (
+            "semantic_type",
+            "substantive_codes",
+            "encoding",
+            "categories",
+            "missing_codes",
+            "missing_rules",
+            "valid_range",
+        )
+        for feat, a_spec in adapter_specs.items():
+            p_spec = prep_specs.get(feat)
+            if p_spec is None:
+                raise ValueError(f"Pre-fitted preprocessor missing specification for feature {feat!r}")
+            for field in critical_fields:
+                a_val = a_spec.get(field)
+                p_val = p_spec.get(field)
+                if a_val != p_val:
+                    raise ValueError(
+                        f"Pre-fitted preprocessor feature registry mismatch on feature {feat!r} field {field!r}: "
+                        f"preprocessor has {p_val!r}, adapter expects {a_val!r}."
+                    )
 
     def _validate_partitions(self) -> None:
         """Validate exact temporal row counts and study roles."""
@@ -160,10 +255,17 @@ class NHISStudyAdapter:
         disability_arm: str = "full_feature",
     ) -> List[str]:
         """Return ordered list of feature names for given feature_set and disability arm."""
+        if hasattr(self.preprocessor, "_frozen_primary_core_features") and self.preprocessor._frozen_primary_core_features:
+            primary_feats = list(self.preprocessor._frozen_primary_core_features)
+            expanded_feats = list(getattr(self.preprocessor, "_frozen_expanded_features", self.preprocessor.expanded_features))
+        else:
+            primary_feats = list(self.preprocessor.primary_core_features)
+            expanded_feats = list(self.preprocessor.expanded_features)
+
         if feature_set == "primary_core":
-            feats = list(self.preprocessor.primary_core_features)
+            feats = primary_feats
         elif feature_set in ("expanded", "expanded_utilization"):
-            feats = list(self.preprocessor.expanded_features)
+            feats = expanded_feats
         else:
             raise ValueError(f"Unknown feature_set: {feature_set}")
 
@@ -198,10 +300,15 @@ class NHISStudyAdapter:
         """
         raw_year_df = self.get_raw_partition(year)
 
-        # Resolve column names
+        # Resolve column names strictly via supported harmonized outcome map
         harm_outcome = OUTCOME_MAP.get(outcome)
-        if harm_outcome is None or harm_outcome not in raw_year_df.columns:
+        if harm_outcome is None:
             raise ValueError(f"Unsupported outcome: {outcome}. Supported: MEDDL12M_A, MEDNG12M_A")
+
+        if harm_outcome not in raw_year_df.columns:
+            raise ValueError(
+                f"Harmonized outcome column {harm_outcome!r} not found in raw data frame for {year}"
+            )
 
         harm_prot = PROTECTED_MAP.get(protected_attribute)
         if harm_prot is None or harm_prot not in raw_year_df.columns:
@@ -215,6 +322,15 @@ class NHISStudyAdapter:
 
         valid_mask = y_raw.notna() & o_raw.notna()
         filtered_df = raw_year_df[valid_mask].copy()
+
+        # Check binary 0/1 contract on substantive records
+        y_vals = filtered_df[harm_outcome].dropna()
+        y_unique = set(y_vals.unique())
+        if not y_unique.issubset({0, 1, 0.0, 1.0}):
+            raise ValueError(
+                f"Outcome column {harm_outcome!r} contains non-binary values {y_unique}; "
+                "harmonized outcome must be encoded strictly as binary {0, 1}."
+            )
 
         # Transform features
         X_all = self.preprocessor.transform(

@@ -67,8 +67,8 @@ The causal phrasing is superseded by the following descriptive interpretation:
 > "The large Arm-4 engineering-geometry C4 gain did not replicate under the primary paper-faithful geometry. The engineering trajectory was not feasible under the frozen D6 fairness criterion, while the primary trajectory reached the criterion, indicating strong geometry/path sensitivity."
 
 **Scientific impact**: This formalizes the core scientific findings of Gate D8:
-1. **C3 Posthoc Mitigation is path/geometry-robust**: All 4 arms yield identical terminal states and AUROC values across both paper-faithful and engineering geometries ($\Delta\text{AUROC} = 0.0000$).
-2. **C4 Joint Interleaving is strongly geometry/path-sensitive**: Trajectories diverge across geometries for HISP, DISAB-full, and DISAB-exclude.
+1. **C3 Posthoc Mitigation observation**: In the substantive D8 execution, identical C3 terminal states across both runs were observed under common starting states, the 0.02 fairness relaxation, and the 5-step budget; the precise underlying mechanism remains unidentified without dedicated mechanistic ablation experiments.
+2. **C4 Joint Interleaving is strongly geometry/path-sensitive**: Trajectories diverge across joint configuration changes for HISP, DISAB-full, and DISAB-exclude. Primary R4 utilized stress-elbow dimensionality selection, while fixed 2D was an exploratory control configuration; sensitivity reflects compound changes across geometry, grid, and threshold rather than an isolated MDS causal effect.
 3. The primary paper-faithful geometry under frozen D6 thresholds is the canonical, authoritative finding. Historical R3 engineering results serve as exploratory sensitivity analyses highlighting the criticality of replication fidelity for geometry-dependent optimization algorithms.
 
 ---
@@ -94,3 +94,27 @@ Primary R4 Result: ACCEPTED
 Real-data rerun: NOT AUTHORIZED
 R4C: WILL NOT BE OPENED
 ```
+
+---
+
+## 5. Addendum 3: Independent Review (GPT-6 Audit) Disclosures and Methodological Clarifications
+
+Following independent external review (commit `67e6659`), the following technical clarifications are formally recorded to maintain full scientific transparency:
+
+1. **Multi-Group Geometric Aggregation (Arm 2, HISP)**:
+   - The primary D8 execution computes pairwise divergences across all 21 pairs of `HISPALLP_A` and averages per-pair differences across companion sets (`mean_pair_extension`).
+   - The original Tang et al. (2024) reference implementation computes absolute differences of per-pair maximum values across contexts (`author_max_pair`). While mathematically equivalent under binary protected attributes, they diverge under multi-category groups. The primary finding is formally designated as the `mean_pair_extension` variant.
+
+2. **AE Feasibility & Search Relaxation Transparency**:
+   - Accuracy Enhancement (AE) candidate search in Conditions 3 and 4 operates under an absolute fairness degradation budget (`max_fairness_degradation = 0.02`), permitting candidates where $d_\phi \le \epsilon + 0.02$.
+   - **Historical Execution Record**: In historical R4 substantive artifacts (`artifacts/nhis_d8_r4/20260909T080325Z_d8r4_substantive/enhancement_audit_summary.json`), terminal state feasibility was recorded under the single boolean field `fairness_feasible`. The flat `condition_metrics.json` output preserves raw terminal `max_dphi` metrics across conditions without embedded $\epsilon$ or feasibility fields; authoritative baseline thresholds $\epsilon$ are documented separately in `frozen_d6_reference_manifest.json`.
+   - **Post-hoc Diagnostic Comparison**: When terminal `max_dphi` is evaluated against authoritative frozen baseline thresholds $\epsilon$ (e.g., 0.0005 for SEX, 0.0020 for HISP), SEX and HISP C3/C4 terminal states satisfy $\epsilon < d_\phi \le \epsilon + 0.02$, lying within the search-relaxed feasibility boundary.
+   - **Future Output Schema**: For subsequent pipeline executions, candidate audit events and runner records explicitly decompose feasibility into `strictly_feasible` ($d_\phi \le \epsilon$) and `relaxed_feasible` ($d_\phi \le \epsilon + 0.02$). This schema refinement applies prospectively to new audit exports (`candidate_audit_events.json`) and is not retroactively backfilled into historical frozen R4 JSON artifacts.
+
+3. **Complex Survey Estimand Scope**:
+   - Primary D8 evaluation metrics (AUROC, AP, Brier, Demographic Parity difference) are unweighted sample-level predictive performance metrics on the NHIS respondent cohort.
+   - They benchmark algorithmic behavior and do not constitute population-weighted health equity point estimates or design-based (stratum/PSU) complex survey inferences for the target U.S. adult civilian population.
+
+4. **Arm 4 Path & Trajectory Sensitivity**:
+   - The divergence between exploratory R3 (fixed 2D engineering geometry) and primary R4 (paper-faithful stress-elbow geometry) on Arm 4 reflects compound sensitivity across MDS dimensionality selection (2D vs. stress-elbow), BM candidate power grids, and threshold origins, rather than an isolated MDS causal effect.
+   - In the substantive D8 execution, identical C3 terminal states across the two runs were observed under common starting states, the 0.02 fairness relaxation, and the 5-step budget; the precise underlying mechanism remains unidentified without dedicated mechanistic ablation experiments.

@@ -530,7 +530,21 @@ def test_03_repeated_cross_sectional_manifest_semantics(tmp_path: pathlib.Path) 
         runner=runner,
         allow_substantive_execution=True,
     )
-    with patch.object(runner, "execute_arm_train_validation", side_effect=make_mock_arm_execution_result):
+    mock_preconditions = {
+        "frozen_features_verified": True,
+        "features_parquet_path": "synthetic_mock.parquet",
+        "features_parquet_sha256": FROZEN_FEATURES_PARQUET_SHA256,
+        "scientific_base_commit": SCIENTIFIC_EXECUTION_BASE_COMMIT,
+        "current_git_commit": "mock_head_commit",
+        "scientific_base_is_ancestor": True,
+        "scientific_code_diff_clean": True,
+        "prior_release_tags_verified": True,
+        "prior_release_archives_verified": True,
+        "verified_at": "2026-09-12T00:00:00Z",
+        "status": "PASS",
+    }
+    with patch("nhis_fairbias.d6_temporal_runner.verify_execution_preconditions", return_value=mock_preconditions), \
+         patch.object(runner, "execute_arm_train_validation", side_effect=make_mock_arm_execution_result):
         manifest = manager.execute_release()
     assert manifest["repeated_cross_sectional"] is True
     assert manifest["longitudinal"] is False

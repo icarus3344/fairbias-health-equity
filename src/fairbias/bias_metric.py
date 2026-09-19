@@ -179,7 +179,14 @@ def compute_pairwise_divergences(
     df[o_col] = o_series.values
     if w_arr is not None:
         df[w_col] = w_arr
+
+    undeclared = [c for c in X.columns if c not in num_attrs and c not in cate_attrs]
+    if undeclared:
+        raise ValueError(f"Features in X are not declared in num_attrs or cate_attrs: {undeclared}")
+
     groups = sorted(df[o_col].dropna().unique())
+    if len(groups) < 2:
+        raise ValueError(f"Cannot compute group divergence for fewer than 2 groups (found {len(groups)})")
 
     columns: Dict[str, pd.Series] = {}
     for p, n in combinations(groups, 2):
@@ -205,34 +212,46 @@ def compute_pairwise_divergences(
             if col not in sub.columns:
                 continue
             vals = pd.to_numeric(sub[col], errors="coerce").astype(float)
-            min_val, max_val = float(vals.min()), float(vals.max())
+            if w_arr is None:
+                min_val, max_val = float(vals.min()), float(vals.max())
+            else:
+                w_series = sub[w_col]
+                pos_w = w_series.notna() & (w_series > 0) & vals.notna()
+                if pos_w.any():
+                    min_val, max_val = float(vals[pos_w].min()), float(vals[pos_w].max())
+                else:
+                    min_val, max_val = float(vals.min()), float(vals.max())
             if max_val > min_val:
                 vals = (vals - min_val) / (max_val - min_val)
 
             if w_arr is None:
                 p_vals = vals[mask_p].dropna()
                 n_vals = vals[mask_n].dropna()
+                if len(p_vals) == 0 or len(n_vals) == 0:
+                    raise ValueError(
+                        f"Numeric feature {col!r} has no valid observations in group "
+                        f"{p if len(p_vals) == 0 else n}; divergence is unestimable"
+                    )
                 if num_method == "num-a":
-                    if len(p_vals) == 0 or len(n_vals) == 0:
-                        num_diff[col] = 0.0
-                    else:
-                        num_diff[col] = float(abs(p_vals.mean() - n_vals.mean()))
+                    num_diff[col] = float(abs(p_vals.mean() - n_vals.mean()))
                 else:
                     raise ValueError(f"Unsupported num divergence method: {num_method}")
             else:
-                p_valid = mask_p & vals.notna()
-                n_valid = mask_n & vals.notna()
+                p_valid = mask_p & vals.notna() & (sub[w_col] > 0)
+                n_valid = mask_n & vals.notna() & (sub[w_col] > 0)
                 p_vals = vals[p_valid]
                 p_w = sub.loc[p_valid, w_col]
                 n_vals = vals[n_valid]
                 n_w = sub.loc[n_valid, w_col]
+                if len(p_vals) == 0 or len(n_vals) == 0 or p_w.sum() <= 0 or n_w.sum() <= 0:
+                    raise ValueError(
+                        f"Numeric feature {col!r} has non-positive valid weight in group "
+                        f"{p if (len(p_vals) == 0 or p_w.sum() <= 0) else n}; divergence is unestimable"
+                    )
                 if num_method == "num-a":
-                    if len(p_vals) == 0 or len(n_vals) == 0 or p_w.sum() <= 0 or n_w.sum() <= 0:
-                        num_diff[col] = 0.0
-                    else:
-                        p_mean = float((p_w * p_vals).sum() / p_w.sum())
-                        n_mean = float((n_w * n_vals).sum() / n_w.sum())
-                        num_diff[col] = float(abs(p_mean - n_mean))
+                    p_mean = float((p_w * p_vals).sum() / p_w.sum())
+                    n_mean = float((n_w * n_vals).sum() / n_w.sum())
+                    num_diff[col] = float(abs(p_mean - n_mean))
                 else:
                     raise ValueError(f"Unsupported num divergence method: {num_method}")
 
@@ -242,11 +261,15 @@ def compute_pairwise_divergences(
                 continue
 
             if w_arr is None:
-                p_counts = sub.loc[mask_p, col].value_counts()
-                n_counts = sub.loc[mask_n, col].value_counts()
+                p_counts = sub.loc[mask_p, col].dropna().value_counts()
+                n_counts = sub.loc[mask_n, col].dropna().value_counts()
+                p_counts = p_counts[p_counts > 0]
+                n_counts = n_counts[n_counts > 0]
                 if len(p_counts) == 0 or len(n_counts) == 0:
-                    cat_diff[col] = 0.0
-                    continue
+                    raise ValueError(
+                        f"Categorical feature {col!r} has no valid observations in group "
+                        f"{p if len(p_counts) == 0 else n}; divergence is unestimable"
+                    )
                 union_index = pd.Index(list(p_counts.index) + list(n_counts.index)).unique()
                 p_counts = p_counts.reindex(union_index, fill_value=0)
                 n_counts = n_counts.reindex(union_index, fill_value=0)
@@ -258,23 +281,31 @@ def compute_pairwise_divergences(
                 else:
                     raise ValueError(f"Unsupported cat divergence method: {cat_method}")
             else:
-                p_valid = mask_p & sub[col].notna()
-                n_valid = mask_n & sub[col].notna()
+                w_series = sub[w_col]
+                pos_w = w_series.notna() & (w_series > 0)
+                p_valid = mask_p & sub[col].notna() & pos_w
+                n_valid = mask_n & sub[col].notna() & pos_w
                 if not p_valid.any() or not n_valid.any():
-                    cat_diff[col] = 0.0
-                    continue
+                    raise ValueError(
+                        f"Categorical feature {col!r} has no positive-weight observations in group "
+                        f"{p if not p_valid.any() else n}; divergence is unestimable"
+                    )
                 p_sub = sub.loc[p_valid]
                 n_sub = sub.loc[n_valid]
-                p_counts = p_sub.groupby(col, observed=False)[w_col].sum()
-                n_counts = n_sub.groupby(col, observed=False)[w_col].sum()
+                p_counts = p_sub.groupby(col, observed=True)[w_col].sum()
+                n_counts = n_sub.groupby(col, observed=True)[w_col].sum()
+                p_counts = p_counts[p_counts > 0]
+                n_counts = n_counts[n_counts > 0]
                 union_index = pd.Index(list(p_counts.index) + list(n_counts.index)).unique()
                 p_counts = p_counts.reindex(union_index, fill_value=0.0)
                 n_counts = n_counts.reindex(union_index, fill_value=0.0)
                 p_sum = float(p_counts.sum())
                 n_sum = float(n_counts.sum())
                 if p_sum <= 0 or n_sum <= 0:
-                    cat_diff[col] = 0.0
-                    continue
+                    raise ValueError(
+                        f"Categorical feature {col!r} has non-positive valid weight sum in group "
+                        f"{p if p_sum <= 0 else n}; divergence is unestimable"
+                    )
                 if cat_method == "cat-a":
                     k = max(1, len(union_index))
                     cat_diff[col] = float(
@@ -283,18 +314,20 @@ def compute_pairwise_divergences(
                 else:
                     raise ValueError(f"Unsupported cat divergence method: {cat_method}")
 
-        columns[f"{p}_{n}"] = pd.concat([
+        pair_series = pd.concat([
             pd.Series(num_diff, dtype="float64"),
             pd.Series(cat_diff, dtype="float64"),
         ])
+        for col in X.columns:
+            if col not in pair_series.index:
+                raise ValueError(f"Feature {col!r} missing from divergence estimation for pair {p}_{n}")
+        columns[f"{p}_{n}"] = pair_series
 
     if not columns:
-        return pd.DataFrame(index=list(X.columns))
-    df_s = pd.DataFrame(columns).fillna(0.0)
-    # Keep every feature row even if it had no divergence entry
-    for col in X.columns:
-        if col not in df_s.index:
-            df_s.loc[col] = 0.0
+        raise ValueError("No pairwise group comparisons could be formed")
+    df_s = pd.DataFrame(columns)
+    if df_s.isna().any().any():
+        raise ValueError("Divergence matrix contains NaN or unestimable entries")
     return df_s
 
 
@@ -302,6 +335,7 @@ def compute_shapley_distance_matrix(
     df_s: pd.DataFrame,
     features: List[str],
     h_order: int = 1,
+    multigroup_aggregation: str = "mean_pair",
 ) -> Tuple[np.ndarray, List[str]]:
     """
     Build the paper distance matrix (Eq. 3-5) over features plus the origin.
@@ -312,8 +346,13 @@ def compute_shapley_distance_matrix(
     attributes (level 0..H exclusion, Eq. 4).  For the origin node the
     contexts range over subsets of ``features \\ {m}`` (Eq. 5) and the
     sub-distance is ``|w_max(S + m) - w_max(S)|``.  ``w_max`` is the RMS
-    norm of Eq. (1).  With multiple protected groups the per-pair
-    sub-distances are averaged (extension of the binary-o paper setting).
+    norm of Eq. (1).
+
+    Multigroup aggregation modes:
+    - "mean_pair": Per-pair sub-distances are averaged across group pairs
+      before averaging across contexts (current project extension).
+    - "author_max_pair": Per-context max over group pairs is taken first,
+      then the absolute difference of max values is computed (Tang et al. code).
     """
     nodes = list(features) + [ORIGIN]
     n_nodes = len(nodes)
@@ -331,7 +370,10 @@ def compute_shapley_distance_matrix(
             "build the bias distance matrix"
         )
 
-    df_s_sq = df_s ** 2
+    if df_s.index.has_duplicates:
+        raise ValueError("Pairwise divergence feature index must be unique")
+    df_s_sq = df_s_arr ** 2
+    feature_index = {name: i for i, name in enumerate(df_s.index)}
     value_cache: Dict[Tuple[str, ...], np.ndarray] = {}
     zero_vec = np.zeros(df_s.shape[1])
 
@@ -342,10 +384,10 @@ def compute_shapley_distance_matrix(
             return zero_vec
         cached = value_cache.get(key)
         if cached is None:
-            rows = [c for c in key if c in df_s_sq.index]
+            rows = [feature_index[c] for c in key if c in feature_index]
             if rows:
                 cached = np.sqrt(
-                    df_s_sq.loc[rows].sum(axis=0).to_numpy(dtype=float) / len(rows)
+                    df_s_sq[rows].sum(axis=0) / len(rows)
                 )
             else:
                 cached = zero_vec
@@ -373,8 +415,18 @@ def compute_shapley_distance_matrix(
                 else:
                     s1 = list(s) + [a]
                     s2 = list(s) + [b]
-                diff = np.abs(subset_value(s1) - subset_value(s2))
-                pair_means.append(float(np.mean(diff)) if diff.size else 0.0)
+                v1 = subset_value(s1)
+                v2 = subset_value(s2)
+                if multigroup_aggregation == "author_max_pair":
+                    max_v1 = float(np.max(v1)) if v1.size else 0.0
+                    max_v2 = float(np.max(v2)) if v2.size else 0.0
+                    diff_val = abs(max_v1 - max_v2)
+                    pair_means.append(diff_val)
+                elif multigroup_aggregation == "mean_pair":
+                    diff = np.abs(v1 - v2)
+                    pair_means.append(float(np.mean(diff)) if diff.size else 0.0)
+                else:
+                    raise ValueError(f"Unsupported multigroup_aggregation: {multigroup_aggregation}")
 
             d_ab = float(np.mean(pair_means)) if pair_means else 0.0
             dist[i, j] = d_ab
@@ -436,6 +488,7 @@ def compute_bias_concentration(
     mds_fixed_components: Optional[int] = None,
     sample_weight: Optional[pd.Series | np.ndarray] = None,
     allow_zero_weights: bool = False,
+    multigroup_aggregation: str = "mean_pair",
 ) -> Dict[str, float]:
     """
     Compute d_phi (Eq. 6: Euclidean distance to the origin after metric MDS)
@@ -459,7 +512,9 @@ def compute_bias_concentration(
         sample_weight=sample_weight,
         allow_zero_weights=allow_zero_weights,
     )
-    dist, nodes = compute_shapley_distance_matrix(df_s, features, h_order=h_order)
+    dist, nodes = compute_shapley_distance_matrix(
+        df_s, features, h_order=h_order, multigroup_aggregation=multigroup_aggregation
+    )
 
     if np.isnan(dist).any() or np.isinf(dist).any():
         # NaN/Inf entries compare False against 0, so this check must run
@@ -518,8 +573,13 @@ def compute_dphi_matrix(
     mds_fixed_components: Optional[int] = None,
     sample_weight: Optional[pd.Series | np.ndarray] = None,
     allow_zero_weights: bool = False,
+    multigroup_aggregation: str = "mean_pair",
+    allow_single_group: bool = False,
 ) -> Dict[str, Dict[str, float]]:
     """Compute d_phi for every protected attribute column in O."""
+    if multigroup_aggregation not in ("mean_pair", "author_max_pair"):
+        raise ValueError(f"Unsupported multigroup_aggregation: {multigroup_aggregation!r}; must be 'mean_pair' or 'author_max_pair'")
+
     if isinstance(O, (pd.DataFrame, pd.Series)) and isinstance(X, (pd.DataFrame, pd.Series)):
         if not O.index.equals(X.index):
             raise ValueError("Index alignment mismatch: O index must match X index")
@@ -531,6 +591,11 @@ def compute_dphi_matrix(
     for p_col in O.columns:
         o_series = O[p_col]
         if o_series.nunique() < 2:
+            if not allow_single_group:
+                raise ValueError(
+                    f"Protected attribute '{p_col}' has fewer than 2 unique groups ({o_series.nunique()}); "
+                    "bias concentration is mathematically not estimable across groups"
+                )
             results[p_col] = {col: 0.0 for col in X.columns}
             continue
         results[p_col] = compute_bias_concentration(
@@ -547,5 +612,6 @@ def compute_dphi_matrix(
             mds_fixed_components=mds_fixed_components,
             sample_weight=sample_weight,
             allow_zero_weights=allow_zero_weights,
+            multigroup_aggregation=multigroup_aggregation,
         )
     return results

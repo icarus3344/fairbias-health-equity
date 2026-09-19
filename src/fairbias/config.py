@@ -93,6 +93,9 @@ def official_power_stream(up_to: int = OFFICIAL_POWER_STREAM_MAX) -> tuple:
     return tuple(stream)
 
 
+MULTIGROUP_AGGREGATIONS: Tuple[str, ...] = ("mean_pair", "author_max_pair")
+
+
 @dataclasses.dataclass(frozen=True)
 class FairBiasConfig:
     """Immutable configuration container for FairBias benchmarking runs."""
@@ -149,6 +152,7 @@ class FairBiasConfig:
     mds_slope_threshold: float = 0.01
     eval_divergence_num: str = "num-a"  # Eq. 2 numerical: centroid distance after min-max normalization
     eval_divergence_cat: str = "cat-a"  # Eq. 2 categorical: mean absolute frequency gap over K categories
+    multigroup_aggregation: str = "mean_pair"  # "mean_pair" or "author_max_pair"
 
     # Mitigation acceptance criteria
     phi_threshold: float = 100.0  # NMI information-loss gate (baseline PARAMS_MAIN_THRESHOLD_PHI)
@@ -203,6 +207,11 @@ class FairBiasConfig:
             raise ValueError(
                 f"algorithm_mode must be one of {ALGORITHM_MODES}, "
                 f"got {self.algorithm_mode!r}"
+            )
+        if self.multigroup_aggregation not in MULTIGROUP_AGGREGATIONS:
+            raise ValueError(
+                f"multigroup_aggregation must be one of {MULTIGROUP_AGGREGATIONS}, "
+                f"got {self.multigroup_aggregation!r}"
             )
         if self.mds_fixed_components is not None and int(self.mds_fixed_components) < 1:
             raise ValueError(

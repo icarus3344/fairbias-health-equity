@@ -1,0 +1,1390 @@
+{
+  "registry_id": "NHIS_FAIRBIAS_76_CONDITION_MASTER_REGISTRY",
+  "governing_plan": "docs/plans/fairbias_benchmark_b0_r1_20260914/EXPERIMENT_REGISTRY_DRAFT.md",
+  "summary": {
+    "total_conditions": 76,
+    "core_conditions": 54,
+    "ae_ablation_conditions": 16,
+    "survey_weighted_conditions": 4,
+    "geometric_path_conditions": 2,
+    "excluded_not_supported_cells": 2
+  },
+  "excluded_cells": [
+    {
+      "cell_id": "EXCL_CORE_ARM_002_LR_LFR_RECONSTRUCTED",
+      "arm": "arm_002",
+      "method_id": "LFR_RECONSTRUCTED",
+      "backbone": "logistic_regression",
+      "status": "NOT_SUPPORTED",
+      "reason": "AIF360 LFR implementation strictly supports binary protected attributes; multigroup 7-category HISP is contractually unsupported."
+    },
+    {
+      "cell_id": "EXCL_CORE_ARM_002_GBDT_LFR_RECONSTRUCTED",
+      "arm": "arm_002",
+      "method_id": "LFR_RECONSTRUCTED",
+      "backbone": "gradient_boosting_classifier",
+      "status": "NOT_SUPPORTED",
+      "reason": "AIF360 LFR implementation strictly supports binary protected attributes; multigroup 7-category HISP is contractually unsupported."
+    }
+  ],
+  "conditions": [
+    {
+      "condition_id": "COND_CORE_ARM_001_LR_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_LR_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_LR_REWEIGHING",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_LR_LFR_RECONSTRUCTED",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "LFR_RECONSTRUCTED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LFR_8_CONFIG_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_LR_EG_DP",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_LR_EG_EO",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_LR_TO_EO",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_LR_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_LR_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_LR_REWEIGHING",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_LR_EG_DP",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_LR_EG_EO",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_LR_TO_EO",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_LR_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_LR_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_LR_REWEIGHING",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_LR_LFR_RECONSTRUCTED",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "LFR_RECONSTRUCTED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LFR_8_CONFIG_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_LR_EG_DP",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_LR_EG_EO",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_LR_TO_EO",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_LR_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_LR_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_LR_REWEIGHING",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_LR_LFR_RECONSTRUCTED",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "LFR_RECONSTRUCTED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LFR_8_CONFIG_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_LR_EG_DP",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_LR_EG_EO",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "EG_8_DIFF_BOUND_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_LR_TO_EO",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_GBDT_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_GBDT_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_GBDT_REWEIGHING",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_GBDT_LFR_RECONSTRUCTED",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "LFR_RECONSTRUCTED",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "LFR_8_CONFIG_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_GBDT_EG_DP",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_GBDT_EG_EO",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_001_GBDT_TO_EO",
+      "category": "core",
+      "arm": "arm_001",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_GBDT_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_GBDT_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_GBDT_REWEIGHING",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_GBDT_EG_DP",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_GBDT_EG_EO",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_002_GBDT_TO_EO",
+      "category": "core",
+      "arm": "arm_002",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_GBDT_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_GBDT_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_GBDT_REWEIGHING",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_GBDT_LFR_RECONSTRUCTED",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "LFR_RECONSTRUCTED",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "LFR_8_CONFIG_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_GBDT_EG_DP",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_GBDT_EG_EO",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_003_GBDT_TO_EO",
+      "category": "core",
+      "arm": "arm_003",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_GBDT_UNMITIGATED",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_GBDT_FAIRBIAS_BM",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_GBDT_REWEIGHING",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "REWEIGHING",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_GBDT_LFR_RECONSTRUCTED",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "LFR_RECONSTRUCTED",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "LFR_8_CONFIG_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_GBDT_EG_DP",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "EG_DP",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_GBDT_EG_EO",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "EG_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "EG_8_DIFF_BOUND_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_CORE_ARM_004_GBDT_TO_EO",
+      "category": "core",
+      "arm": "arm_004",
+      "method_id": "TO_EO",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "GBDT_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "decision_probability_q",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_001_LR_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_001",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "BM_AE_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_002_LR_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_002",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "BM_AE_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_003_LR_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_003",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "BM_AE_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_004_LR_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "BM_AE_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_001_GBDT_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_001",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "BM_AE_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_002_GBDT_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_002",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "BM_AE_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_003_GBDT_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_003",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "BM_AE_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_004_GBDT_BM_AE",
+      "category": "ae_ablation",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_BM_TO_AE",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "BM_AE_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_001_LR_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_001",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "JOINT_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_002_LR_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_002",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "JOINT_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_003_LR_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_003",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "JOINT_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_004_LR_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "JOINT_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_001_GBDT_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_001",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "JOINT_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_002_GBDT_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_002",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "JOINT_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_003_GBDT_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_003",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "JOINT_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_AE_ARM_004_GBDT_JOINT",
+      "category": "ae_ablation",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1",
+      "backbone": "gradient_boosting_classifier",
+      "config_grid_ref": "JOINT_8_EPSILON_GBDT_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT"
+    },
+    {
+      "condition_id": "COND_WEIGHTED_ARM_003_LR_UNMITIGATED",
+      "category": "survey_weighted_training_sensitivity",
+      "arm": "arm_003",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "wtfa_a_mean_normalized",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT",
+      "note": "Survey weights applied exclusively to downstream predictor fitting; FairBias geometry remains unweighted."
+    },
+    {
+      "condition_id": "COND_WEIGHTED_ARM_003_LR_FAIRBIAS_BM",
+      "category": "survey_weighted_training_sensitivity",
+      "arm": "arm_003",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "wtfa_a_mean_normalized",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT",
+      "note": "Survey weights applied exclusively to downstream predictor fitting; FairBias geometry remains unweighted."
+    },
+    {
+      "condition_id": "COND_WEIGHTED_ARM_004_LR_UNMITIGATED",
+      "category": "survey_weighted_training_sensitivity",
+      "arm": "arm_004",
+      "method_id": "UNMITIGATED",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "LR_4_GRID",
+      "configs_per_condition": 4,
+      "expected_seed_policy": [
+        0
+      ],
+      "training_weight_target": "wtfa_a_mean_normalized",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT",
+      "note": "Survey weights applied exclusively to downstream predictor fitting; FairBias geometry remains unweighted."
+    },
+    {
+      "condition_id": "COND_WEIGHTED_ARM_004_LR_FAIRBIAS_BM",
+      "category": "survey_weighted_training_sensitivity",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "FAIRBIAS_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "wtfa_a_mean_normalized",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT",
+      "note": "Survey weights applied exclusively to downstream predictor fitting; FairBias geometry remains unweighted."
+    },
+    {
+      "condition_id": "COND_PATH_ARM_004_LR_BM_FIXED_2D",
+      "category": "geometric_path_sensitivity",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_BM",
+      "method_version": "application-v1-fixed-2d",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "PATH_FIXED_2D_BM_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT",
+      "note": "Directly paired against Arm 004 LR stress-elbow BM in Core and stress-elbow Joint in AE."
+    },
+    {
+      "condition_id": "COND_PATH_ARM_004_LR_JOINT_FIXED_2D",
+      "category": "geometric_path_sensitivity",
+      "arm": "arm_004",
+      "method_id": "FAIRBIAS_JOINT",
+      "method_version": "application-v1-fixed-2d",
+      "backbone": "logistic_regression",
+      "config_grid_ref": "PATH_FIXED_2D_JOINT_8_EPSILON_LR_GRID",
+      "configs_per_condition": 32,
+      "expected_seed_policy": [
+        0,
+        7,
+        19,
+        37,
+        73
+      ],
+      "training_weight_target": "unweighted",
+      "output_capability": "event_probability_p",
+      "stage": "R3_REHEARSAL_AND_DEVELOPMENT",
+      "note": "Directly paired against Arm 004 LR stress-elbow BM in Core and stress-elbow Joint in AE."
+    }
+  ]
+}

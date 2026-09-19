@@ -10,26 +10,47 @@ import tempfile
 import shutil
 import unittest
 import unittest.mock
+import pytest
 import numpy as np
 import pandas as pd
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BLOCKED_ACCESS: list[str] = []
+_DATA_GUARD_ACTIVE: bool = False
 
 
 def data_guard(event: str, args: tuple) -> None:
+    if not _DATA_GUARD_ACTIVE:
+        return
     if event == "open" and args and isinstance(args[0], (str, bytes, pathlib.Path)):
         p = pathlib.Path(args[0]).resolve()
         if (
             p.is_relative_to(ROOT / "data")
             or p in [ROOT / "data_COMPAS.csv", ROOT / "data_Credit_Card.csv"]
-            or p.suffix == ".parquet"
+            or (p.is_relative_to(ROOT) and p.suffix == ".parquet")
         ):
             BLOCKED_ACCESS.append(p.name)
             raise RuntimeError(f"DATA_ACCESS_BLOCKED: {p.name}")
 
 
 sys.addaudithook(data_guard)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def activate_data_guard():
+    """Activate data guard strictly during the execution of this test module."""
+    global _DATA_GUARD_ACTIVE
+    _DATA_GUARD_ACTIVE = True
+    try:
+        yield
+    finally:
+        _DATA_GUARD_ACTIVE = False
+
+
+def teardown_module(module=None) -> None:
+    """Deactivate audit guard so it does not poison subsequent test suites in same process."""
+    global _DATA_GUARD_ACTIVE
+    _DATA_GUARD_ACTIVE = False
 
 import scripts.run_nhis_enhancement_study as cli
 from scripts.run_nhis_enhancement_study import build_comparison_dataframe
@@ -73,7 +94,10 @@ class FakeNHISStudyAdapter:
         x_num1 = np.random.randn(n) * 2.0 + 5.0
         x_num2 = np.random.randn(n) + 10.0
         x_cat1 = np.random.choice([0, 1, 2, 3], size=n)
-        o_prot = np.random.choice([0, 1], size=n)
+        # Use the declared NHIS arm codes; 0 is not a valid SEX/DISAB code.
+        # The guard must keep rejecting unexpected groups in production.
+        protected_levels = list(range(1, 8)) if protected_attribute == "HISPALLP_A" else [1, 2]
+        o_prot = np.random.choice(protected_levels, size=n)
         prob = 1.0 / (1.0 + np.exp(-(0.3 * x_num1 + (x_cat1 == 0).astype(float) * 1.2 - 2.0)))
         y = (np.random.rand(n) < prob).astype(int)
 
@@ -1405,6 +1429,7 @@ class TestNHISD8R3CGateContracts(unittest.TestCase):
             fit_X=df_X, fit_y=df_y,
             selection_X=df_X, selection_y=df_y,
             protected_fit=df_O, protected_selection=df_O,
+            allow_identical_index=True,
         )
 
         tr = FairTransform()

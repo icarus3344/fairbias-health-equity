@@ -1,0 +1,158 @@
+{
+  "schema_version": "nhis_hidden_bias_plan_draft_v1",
+  "status": "DRAFT_NOT_FROZEN",
+  "created_date": "2026-09-18",
+  "planning_only": true,
+  "repository": "/Users/lkc/Downloads/code_v_0_3",
+  "observed_branch": "research/nhis-fairbias",
+  "observed_head": "67e6659fa65249a8842e34af5d8969629efe4bca",
+  "source_identity_warning": "HEAD does not identify the dirty working tree or archived training/evaluation sources.",
+  "research_question": "Hidden subgroup disparities in cost-related delayed-care classification; temporal validation and transfer of existing mitigation.",
+  "target": {
+    "outcome": "MEDDL12M_A",
+    "scope": "retrospective self-reported cost-related delayed care",
+    "causal_claims": false,
+    "deployed_clinical_system": false
+  },
+  "years": {
+    "2022": "existing F fitting and C calibration/development",
+    "2023": "exploratory discovery; previously used for model selection",
+    "2024": "retrospective evaluation; known_T=true",
+    "2025": "candidate temporal validation, locked pending access-history and compatibility audit"
+  },
+  "validation": {
+    "status": "LOCKED_NOT_ADMITTED",
+    "official_page": "https://www.cdc.gov/nchs/nhis/documentation/2025-nhis.html",
+    "microdata_downloaded_this_turn": false,
+    "microdata_read_this_turn": false,
+    "untouched_status": "NOT_ESTABLISHED",
+    "requires_protocol_freeze": true,
+    "requires_discovery_freeze": true,
+    "requires_source_and_model_hashes": true,
+    "requires_supervisor_release": true,
+    "fallback": "honestly labelled 2023-2024 exploratory study; no resplitting known 2024 to manufacture independent validation"
+  },
+  "models": {
+    "primary_discovery_proposal": "original frozen Arm001 unmitigated GBDT",
+    "backbone_sensitivity": "original frozen unmitigated LR",
+    "principal_mitigation_comparators": [
+      "Reweighing",
+      "ThresholdOptimizer"
+    ],
+    "descriptive_case_studies": [
+      "FairBias BM_AE",
+      "FairBias Joint"
+    ],
+    "optional_descriptive": [
+      "OxonFair"
+    ],
+    "exact_model_ids": null,
+    "seeds": "inherit original registered seeds per model; never choose best seed",
+    "thresholds": "original frozen C thresholds",
+    "primary_round_retraining": false
+  },
+  "cohort": {
+    "common_domain": "valid outcome and SEX_A/HISPALLP_A/DISAB3_A, with all primary model predictions available",
+    "requires_verified_record_order": true,
+    "row_count_only_alignment_allowed": false,
+    "preserve_full_annual_survey_design": true,
+    "missing_protected_attributes_imputed": false,
+    "encoding_dictionary": null
+  },
+  "discovery": {
+    "protected": [
+      "SEX_A",
+      "HISPALLP_A",
+      "DISAB3_A"
+    ],
+    "context_allowlist_proposal": [
+      "AGEP_A",
+      "NOTCOV_A",
+      "RATCAT_A",
+      "employment routing and nonresponse states"
+    ],
+    "prespecified_groups": "SEX_A x DISAB3_A, four groups",
+    "age_bins_proposal": [
+      [
+        18,
+        39
+      ],
+      [
+        40,
+        64
+      ],
+      [
+        65,
+        null
+      ]
+    ],
+    "max_rule_conditions": 2,
+    "max_primary_candidates": 500,
+    "max_discovered_groups": 10,
+    "max_total_registered_validation_groups": 14,
+    "prespecified_groups_not_selected_by_error": true,
+    "search_year": 2023,
+    "frozen_rule_ids": null,
+    "primary_endpoint": "survey-weighted FNR(group) - FNR(common-domain complement)",
+    "optional_mdss": "probability-based candidate discovery only; not default survey inference",
+    "support_proposal_not_cdc_standard": {
+      "minimum_n_group_and_complement": 200,
+      "minimum_events_each": 30,
+      "minimum_nonevents_each": 30,
+      "minimum_kish_ess_events_each": 20,
+      "minimum_kish_ess_nonevents_each": 20,
+      "minimum_distinct_psu_each": 20
+    }
+  },
+  "statistics": {
+    "survey_columns": [
+      "WTFA_A",
+      "PSTRAT",
+      "PPSU"
+    ],
+    "primary_validation_family": "K frozen subgroup-complement FNR contrasts",
+    "primary_adjustment": "Holm FWER",
+    "intervals": "marginal 95% and separately labelled Bonferroni simultaneous intervals",
+    "secondary_family": "2*K subgroup FNR method-baseline contrasts plus 2 overall BA contrasts for RW and TO",
+    "keep_unestimable_registered_slots": true,
+    "shared_psu_resamples_proposal": 2000,
+    "variance_check": "Taylor linearization against common-PSU bootstrap",
+    "q_semantics": "expected decision rates; not event risk",
+    "p_semantics": "event risk; no q-only risk calibration",
+    "training_uncertainty_in_survey_intervals": false,
+    "seed_aggregation": "mean seed metrics, not replicated participants",
+    "effect_size_discussion_proposal": 0.05,
+    "effect_size_is_validated_clinical_margin": false
+  },
+  "stage_ids": [
+    "R0",
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6"
+  ],
+  "required_before_protocol_freeze": [
+    "application framing and outcome/feature dictionary",
+    "input/model identities, runtime and source hashes",
+    "verified record linkage and common-domain specification",
+    "support thresholds, candidate grammar and deterministic selection",
+    "statistics and complete multiplicity families",
+    "2025 compatibility and access-history audit",
+    "independent synthetic contract review"
+  ],
+  "note_freeze_order": "R1 fixes design choices; R2 verifies code and binds final protocol before real search; R3 freezes discovered rules; R5 release binds both plus evaluation source.",
+  "execution": {
+    "local_workers_default": 2,
+    "local_workers_max_after_pilot": 4,
+    "blas_threads_per_worker": 1,
+    "remote_connections_authorized_by_this_plan": false,
+    "paid_compute_start_authorized_by_this_plan": false,
+    "automated_polling": false,
+    "continual_goal": false,
+    "protect_existing_artifacts": true,
+    "git_commit_or_push": false
+  }
+}
+

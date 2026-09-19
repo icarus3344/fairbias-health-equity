@@ -1,0 +1,46 @@
+{
+  "schema_version": "nhis_bias_attribute_audit_repair_verification_v3",
+  "date": "2026-09-19",
+  "gate": "A0_A2_NHIS_BIAS_ATTRIBUTE_AUDIT_V3",
+  "status": {
+    "a0": "PASS_WITH_LIMITS",
+    "a1": "SCIENTIFIC_CONTENT_NOT_FROZEN",
+    "a2": "REPAIR_TRANCHE_4_WORKER_COMPLETE_REVIEW_REQUIRED",
+    "a3": "BLOCKED_NOT_AUTHORIZED",
+    "validation_2025": "LOCKED_NOT_READ"
+  },
+  "reviewer_input_sha256": {
+    "INDEPENDENT_REVIEW_V3_GOAL.md": "564835cf86a5334d382c8a0e40f166449b127fe09469d382d0320e3e027ce5c9",
+    "INDEPENDENT_REVIEW_A0_A2_REPAIR_V3.md": "829355f078401416864cdc019f51e32b3e339939ab662f99505a415dd3ef8030",
+    "INDEPENDENT_REVIEW_A0_A2_REPAIR_TRANCHE_2_V3.md": "09d8cdc1a7a17e489c3fb0374b7e8725df808cff709825132112cadc93be22e7",
+    "INDEPENDENT_REVIEW_A0_A2_REPAIR_TRANCHE_3_V3.md": "c6ed5c21b3fa8de7f8a36480b8ed469619b92aad22ef2a3ddee3e5c90d2fca65"
+  },
+  "tranche_reports_sha256": {
+    "A0_A2_REPAIR_REPORT_V3.md": "34a40c571fcbb318818521c16a4577e0d7fbcecf8d45870c119a22724199d03d",
+    "A0_A2_REPAIR_TRANCHE_2_REPORT_V3.md": "dcb9e7a276b88e8c5da3fefc9a20a6d54356e847b8be8ed310c479b8467aa700",
+    "A0_A2_REPAIR_TRANCHE_3_REPORT_V3.md": "a51b8593a0d992bccc12248e8b93fd7e74c0f62797fe27e507f4a8dd964cb99f",
+    "A0_A2_REPAIR_TRANCHE_4_REPORT_V3.md": "b2c80712a641d9dd5a4d9bdea9a365ad93c96a36644755b553ffcd94e1714b4a"
+  },
+  "output_sha256": {
+    "src/nhis_fairbias/bias_attribute_audit_v3.py": "7d7961bb2697489ebbd5750d0426e1354fa034e232d38bdd11a970453703c4ea",
+    "tests/synthetic/test_bias_attribute_audit_v3.py": "c6beac8a74be0aec6abbbbe0e6fa2375122e35ae285f5936495e419a071bc64f",
+    "tests/synthetic/test_bias_attribute_audit_v3_registry.py": "f739202788f4e98befb0407c4c8a74dad2128db20d299f025855c87b88caa4b7",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/PRE_FREEZE_REGISTRY_V3_DRAFT.json": "ec0dd67fcc602b6337d425a742d1e9abf3d5b9245fc77ca38b6bffbfd00c7bdb",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/A1_INTERFACE_AND_FAMILY_SPEC_V3.md": "eea366962b7f9f6322c02de9c423bdb6970df6a10c72b95692dcbdd596cd03f6",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/A1_FREEZE_CHECKLIST_V3_DRAFT.json": "a6a470f61f18c82b38a69ca1688fba5fbc9648aa76665c90ac7e597208f7d0dd",
+    "docs/plans/nhis_bias_attribute_discovery_20260918/planning_verification_v3.json": "6813360d11a1edac8a7edd6756442f24f9c3c2656eaec0a8c754cb90fcf5d313"
+  },
+  "tests": {
+    "command": "PYTHONPATH=src pytest -q tests/synthetic/test_bias_attribute_audit_v3.py tests/synthetic/test_bias_attribute_audit_v3_registry.py tests/benchmark/test_survey_domain_contract.py tests/benchmark/test_survey_linearization.py tests/benchmark/test_survey_sufficient_totals.py tests/test_nhis_survey.py",
+    "result": "100 passed, 3 warnings in 2.35s",
+    "adversarial_scope": "hash-bound audit role and group rule; exact frozen anchor/new-O contrast universe shared by family and Q2"
+  },
+  "counts": {
+    "real_microdata_rows_processed": 0,
+    "new_real_performance_records": 0,
+    "validation_2025_rows_read": 0
+  },
+  "output_hash_note": "This verification file deliberately does not hash itself to avoid self-reference.",
+  "real_performance_scan_authorized": false,
+  "2025_micro_outcome_or_performance_read": false
+}

@@ -1,0 +1,33 @@
+{
+  "status": "COMPLETE",
+  "host": "fairbias-cpu",
+  "seed": 20260917,
+  "smoke": {
+    "N": 2400,
+    "B": 20,
+    "models": 3,
+    "strata": 600,
+    "psus": 1200,
+    "groups": 7,
+    "linearized_elapsed_seconds": 0.26288335025310516,
+    "bootstrap_elapsed_seconds": 0.15465303510427475,
+    "maxrss_bytes": 150097920
+  },
+  "formal": {
+    "N": 30000,
+    "B": 2000,
+    "models": 100,
+    "strata": 600,
+    "psus": 1200,
+    "groups": 7,
+    "linearized_elapsed_seconds": 19.90644796192646,
+    "bootstrap_elapsed_seconds": 14.776139453053474,
+    "maxrss_bytes": 289558528
+  },
+  "source_sha256": {
+    "survey_batch.py": "907225f0ac5083180303501571ff350e8c67f5378a30dc2da6decd7258ac68dd",
+    "survey_linearization.py": "f8270032d26f03e5eca4aa84e8813e1b11a15a18922534c9afaa64b3232ab925"
+  },
+  "probe_sha256": "886ec6d62222c3ce095526302cab8d7c1bf6775211fe2a0a24e4e47bcad8971c",
+  "data_boundary": "synthetic generated arrays only; no NHIS/model/S/T reads"
+}

@@ -1,0 +1,700 @@
+{
+  "schema_version": "nhis_bias_attribute_audit_registry_v3",
+  "status": "DRAFT_NOT_FROZEN",
+  "date": "2026-09-19",
+  "planning_only": false,
+  "real_performance_scan_authorized": false,
+  "primary_question": "Does a limited anchor-attribute audit overstate mitigation effectiveness relative to an expanded, domain-grounded audit of the same fixed models?",
+  "audit_scopes": {
+    "anchor": [
+      "SEX_A",
+      "HISPALLP_A",
+      "DISAB3_A"
+    ],
+    "expanded_definition": "anchor plus new_O_frozen_before_confirmatory_evaluation",
+    "new_O_validation_max": 5,
+    "targeted_retraining_new_O_max": 3
+  },
+  "time_roles": {
+    "2022": "training_and_calibration_history",
+    "2023": "discovery",
+    "2024": "known_retrospective_replication_only",
+    "2025": "LOCKED_ONE_SHOT_VALIDATION_NOT_ADMITTED"
+  },
+  "outcome": {
+    "variable": "MEDDL12M_A",
+    "construct": "self-reported delayed medical care due to cost in prior 12 months",
+    "causal_claims_allowed": false
+  },
+  "delta_decision": {
+    "status": "HUMAN_DECISION_REQUIRED",
+    "values": null,
+    "required_fields": [
+      "application_context",
+      "endpoint",
+      "delta",
+      "units",
+      "domain_rationale",
+      "approver",
+      "approved_at"
+    ],
+    "post_result_selection_prohibited": true
+  },
+  "conclusion_states": [
+    "SUPPORTED_WITHIN_TOLERANCE",
+    "SUPPORTED_EXCEEDS_TOLERANCE",
+    "INSUFFICIENT_EVIDENCE"
+  ],
+  "candidate_registry": {
+    "status": "2024_METADATA_MAPPED_CROSS_YEAR_AND_GROUPING_NOT_FROZEN",
+    "atlas": "VARIABLE_ATLAS_V3_DRAFT.csv",
+    "candidate_limit": 30,
+    "candidates": [
+      {"variable": "SEX_A", "role": "anchor", "official_2024_page": 19, "in_original_X": false, "admission": "ANCHOR_PENDING_REFERENCE_FREEZE"},
+      {"variable": "HISPALLP_A", "role": "anchor", "official_2024_page": 25, "in_original_X": false, "admission": "ANCHOR_PENDING_REFERENCE_FREEZE"},
+      {"variable": "DISAB3_A", "role": "anchor", "official_2024_page": 181, "in_original_X": false, "admission": "ANCHOR_PENDING_REFERENCE_FREEZE"},
+      {"variable": "AGEP_A", "role": "socioeconomic_or_demographic", "official_2024_page": 21, "in_original_X": true, "admission": "PENDING_GROUP_RULE"},
+      {"variable": "EDUCP_A", "role": "socioeconomic_or_demographic", "official_2024_page": 26, "in_original_X": true, "admission": "PENDING_CROSS_YEAR_REVIEW"},
+      {"variable": "REGION", "role": "living_context", "official_2024_page": 6, "in_original_X": true, "admission": "PENDING_CROSS_YEAR_REVIEW"},
+      {"variable": "PCNT18UPTC", "role": "living_context", "official_2024_page": 17, "in_original_X": true, "admission": "PENDING_GROUP_RULE"},
+      {"variable": "PCNTLT18TC", "role": "living_context", "official_2024_page": 18, "in_original_X": true, "admission": "PENDING_GROUP_RULE"},
+      {"variable": "RATCAT_A", "role": "socioeconomic_or_demographic", "official_2024_page": 611, "in_original_X": true, "admission": "PENDING_GROUP_RULE_AND_IMPUTATION_NOTE"},
+      {"variable": "EMPWRKLSW1_A", "role": "socioeconomic_or_demographic", "official_2024_page": 577, "in_original_X": true, "admission": "PENDING_ROUTING_REVIEW"},
+      {"variable": "EMPWRKFT1_A", "role": "socioeconomic_or_demographic", "official_2024_page": 580, "in_original_X": true, "admission": "PENDING_ROUTING_REVIEW"},
+      {"variable": "NOTCOV_A", "role": "socioeconomic_or_demographic", "official_2024_page": 187, "in_original_X": true, "admission": "PENDING_CROSS_YEAR_REVIEW"},
+      {"variable": "PHSTAT_A", "role": "clinical_context", "official_2024_page": 32, "in_original_X": true, "admission": "PENDING_ROLE_REVIEW"},
+      {"variable": "HYPEV_A", "role": "clinical_context", "official_2024_page": 34, "in_original_X": true, "admission": "PENDING_ROLE_REVIEW"},
+      {"variable": "CHLEV_A", "role": "clinical_context", "official_2024_page": 38, "in_original_X": true, "admission": "PENDING_ROLE_REVIEW"},
+      {"variable": "DIBEV_A", "role": "clinical_context", "official_2024_page": 113, "in_original_X": true, "admission": "PENDING_ROLE_REVIEW"},
+      {"variable": "ASEV_A", "role": "clinical_context", "official_2024_page": 45, "in_original_X": true, "admission": "PENDING_ROLE_REVIEW"},
+      {"variable": "VISIONDF_A", "role": "functional_status", "official_2024_page": 152, "in_original_X": true, "admission": "PENDING_DISAB3_NESTING_RULE"},
+      {"variable": "HEARINGDF_A", "role": "functional_status", "official_2024_page": 155, "in_original_X": true, "admission": "PENDING_DISAB3_NESTING_RULE"},
+      {"variable": "DIFF_A", "role": "functional_status", "official_2024_page": 158, "in_original_X": true, "admission": "PENDING_DISAB3_NESTING_RULE"},
+      {"variable": "COMDIFF_A", "role": "functional_status", "official_2024_page": 172, "in_original_X": true, "admission": "PENDING_DISAB3_NESTING_RULE"},
+      {"variable": "COGMEMDFF_A", "role": "functional_status", "official_2024_page": 174, "in_original_X": true, "admission": "PENDING_DISAB3_NESTING_RULE"},
+      {"variable": "UPPSLFCR_A", "role": "functional_status", "official_2024_page": 178, "in_original_X": true, "admission": "PENDING_DISAB3_NESTING_RULE"},
+      {"variable": "USUALPL_A", "role": "living_context", "official_2024_page": 326, "in_original_X": true, "admission": "PENDING_OUTCOME_PROXIMITY_REVIEW"}
+    ],
+    "metadata_atlas_extensions_verified_2024": [
+      {
+        "variable": "URBRRL23",
+        "role": "living_context",
+        "official_2024_page": 5,
+        "admission": "METADATA_ATLAS_ONLY_PENDING_DOWNSELECT_AND_CROSS_YEAR_REVIEW"
+      },
+      {
+        "variable": "MARSTAT_A",
+        "role": "socioeconomic_or_demographic",
+        "official_2024_page": 541,
+        "admission": "METADATA_ATLAS_ONLY_PENDING_DOWNSELECT_AND_CROSS_YEAR_REVIEW"
+      },
+      {
+        "variable": "NATUSBORN_A",
+        "role": "socioeconomic_or_demographic",
+        "official_2024_page": 563,
+        "admission": "METADATA_ATLAS_ONLY_PENDING_DOWNSELECT_AND_CROSS_YEAR_REVIEW"
+      },
+      {
+        "variable": "CITZNSTP_A",
+        "role": "socioeconomic_or_demographic",
+        "official_2024_page": 565,
+        "admission": "METADATA_ATLAS_ONLY_PENDING_DOWNSELECT_AND_CROSS_YEAR_REVIEW"
+      },
+      {
+        "variable": "FDSCAT3_A",
+        "role": "social_resources",
+        "official_2024_page": 628,
+        "admission": "METADATA_ATLAS_ONLY_PENDING_DOWNSELECT_AND_CROSS_YEAR_REVIEW"
+      },
+      {
+        "variable": "ANXEV_A",
+        "role": "clinical_context",
+        "official_2024_page": 126,
+        "admission": "METADATA_ATLAS_ONLY_PENDING_DOWNSELECT_AND_CROSS_YEAR_REVIEW"
+      },
+      {
+        "variable": "DEPEV_A",
+        "role": "clinical_context",
+        "official_2024_page": 127,
+        "admission": "METADATA_ATLAS_ONLY_PENDING_DOWNSELECT_AND_CROSS_YEAR_REVIEW"
+      }
+    ],
+    "forbidden_primary_scan": [
+      "MEDDL12M_A",
+      "MEDNG12M_A",
+      "PAYBLL12M_A",
+      "PAYNOBLLNW_A",
+      "PAYWORRY_A",
+      "DENDL12M_A",
+      "DENNG12M_A",
+      "RXSK12M_A",
+      "RXLS12M_A",
+      "RXDL12M_A",
+      "RXDG12M_A",
+      "record identifiers",
+      "WTFA_A",
+      "PSTRAT",
+      "PPSU",
+      "predictions",
+      "error indicators"
+    ]
+  },
+  "discovery_models": {
+    "primary": {
+      "arm_id": "arm_001",
+      "backbone": "GBDT",
+      "method": "UNMITIGATED",
+      "selection_id": "parent:selection_a57017497c1eb266dd8b0262c1510f5e0f52859bfc79cb7c80f2f78e694e4d1e",
+      "seeds": [0, 7, 19, 37, 73],
+      "model_ids_by_seed": {
+        "0": "model_1a24890ea00a03a528efbb110eebc3690060646dc7830a35e8606273c3697417",
+        "7": "model_8bd7099364a9d1a6fb5a4b1e34316fd1497aa9c291cd30a7e10eb427a5037817",
+        "19": "model_5ac655563b9accc37651bd8a679ae744904115999946f79ba0cf0680f78509f5",
+        "37": "model_5925d4a08288c868e7c9139c90dccfefda9ca26f33f7b3116f3e1a730f69c21e",
+        "73": "model_be5430077ce5f93be9dd7b04dca302b940d7f4cd0c0f27ce8205b02014a53145"
+      },
+      "source_binding": {
+        "path": "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json",
+        "sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628"
+      },
+      "2023_predictions": "MISSING_VERSIONED_REPLAY_REQUIRED_BEFORE_A3"
+    },
+    "backbone_sensitivity": "ARM001_LR_UNMITIGATED_EXACT_ID_PENDING_A1_BINDING"
+  },
+  "comparison_panels": {
+    "main_risk_panel": {
+      "panel_id": "main_risk_gbdt_arm001_v3",
+      "status": "TECHNICALLY_BOUND_PENDING_MEMBER_CONTRACT_AND_COVERAGE_PREFLIGHT",
+      "baseline_member_id": "UNMITIGATED",
+      "O_train": "SEX_A",
+      "O_train_status": "VERIFIED_FROM_ARM_SPEC",
+      "model_id_uniqueness_policy": "UNIQUE_ACROSS_PANEL_MEMBERS_AND_SEEDS",
+      "seed_policy": {
+        "status": "HUMAN_DECISION_REQUIRED",
+        "seeds": [0, 7, 19, 37, 73],
+        "aggregation_estimand": null,
+        "training_randomness_inference": null,
+        "seed_policy_sha256": null
+      },
+      "deployment_contract": {
+        "arm_id": "arm_001",
+        "backbone": "GBDT",
+        "features": "PRIMARY_CORE_21",
+        "feature_sha256": null,
+        "preprocessing_sha256": null,
+        "training_weighted": false,
+        "output_type": "event_probability_p",
+        "O_at_inference": false,
+        "threshold_policy_mode": "REUSE_EACH_MEMBER_FROZEN_POLICY_NO_RETUNING",
+        "threshold_comparison_operator": ">=",
+        "threshold_policy_status": "PENDING_MEMBER_LEVEL_THRESHOLD_VALUES_AND_HASHES"
+      },
+      "common_domain_contract": {
+        "scope": "per_O",
+        "all_panel_members_required": true,
+        "annual_design_rows_retained": true,
+        "global_all_O_complete_case_prohibited": true
+      },
+      "members": [
+        {
+          "member_id": "UNMITIGATED",
+          "selection_id": "parent:selection_a57017497c1eb266dd8b0262c1510f5e0f52859bfc79cb7c80f2f78e694e4d1e",
+          "model_ids": [
+            "model_1a24890ea00a03a528efbb110eebc3690060646dc7830a35e8606273c3697417",
+            "model_8bd7099364a9d1a6fb5a4b1e34316fd1497aa9c291cd30a7e10eb427a5037817",
+            "model_5ac655563b9accc37651bd8a679ae744904115999946f79ba0cf0680f78509f5",
+            "model_5925d4a08288c868e7c9139c90dccfefda9ca26f33f7b3116f3e1a730f69c21e",
+            "model_be5430077ce5f93be9dd7b04dca302b940d7f4cd0c0f27ce8205b02014a53145"
+          ],
+          "source_binding": {
+            "path": "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json",
+            "sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628"
+          },
+          "O_train": "SEX_A",
+          "seed_policy_sha256": null,
+          "seed_model_bindings": [
+            {"seed": 0, "model_id": "model_1a24890ea00a03a528efbb110eebc3690060646dc7830a35e8606273c3697417", "model_sha256": "c0bfc0687ea264f03fbc8dd6c42233386dd41849f6b166dcda8f6af15522b1b0"},
+            {"seed": 7, "model_id": "model_8bd7099364a9d1a6fb5a4b1e34316fd1497aa9c291cd30a7e10eb427a5037817", "model_sha256": "86ec4232ce664e256ebd790f3da28ab8d770603b005a11bcba317da25f49bb4b"},
+            {"seed": 19, "model_id": "model_5ac655563b9accc37651bd8a679ae744904115999946f79ba0cf0680f78509f5", "model_sha256": "15bddf4decd50d1ff5f51eadcc402dec6eda0cf35cd744d091fc12f4d2bad5de"},
+            {"seed": 37, "model_id": "model_5925d4a08288c868e7c9139c90dccfefda9ca26f33f7b3116f3e1a730f69c21e", "model_sha256": "012bf1fd685ed4b2df1e094dcf9c0e79ffcf6959302fab9648e5bbf4685bae32"},
+            {"seed": 73, "model_id": "model_be5430077ce5f93be9dd7b04dca302b940d7f4cd0c0f27ce8205b02014a53145", "model_sha256": "720fe1ea90dfc283ed562aa5904d05882799e83f2007f20f4e4fd183a6799a4e"}
+          ],
+          "feature_sha256": null,
+          "feature_registry_sha256": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018",
+          "preprocessing_sha256": null,
+          "training_source_sha256": null,
+          "prediction_source_code_sha256": null,
+          "backbone": "GBDT",
+          "output_type": "event_probability_p",
+          "output_type_status": "VERIFIED_IN_ADMISSION_PREDICTION_REFS",
+          "threshold_policy": {"status": "PENDING", "policy_id": null, "threshold": null, "comparison_operator": ">=", "selection_role": null, "threshold_policy_sha256": null},
+          "O_at_inference": false,
+          "member_contract_complete": false,
+          "pending_fields": ["seed_policy", "feature_sha256", "preprocessing_sha256", "training_source_sha256", "prediction_source_code_sha256", "threshold_policy", "2023_prediction_threshold_y_hat_order_hashes", "coverage_preflight"]
+        },
+        {
+          "member_id": "REWEIGHING",
+          "selection_id": "parent:selection_186d582aa681fda7b576e6e41b719a9333b808acf28db4afb192067f17f9adf5",
+          "model_ids": [
+            "model_8da8582b18c49c8ff79834bd2562522d22f4f4a6033f44197b48b91dbcd067ff",
+            "model_da11a97c927be7751b163be952d31bd88d0659dbaa67e69255161a6c2e1513ed",
+            "model_7726d20be62db17b7fa4f9f3222c00e23169fe6b2d79d611456e04b96a30bde3",
+            "model_dc6e2d47d9edd84439b13ddf644ddefff8814612ad909e0fafaacd894fc794bc",
+            "model_b88a8b1e85ed2e0783e7809b90d9a59e8bba5818a710811831bcf2c944b13a7f"
+          ],
+          "source_binding": {
+            "path": "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json",
+            "sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628"
+          },
+          "O_train": "SEX_A",
+          "seed_policy_sha256": null,
+          "seed_model_bindings": [
+            {"seed": 0, "model_id": "model_8da8582b18c49c8ff79834bd2562522d22f4f4a6033f44197b48b91dbcd067ff", "model_sha256": "fc22136b56d56242143fccb3485c63afe59c6cc038d9af3896f14ab8c55a3d7d"},
+            {"seed": 7, "model_id": "model_da11a97c927be7751b163be952d31bd88d0659dbaa67e69255161a6c2e1513ed", "model_sha256": "48f580de9ae50e5a28cff974cc44613c86fc7d663262f9a4dcfbff2ff3fbafd3"},
+            {"seed": 19, "model_id": "model_7726d20be62db17b7fa4f9f3222c00e23169fe6b2d79d611456e04b96a30bde3", "model_sha256": "5bc3d778991191bf584bc610a57590e89fc01b80b8fabe42acf604c217b07f6a"},
+            {"seed": 37, "model_id": "model_dc6e2d47d9edd84439b13ddf644ddefff8814612ad909e0fafaacd894fc794bc", "model_sha256": "7caf0680519e11bb5ef12812987abbf64a6b96d3abbf72d9caadfd883721e097"},
+            {"seed": 73, "model_id": "model_b88a8b1e85ed2e0783e7809b90d9a59e8bba5818a710811831bcf2c944b13a7f", "model_sha256": "b6df22c87dfcf9252099aa017648a2aaa3ee5e9e21aa644eb9f8012f163b8692"}
+          ],
+          "feature_sha256": null,
+          "feature_registry_sha256": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018",
+          "preprocessing_sha256": null,
+          "training_source_sha256": null,
+          "prediction_source_code_sha256": null,
+          "backbone": "GBDT",
+          "output_type": "event_probability_p",
+          "output_type_status": "VERIFIED_IN_ADMISSION_PREDICTION_REFS",
+          "threshold_policy": {"status": "PENDING", "policy_id": null, "threshold": null, "comparison_operator": ">=", "selection_role": null, "threshold_policy_sha256": null},
+          "O_at_inference": false,
+          "member_contract_complete": false,
+          "pending_fields": ["seed_policy", "feature_sha256", "preprocessing_sha256", "training_source_sha256", "prediction_source_code_sha256", "threshold_policy", "2023_prediction_threshold_y_hat_order_hashes", "coverage_preflight"]
+        },
+        {
+          "member_id": "FAIRBIAS_BM",
+          "selection_id": "parent:selection_8b51bb5ead74ed270d5b7c87c6fc4806d05198c7b2dbd1946dd02e4aca87b84d",
+          "model_ids": [
+            "model_463217e826089f89bd621504e40d9cd330a70b3af57ce273fb000df9d0614ba0",
+            "model_dcb48874a1eafb606314df26446b026cc67d0d0f8db3962c3ff7ddf766324dc4",
+            "model_903fe9effe1c138239acc53aa387b779378aa98840f9c832bbfe18f088ce3641",
+            "model_4e6b8e130ffe51cd32bb245b7cf55b35908370fb40c144218559241f4cc7864c",
+            "model_0eee551bf12762da67629fe7c83e2205b9ad64a1c55b7e1cc21c4216e579499e"
+          ],
+          "source_binding": {
+            "path": "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json",
+            "sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628"
+          },
+          "O_train": "SEX_A",
+          "seed_policy_sha256": null,
+          "seed_model_bindings": [
+            {"seed": 0, "model_id": "model_463217e826089f89bd621504e40d9cd330a70b3af57ce273fb000df9d0614ba0", "model_sha256": "feecf5155724bdb46e40f99e8087eaf8695f28eaf497b94592ce1d4b929df7de"},
+            {"seed": 7, "model_id": "model_dcb48874a1eafb606314df26446b026cc67d0d0f8db3962c3ff7ddf766324dc4", "model_sha256": "b5faf03ad957cfd6ca1bb1058ac2daa874f2f5f59b1cbfed27ad839f25ca5d93"},
+            {"seed": 19, "model_id": "model_903fe9effe1c138239acc53aa387b779378aa98840f9c832bbfe18f088ce3641", "model_sha256": "13e0a7d358435e92aabf2b1433e160fbc2c47e50d19c39d9af0c118f60105500"},
+            {"seed": 37, "model_id": "model_4e6b8e130ffe51cd32bb245b7cf55b35908370fb40c144218559241f4cc7864c", "model_sha256": "d82ee1adc5cd3338902218b33e4dc7429c53fd9d2cfb83b561af995c64de3251"},
+            {"seed": 73, "model_id": "model_0eee551bf12762da67629fe7c83e2205b9ad64a1c55b7e1cc21c4216e579499e", "model_sha256": "16153c0745631bf9dbfeffbab359e9b0ef4265c0feba1a13e9f446fa726113e1"}
+          ],
+          "feature_sha256": null,
+          "feature_registry_sha256": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018",
+          "preprocessing_sha256": null,
+          "training_source_sha256": null,
+          "prediction_source_code_sha256": null,
+          "backbone": "GBDT",
+          "output_type": "event_probability_p",
+          "output_type_status": "VERIFIED_IN_ADMISSION_PREDICTION_REFS",
+          "threshold_policy": {"status": "PENDING", "policy_id": null, "threshold": null, "comparison_operator": ">=", "selection_role": null, "threshold_policy_sha256": null},
+          "O_at_inference": false,
+          "member_contract_complete": false,
+          "pending_fields": ["seed_policy", "feature_sha256", "preprocessing_sha256", "training_source_sha256", "prediction_source_code_sha256", "threshold_policy", "2023_prediction_threshold_y_hat_order_hashes", "coverage_preflight"]
+        },
+        {
+          "member_id": "FAIRBIAS_BM_AE",
+          "selection_id": "completion:arm_001:GBDT:FAIRBIAS_BM_AE",
+          "model_ids": [
+            "completion_model_3c8badc6d7eeaa99adce_s0",
+            "completion_model_3c8badc6d7eeaa99adce_s7",
+            "completion_model_3c8badc6d7eeaa99adce_s19",
+            "completion_model_3c8badc6d7eeaa99adce_s37",
+            "completion_model_3c8badc6d7eeaa99adce_s73"
+          ],
+          "source_binding": {
+            "path": "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json",
+            "sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628"
+          },
+          "O_train": "SEX_A",
+          "seed_policy_sha256": null,
+          "seed_model_bindings": [
+            {"seed": 0, "model_id": "completion_model_3c8badc6d7eeaa99adce_s0", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 7, "model_id": "completion_model_3c8badc6d7eeaa99adce_s7", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 19, "model_id": "completion_model_3c8badc6d7eeaa99adce_s19", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 37, "model_id": "completion_model_3c8badc6d7eeaa99adce_s37", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 73, "model_id": "completion_model_3c8badc6d7eeaa99adce_s73", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"}
+          ],
+          "feature_sha256": null,
+          "feature_registry_sha256": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018",
+          "preprocessing_sha256": null,
+          "training_source_sha256": null,
+          "prediction_source_code_sha256": null,
+          "backbone": "GBDT",
+          "output_type": "event_probability_p",
+          "output_type_status": "REGISTERED_PENDING_SOURCE_CONFIRMATION",
+          "threshold_policy": {"status": "PENDING", "policy_id": null, "threshold": null, "comparison_operator": ">=", "selection_role": null, "threshold_policy_sha256": null},
+          "O_at_inference": false,
+          "member_contract_complete": false,
+          "pending_fields": ["seed_policy", "model_sha256", "feature_sha256", "preprocessing_sha256", "training_source_sha256", "prediction_source_code_sha256", "output_type_source_confirmation", "threshold_policy", "2023_prediction_threshold_y_hat_order_hashes", "coverage_preflight"]
+        },
+        {
+          "member_id": "FAIRBIAS_JOINT",
+          "selection_id": "completion:arm_001:GBDT:FAIRBIAS_JOINT",
+          "model_ids": [
+            "completion_model_ca3e460d1bc028e42c48_s0",
+            "completion_model_ca3e460d1bc028e42c48_s7",
+            "completion_model_ca3e460d1bc028e42c48_s19",
+            "completion_model_ca3e460d1bc028e42c48_s37",
+            "completion_model_ca3e460d1bc028e42c48_s73"
+          ],
+          "source_binding": {
+            "path": "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json",
+            "sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628"
+          },
+          "O_train": "SEX_A",
+          "seed_policy_sha256": null,
+          "seed_model_bindings": [
+            {"seed": 0, "model_id": "completion_model_ca3e460d1bc028e42c48_s0", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 7, "model_id": "completion_model_ca3e460d1bc028e42c48_s7", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 19, "model_id": "completion_model_ca3e460d1bc028e42c48_s19", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 37, "model_id": "completion_model_ca3e460d1bc028e42c48_s37", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"},
+            {"seed": 73, "model_id": "completion_model_ca3e460d1bc028e42c48_s73", "model_sha256": null, "model_sha256_status": "PENDING_MODEL_ARTIFACT_CONTRACT"}
+          ],
+          "feature_sha256": null,
+          "feature_registry_sha256": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018",
+          "preprocessing_sha256": null,
+          "training_source_sha256": null,
+          "prediction_source_code_sha256": null,
+          "backbone": "GBDT",
+          "output_type": "event_probability_p",
+          "output_type_status": "REGISTERED_PENDING_SOURCE_CONFIRMATION",
+          "threshold_policy": {"status": "PENDING", "policy_id": null, "threshold": null, "comparison_operator": ">=", "selection_role": null, "threshold_policy_sha256": null},
+          "O_at_inference": false,
+          "member_contract_complete": false,
+          "pending_fields": ["seed_policy", "model_sha256", "feature_sha256", "preprocessing_sha256", "training_source_sha256", "prediction_source_code_sha256", "output_type_source_confirmation", "threshold_policy", "2023_prediction_threshold_y_hat_order_hashes", "coverage_preflight"]
+        }
+      ],
+      "source_manifest": {
+        "path": "artifacts/nhis/completion_evaluation_20260918/control/admission_v1.json",
+        "sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628"
+      },
+      "coverage_preflight": {
+        "status": "NOT_RUN_A3_REPLAY_NOT_AUTHORIZED",
+        "2023_prediction_availability_verified": false,
+        "per_O_nonperformance_coverage_verified": false
+      },
+      "panel_sha256": "2a63adc9e43829af676570553d8dbedc7a9209ca59a832089e77479bfe6a8d0f"
+    },
+    "supplemental_panels_required_for": [
+      "decision_probability_q methods",
+      "methods requiring O at inference",
+      "later lower-coverage methods",
+      "different backbone or feature contract"
+    ],
+    "supplemental_may_redefine_main_domain": false,
+    "freeze_validator_contract": {
+      "identifier_type": "NONEMPTY_STRING_ONLY",
+      "seed_type": "UNIQUE_ORDERED_NON_BOOLEAN_INTEGERS",
+      "deployment_output_type": "event_probability_p",
+      "deployment_O_at_inference": false,
+      "domain_scope": "per_O",
+      "all_panel_members_required": true,
+      "annual_design_rows_retained": true,
+      "global_all_O_complete_case_prohibited": true,
+      "false_nonboolean_or_missing_domain_flags_rejected": true
+    }
+  },
+  "statistical_families": {
+    "generator": "nhis_fairbias.bias_attribute_audit_v3.generate_statistical_families",
+    "status": "MANIFEST_SCHEMA_IMPLEMENTED_CONTENT_NOT_FROZEN",
+    "required_identity_fields": [
+      "year",
+      "evidence_role",
+      "scope",
+      "panel_id",
+      "panel_sha256",
+      "O_train",
+      "O_audit",
+      "audit_role",
+      "audit_role_sha256",
+      "O_group_rule_sha256",
+      "O_registry_version",
+      "O_registry_sha256",
+      "contrast_universe_sha256",
+      "seed_policy",
+      "seed_policy_sha256",
+      "endpoint",
+      "delta_rationale_id",
+      "family_id",
+      "family_sha256",
+      "contrast_id",
+      "slot_status"
+    ],
+    "required_manifest_fields": [
+      "schema_version",
+      "manifest_status",
+      "manifest_identity",
+      "contrast_universe_receipt",
+      "family_manifests",
+      "family_sizes",
+      "manifest_sha256"
+    ],
+    "predeclared_NA_slots_retained": true,
+    "q1_null": "d_model_O_group = 0",
+    "q3_q4_null": "d_method_O_group - d_matched_baseline_O_group = 0",
+    "q1_and_q3_q4_must_be_disjoint": true,
+    "confirmatory_endpoints": ["fnr", "fpr"],
+    "holm_p_values_only": true,
+    "ordinary_and_simultaneous_ci_stored_separately": true,
+    "max_EO_interval": "projection over all predeclared FNR/FPR contrast simultaneous intervals",
+    "not_estimable_slots_remain_in_family_denominator": true,
+    "seed_policy_verifier_contract": {
+      "exact_fields": ["status", "seeds", "aggregation_estimand", "training_randomness_inference"],
+      "status_required": "FROZEN",
+      "seeds_nonempty_unique_non_boolean_integers": true,
+      "aggregation_estimand_nonempty": true,
+      "training_randomness_inference_nonempty": true
+    },
+    "top_level_verifier_contract": {
+      "exact_family_set_required": true,
+      "manifest_identity_must_match_every_family_and_slot": true,
+      "family_sizes_and_slot_counts_recomputed": true,
+      "contrast_id_null_and_slot_status_rules_recomputed": true,
+      "scope_must_equal_exact_frozen_attribute_universe": true,
+      "O_audit_role_group_rule_registry_identity_unique_across_all_slots": true,
+      "missing_extra_or_relabelled_slots_rejected": true,
+      "manifest_sha256_required": true
+    }
+  },
+  "contrast_universe_contract": {
+    "implementation": "nhis_fairbias.bias_attribute_audit_v3.freeze_contrast_universe_receipt",
+    "verifier": "nhis_fairbias.bias_attribute_audit_v3.verify_contrast_universe_receipt",
+    "status": "SOFTWARE_SCHEMA_IMPLEMENTED_SCIENTIFIC_CONTENT_NOT_FROZEN",
+    "fixed_ordered_anchor_O_set": ["SEX_A", "HISPALLP_A", "DISAB3_A"],
+    "new_O_set_status": "HUMAN_DECISION_REQUIRED",
+    "same_O_in_anchor_and_new_O_prohibited": true,
+    "attribute_identity_fields": [
+      "O_audit",
+      "groups",
+      "reference_group",
+      "audit_role",
+      "audit_role_sha256",
+      "O_group_rule_sha256",
+      "O_registry_version",
+      "O_registry_sha256"
+    ],
+    "receipt_identity_fields": [
+      "O_registry_version_and_sha256",
+      "selection_rule_id_and_sha256",
+      "year",
+      "evidence_role",
+      "panel_id_and_sha256",
+      "O_train",
+      "seed_policy_sha256",
+      "delta_rationale_id",
+      "endpoints",
+      "q1_model_ids",
+      "confirmatory_and_descriptive_method_pairs",
+      "anchor_O_set",
+      "new_O_set",
+      "exact_expected_contrasts",
+      "contrast_universe_sha256"
+    ],
+    "scope_rules": {
+      "anchor": "EXACT_FIXED_ANCHOR_UNIVERSE_ONLY",
+      "expanded": "EXACT_SAME_ANCHOR_UNIVERSE_PLUS_DISJOINT_FROZEN_NEW_O_UNIVERSE"
+    },
+    "family_and_q2_must_bind_same_receipt": true,
+    "same_O_role_group_rule_registry_identity_must_hold_across_endpoint_group_model_and_family": true,
+    "missing_extra_or_relabelled_contrasts_rejected": true
+  },
+  "q2_scope_aggregator": {
+    "implementation": "nhis_fairbias.bias_attribute_audit_v3.aggregate_q2_scope_conclusions",
+    "status": "SOFTWARE_CONTRACT_IMPLEMENTED_SCIENTIFIC_CONTENT_NOT_FROZEN",
+    "priority_high_to_low": [
+      "SUPPORTED_EXCEEDS_TOLERANCE",
+      "INSUFFICIENT_EVIDENCE",
+      "SUPPORTED_WITHIN_TOLERANCE"
+    ],
+    "separate_outputs": [
+      "new_O_content_change",
+      "multiplicity_precision_change",
+      "overall_anchor_to_expanded_change",
+      "per_O_coverage"
+    ],
+    "required_scientific_contrast_identity": [
+      "year",
+      "evidence_role",
+      "family_name",
+      "question",
+      "panel_id",
+      "panel_sha256",
+      "O_train",
+      "O_audit",
+      "audit_role",
+      "audit_role_sha256",
+      "O_group_rule_sha256",
+      "O_registry_version",
+      "O_registry_sha256",
+      "contrast_universe_sha256",
+      "group",
+      "reference_group",
+      "endpoint",
+      "model_id_or_method_matched_baseline_pair",
+      "seed_policy_sha256",
+      "delta",
+      "delta_units",
+      "delta_rationale_id",
+      "contrast_id"
+    ],
+    "expanded_rows_shared_scope_identity": [
+      "year",
+      "evidence_role",
+      "family_name",
+      "question",
+      "panel_id",
+      "panel_sha256",
+      "O_train",
+      "O_registry_version",
+      "O_registry_sha256",
+      "contrast_universe_sha256",
+      "endpoint",
+      "model_id_or_method_matched_baseline_pair",
+      "seed_policy_sha256",
+      "delta",
+      "delta_units",
+      "delta_rationale_id"
+    ],
+    "new_O_allowed_identity_differences": [
+      "O_audit",
+      "audit_role",
+      "audit_role_sha256",
+      "O_group_rule_sha256",
+      "group",
+      "reference_group",
+      "contrast_id",
+      "registered_inference_fields"
+    ],
+    "frozen_contrast_universe_rules": {
+      "receipt_required_for_every_call": true,
+      "anchor_rows_equal_exact_anchor_slots": true,
+      "new_O_rows_equal_exact_frozen_new_O_slots": true,
+      "not_estimable_slots_must_be_retained": true,
+      "same_O_cannot_appear_in_both_layers": true,
+      "family_and_q2_receipt_hash_must_match": true
+    },
+    "native_to_expanded_family_allowed_changes": "REGISTERED_FAMILY_DEPENDENT_INFERENCE_FIELDS_ONLY",
+    "no_new_O_path": {
+      "empty_new_O_rows_allowed_only_with_hash_bound_receipt": true,
+      "expanded_equals_anchor": true,
+      "affirmative_new_O_change_prohibited": true,
+      "required_receipt_fields": [
+        "shared_scope_identity",
+        "atlas_source_path_sha256_variable_count",
+        "candidate_registry_source_path_sha256_denominator",
+        "excluded_candidate_count",
+        "not_estimable_candidate_count",
+        "selected_new_O_count",
+        "precision_interpretation",
+        "precision_evidence_source_path_sha256_schema",
+        "selection_rule_id_path_schema_sha256",
+        "O_registry_version_path_sha256",
+        "contrast_universe_sha256_with_empty_new_O_set",
+        "candidate_universe_scope",
+        "codebook_wide_eligibility_ledger_complete",
+        "status",
+        "receipt_sha256"
+      ],
+      "receipt_status": "FROZEN_NO_NEW_O_SELECTED",
+      "contrast_universe_new_O_set_must_be_empty": true,
+      "candidate_universe_scope": "PROJECT_ATLAS_NOT_CODEBOOK_WIDE_ELIGIBILITY_LEDGER",
+      "codebook_wide_eligibility_ledger_complete": false
+    },
+    "global_all_O_complete_case_prohibited": true
+  },
+  "prediction_decision_contract": {
+    "status": "SOFTWARE_CONTRACT_IMPLEMENTED_MEMBER_BINDINGS_PENDING",
+    "risk_output_type": "event_probability_p",
+    "decision_output_type": "binary_decision_y_hat",
+    "decision_metrics": ["fnr", "fpr", "ba"],
+    "risk_quality_metrics": ["brier", "calibration", "log_loss"],
+    "required_hashes": [
+      "prediction_sha256",
+      "threshold_policy_sha256",
+      "y_hat_sha256",
+      "record_order_sha256"
+    ],
+    "soft_probability_as_error_rate_prohibited": true,
+    "threshold_policy_frozen_schema": {
+      "exact_fields": ["status", "policy_id", "threshold", "comparison_operator", "selection_role", "threshold_policy_sha256"],
+      "policy_id_nonempty_string": true,
+      "selection_role": "FROZEN_WITHOUT_EVALUATION_RESULT_ACCESS",
+      "partial_self_hashed_policy_prohibited": true
+    }
+  },
+  "precision": {
+    "support_thresholds_are_estimation_gates_only": true,
+    "minimum_detectable_effect_status": "NOT_IMPLEMENTED_POWER_PARAMETERS_NOT_FROZEN",
+    "required_outputs": [
+      "ordinary_ci_width",
+      "simultaneous_ci_width",
+      "simultaneous_margin_of_error_from_point",
+      "supplied_critical_margin_of_error",
+      "compatible_effect_interval",
+      "largest_absolute_effect_compatible_with_interval",
+      "rules_out_effects_with_absolute_magnitude_above_delta",
+      "rules_out_within_tolerance_region",
+      "delta_exclusion_statement"
+    ]
+  },
+  "method_tradeoff_outputs": [
+    "gap_change",
+    "disadvantaged_group_absolute_performance_change",
+    "other_group_absolute_performance_change",
+    "overall_balanced_accuracy_change",
+    "overall_risk_quality_change_for_p_event_only",
+    "other_O_worsening"
+  ],
+  "source_bindings": {
+    "protocol_sha256": "1a3d38929d65493f8352d6b46d32f65fa836502d08a3c2d2704dd713e5c3beac",
+    "variables_registry_sha256": "fee56be0266b99988fa46010b6ecb7083029fe4d953bd18ddf36cfbf5a297a1e",
+    "features_registry_sha256": "9fb42eb3b14c9d80b56476b1cbac5e4981843e020a00d7918702676026975018",
+    "study_registry_sha256": "d0fa6b12b8fae5d77ddbb75aef91de9294c1c5d4b93fb5fbf3990c560dbbd964",
+    "official_2024_codebook_sha256": "04ef4aa4b86c1b341cfdbae4389d9d7726584c92e579e4acac98b7c240fda3c9",
+    "completion_admission_sha256": "2a83612b23048a54ce09196ec553b9881ee87bf5b5930f36fc53bc0e52d1a628",
+    "completion_study_sha256": "3c4572ec327d8d97a2f108fe3c82a8619370a78981c8fe1abdb496677b2933fb"
+  },
+  "validation_2025_lock": {
+    "status": "LOCKED",
+    "validation_year": 2025,
+    "candidate_O_frozen": false,
+    "delta_approved_with_domain_rationale": false,
+    "models_frozen": false,
+    "metrics_frozen": false,
+    "families_frozen": false,
+    "source_code_frozen": false,
+    "source_hashes_verified": false,
+    "record_order_contract_frozen": false,
+    "human_release_decision_recorded": false,
+    "micro_outcome_or_performance_read": false
+  },
+  "a3_gate": {
+    "status": "BLOCKED_PENDING_A0_A2_ACCEPTANCE_AND_SCIENTIFIC_FREEZE",
+    "technical_panel_frozen": false,
+    "technical_panel_bound_pending_member_contract_and_coverage_preflight": true,
+    "technical_panel_binding_does_not_authorize_prediction_generation_or_performance_scan": true,
+    "remaining_blockers": [
+      "independent 2023 model replay and prediction alignment not yet verified",
+      "main panel member-level hashes, thresholds, y_hat bindings, seed estimand, and coverage preflight are incomplete",
+      "formal candidate O groups and references are not frozen",
+      "application-grounded delta is not approved",
+      "confirmatory method pairs and full family manifest content are not frozen",
+      "simultaneous CI production coverage/reference validation is incomplete",
+      "independent reviewer has not accepted A0-A2 repair tranche 4"
+    ],
+    "no_real_scan_executed_in_this_registry_revision": true
+  }
+}
